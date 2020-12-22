@@ -156,7 +156,7 @@ class FPSDesign(object):
 
         Notes:
         ------
-        This method will generally be triggered when manual_design=False
+        This method will build a design from the db if manual_design=False
 
         """
 
@@ -210,7 +210,7 @@ class FPSDesign(object):
         ------
         This function creates a manual design whether it is from
         user inputted catalogids, or if it is a flat file list
-        of coordinates (and fiber assignments?)
+        of coordinates (and fiber assignments?), if manual_design=True
 
         """
 
@@ -237,7 +237,7 @@ class FPSDesign(object):
                 self.design['dec'][i] = targ_db.dec
 
             # here somehow assign these
-            design['fiberID'], design['wokHoleID'] = something()
+            self.design['fiberID'], self.design['wokHoleID'] = something()
         else:
             # manual design from flat file
             man_des = load(self.design_file)
@@ -245,9 +245,9 @@ class FPSDesign(object):
             # now need to load all the params to dictonary
 
         # here convert ra/dec to x/y based on field/HA observation
-        design['x'], design['y'] = self.radec_to_xy()
+        self.design['x'], self.design['y'] = self.radec_to_xy()
 
-        return design
+        return
 
     def design_to_RobotGrid(self, design):
         """

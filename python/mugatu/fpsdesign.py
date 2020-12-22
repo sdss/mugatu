@@ -16,31 +16,43 @@ class FPSDesign(object):
     Parameters:
     -----------
 
-    racen_field: float
+    racen: np.float64
         Right Ascension of center of the field
 
-    decen_field: float
+    deccen: np.float64
         Declination of center of the field
 
-    PA: float
+    PA: np.float64
         Position angle of the field
 
-    HA: float
+    HA: np.float64
         Hour angle of the observation
 
-    design_id: int
-        The ID of the design as it appears in targetdb
+    observatory: str
+        Observatory where observation is taking place
+
+    design_pk: int
+        The pk of the design as it appears in targetdb
 
     target_ids: np.array
         List of target ids (or catalog ids?) for a manual
-        design
+        design in db
 
     obsWavelength: np.array
         Wavelength of observation for each fiber in the
-        manual design
+        manual design in db
 
     priority: np.array
-        Priorties for targets in a manual design
+        Priorties for targets in a manual design in db
+
+    design_file: str
+        Flate file with a manual design not in the db. The
+        file should have the columns: RA, DEC, obsWavelength,
+        priority, ???
+
+    manual_design: boolean
+        Boolean if the design being validated is manual
+        (manual_design=True) or in targetdb (manual_design=False)
 
     Attributes:
     -----------
@@ -49,7 +61,9 @@ class FPSDesign(object):
         contains all of the design inputs for Kaiju needed to validate
         a design
 
-    robo_grid: Kaiju RobotGrid object
+    robogrid: Kaiju RobotGrid object
+        MIKE NOTE: I imay just want to inherit this? need to think about
+        this when I get to writing Kaiju part of code.
 
     valid_design: dictonary
         same form as design dictonary, except this design has been
@@ -61,11 +75,13 @@ class FPSDesign(object):
     radec_to_xy(): convert ra/dec to x/y using field information and
         coordio
 
-    build_design(): compile the parameters for a design that are
-        needed to define a design and load it into Kaiju.
-        This checks if designs are manual or not to either randomally
-        asign fiberIDS (or algorthimically, or manually, not sure?),
-        or pull them from targetdb if they have an assigned design_id
+    build_design_db(): compile the parameters for a design that exists in
+        targetdb. This method will generally be triggered when
+        manual_design=False
+
+    build_design_manual(): compile the parameters for a design that has
+        been manually created. This method with work for manual designs that
+        are flat files (not in targetdb) and those targets in targetdb
 
     design_to_RobotGrid(): construct the Kaiju RobotGrid object from a design
 
@@ -82,19 +98,23 @@ class FPSDesign(object):
 
     """
 
-    def _init_(self, racen_field, decen_field, PA, HA,
-               design_id, target_ids=None,
-               obsWavelength=None, priority=None):
-        self.racen_field = racen_field
-        self.decen_field = decen_field
+    def _init_(self, racen, deccen, PA, HA, observatory,
+               design_pk, target_ids=None,
+               obsWavelength=None, priority=None, design_file=None,
+               manual_design=False):
+        self.racen = racen
+        self.deccen = deccen
         self.PA = PA
         self.HA = HA
-        self.design_id = design_id
+        self.observatory = observatory
+        self.design_pk = design_pk
         self.target_ids = target_ids
         self.obsWavelength = obsWavelength
         self.priority = priority
+        self.design_file = design_file
+        self.manual_design = manual_design
 
-    def radec_to_xy(self):
+    def radec_to_xy(self, ra, dec):
         """
         convert ra/dec to x/y using field information and
         coordio
@@ -107,7 +127,38 @@ class FPSDesign(object):
         """
         return x, y
 
-    def build_design(self):
+    def build_design_db(self):
+        """
+        compile the parameters for a design that exists in targetdb
+
+        Notes:
+        ------
+        This method will generally be triggered when manual_design=False
+
+        """
+
+        design = {}
+        design['design_pk'] = self.design_pk
+        design['targetID'] = np.array(500, dtype=np.int64)
+        design['fiberID'] = np.array(500, dtype=np.int64)
+        design['wokHoleID'] = np.array(500, dtype=np.int64)
+        design['obsWavelength'] = np.array(500, dtype=str)
+        design['priority'] = np.array(500, dtype=int)
+        design['x'] = np.array(500, dtype=float)
+        design['y'] = np.array(500, dtype=float)
+
+        # something here that queries the db to pull targetID, fiberID,
+        # wokHoleID and obsWavelength based on design_pk
+
+        # here grab the ra/decs from targetdb based on targetID
+        ra, dec = something(design['targetID'])
+
+        # here convert ra/dec to x/y based on field/HA observation
+        design['x'], design['y'] = self.radec_to_xy(ra, dec)
+
+        return design
+
+    def build_design_manual(self):
         """
         compile the parameters for a design
 
@@ -119,28 +170,23 @@ class FPSDesign(object):
         input targets and randomally (or algorthmically?) assign
         fiberIDs (and WokHoleIDs) based on priority
 
-        (2) Build a design from a design_id in targetdb. This will be just
+        (2) Build a design from a design_pk in targetdb. This will be just
         collecting information that already exists in the db.
 
         """
 
         design = {}
-        design['design_id'] = self.design_id
-        design['targetID'] = np.array(500, dtype=int)
-        design['fiberID'] = np.array(500, dtype=int)
-        design['wokHoleID'] = np.array(500, dtype=int)
+        design['design_pk'] = self.design_pk
+        design['targetID'] = np.array(500, dtype=np.int64)
+        design['fiberID'] = np.array(500, dtype=np.int64)
+        design['wokHoleID'] = np.array(500, dtype=np.int64)
         design['obsWavelength'] = np.array(500, dtype=str)
         design['priority'] = np.array(500, dtype=int)
         design['x'] = np.array(500, dtype=float)
         design['y'] = np.array(500, dtype=float)
 
-        if self.target_ids is None:
-            # design in targetdb
-
-            # something here that queries the db to pull targetID, fiberID,
-            # wokHoleID and obsWavelength based on design_id
-        else:
-            # manual design
+        if self.design_file is None:
+            # manual design with targets in targetdv
             design['targetID'] = self.target_ids
             design['obsWavelength'] = self.obsWavelength
             design['priority'] = self.priority
@@ -148,13 +194,16 @@ class FPSDesign(object):
             # here somehow assign these
             design['fiberID'], design['wokHoleID'] = something()
 
-        # here grab the ra/decs from targetdb based on targetID
-        ra, dec = something(design['targetID'])
+            # here grab the ra/decs from targetdb based on targetID
+            ra, dec = something(design['targetID'])
+        else:
+            # manual design from flat file
+            man_des = load(self.design_file)
+
+            # now need to load all the params to dictonary
 
         # here convert ra/dec to x/y based on field/HA observation
-        design['x'], design['y'] = self.radec_to_xy(ra, dec, self.racen_field,
-                                                    self.decen_field, self.PA,
-                                                    self.HA)
+        design['x'], design['y'] = self.radec_to_xy(ra, dec)
 
         return design
 
@@ -170,7 +219,7 @@ class FPSDesign(object):
 
         return kaiju.RobotGrid
 
-    def RobotGrid_to_design(self, robo_grid):
+    def RobotGrid_to_design(self, robogrid):
         """
         construct design from RobotGrid object
 
@@ -198,18 +247,18 @@ class FPSDesign(object):
         design = self.build_design()
 
         # construct the Kaiju robotGrid
-        robo_grid = self.design_to_RobotGrid(design=design)
+        robogrid = self.design_to_RobotGrid(design=design)
 
         # validate the design
         # I don't know what would go here yet, but I imagine it would be calls
         # to Kaiju that would look for collisions and generate the paths for
-        # the design that was built into the above robo_grid
+        # the design that was built into the above robogrid
 
-        # I imagine that the above step would manipulate the robo_grid based on
+        # I imagine that the above step would manipulate the robogrid based on
         # collisions and deadlocks, so the below would take these Kaiju results
         # and put them back as a design object which will be the output of the
         # function
-        valid_design = self.RobotGrid_to_design(robo_grid=robo_grid)
+        valid_design = self.RobotGrid_to_design(robogrid=robogrid)
 
         # another note to add to this above design dictonary, is how will this
         # include paths? This seems important for manual designs and to send

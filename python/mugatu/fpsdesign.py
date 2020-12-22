@@ -8,7 +8,7 @@ import numpy as np
 
 import kaiju
 import coordio
-import sdssdb
+from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget
 
 
 class FPSDesign(object):
@@ -16,27 +16,31 @@ class FPSDesign(object):
     Parameters:
     -----------
 
+    design_pk: int
+        The pk of the design as it appears in targetdb
+
+    hour_angle: np.float64
+        Hour angle of the observation
+
+    design: dict
+        Dictonary that contains all parameters related to the design.
+        This is initiallized as empty and is populated using either
+        build_design_db() or build_design_manual().
+
     racen: np.float64
         Right Ascension of center of the field
 
     deccen: np.float64
         Declination of center of the field
 
-    PA: np.float64
+    position_angle: np.float64
         Position angle of the field
-
-    HA: np.float64
-        Hour angle of the observation
 
     observatory: str
         Observatory where observation is taking place
 
-    design_pk: int
-        The pk of the design as it appears in targetdb
-
-    target_ids: np.array
-        List of target ids (or catalog ids?) for a manual
-        design in db
+    catalogids: np.array
+        List of catalogids for a manual design in db
 
     obsWavelength: np.array
         Wavelength of observation for each fiber in the
@@ -94,21 +98,40 @@ class FPSDesign(object):
 
     design_to_targetdb(): write a design to targetdb
 
-    design_to_opsdb(): write a validated design to opsdb
+    design_to_opsdb(): write a validated design to opsdb. NOTE: Need to
+        address here that "designs" do not go to opsdb, "configurations"
+        do.
 
     """
 
-    def _init_(self, racen, deccen, PA, HA, observatory,
-               design_pk, target_ids=None,
+    def _init_(self, design_pk, hour_angle, racen=None, deccen=None,
+               position_angle=None, observatory=None, catalogids=None,
                obsWavelength=None, priority=None, design_file=None,
                manual_design=False):
-        self.racen = racen
-        self.deccen = deccen
-        self.PA = PA
-        self.HA = HA
-        self.observatory = observatory
         self.design_pk = design_pk
-        self.target_ids = target_ids
+        self.hour_angle = hour_angle
+        self.design = {}
+        if manual_design:
+            self.racen = racen
+            self.deccen = deccen
+            self.position_angle = position_angle
+            self.observatory = observatory
+        else:
+            design_field_db = (Design.select(Design.pk,
+                                             Field.racen,
+                                             Field.deccen,
+                                             Field.position_angle,
+                                             Observatory.label)
+                                     .join(Field,
+                                           on=(Design.field_pk == Field.pk))
+                                     .join(Observatory,
+                                           on=(Field.observatory_pk == Observatory.pk))
+                                     .where(Design.pk == self.design_pk))
+            self.racen = design_field_db[0].field.racen
+            self.deccen = design_field_db[0].field.deccen
+            self.position_angle = design_field_db[0].field.position_angle
+            self.observatory = design_field_db[0].observatory.label
+        self.catalogids = catalogids
         self.obsWavelength = obsWavelength
         self.priority = priority
         self.design_file = design_file
@@ -137,65 +160,84 @@ class FPSDesign(object):
 
         """
 
-        design = {}
-        design['design_pk'] = self.design_pk
-        design['targetID'] = np.array(500, dtype=np.int64)
-        design['fiberID'] = np.array(500, dtype=np.int64)
-        design['wokHoleID'] = np.array(500, dtype=np.int64)
-        design['obsWavelength'] = np.array(500, dtype=str)
-        design['priority'] = np.array(500, dtype=int)
-        design['x'] = np.array(500, dtype=float)
-        design['y'] = np.array(500, dtype=float)
+        self.design['design_pk'] = self.design_pk
+        self.design['catalogID'] = np.array(500, dtype=np.int64)
+        self.design['fiberID'] = np.array(500, dtype=np.int64)
+        self.design['wokHoleID'] = np.array(500, dtype=np.int64)
+        self.design['obsWavelength'] = np.array(500, dtype=str)
+        self.design['priority'] = np.array(500, dtype=int)
+        self.design['ra'] = np.array(500, dtype=float)
+        self.design['dec'] = np.array(500, dtype=float)
+        self.design['x'] = np.array(500, dtype=float)
+        self.design['y'] = np.array(500, dtype=float)
 
-        # something here that queries the db to pull targetID, fiberID,
-        # wokHoleID and obsWavelength based on design_pk
+        # need to add wokHole to query when in db (not there now)
+        design_targ_db = (Assignment.select(Target.catalogid,
+                                            Positioner.id,
+                                            Instrument.label,
+                                            CartonToTarget.priority,
+                                            Target.ra,
+                                            Target.dec)
+                                    .join(Target,
+                                          on=(Assignment.target_pk == Target.pk))
+                                    .join(Positioner,
+                                          on=(Assignment.positioner_pk == Positioner.pk))
+                                    .join(Instrument,
+                                          on=(Assignment.instrument_pk == Instrument.pk))
+                                    .join(CartonToTarget,
+                                          on=(Target.pj == CartonToTarget.target_pk))
+                                    .where(Assignment.design_pk == self.design_pk))
 
-        # here grab the ra/decs from targetdb based on targetID
-        ra, dec = something(design['targetID'])
+        for i in range(len(design_targ_db)):
+            self.design['catalogID'][i] = design_targ_db[i].target.catalogid
+            self.design['fiberID'][i] = design_targ_db[i].positioner.id
+            # design['wokHoleID'][i] = design_targ_db[i]
+            self.design['obsWavelength'][i] = design_targ_db[i].instrument.label
+            self.design['priority'][i] = design_targ_db[i].cartontotarget.priority
+            self.design['ra'][i] = design_targ_db[i].target.ra
+            self.design['dec'][i] = design_targ_db[i].target.dec
 
         # here convert ra/dec to x/y based on field/HA observation
-        design['x'], design['y'] = self.radec_to_xy(ra, dec)
+        self.design['x'], self.design['y'] = self.radec_to_xy()
 
-        return design
+        return
 
     def build_design_manual(self):
         """
-        compile the parameters for a design
+        compile the parameters for a manual design
 
         Notes:
         ------
-        This function will be able to do two things:
-
-        (1) Build a manual design by collecting ra/decs of
-        input targets and randomally (or algorthmically?) assign
-        fiberIDs (and WokHoleIDs) based on priority
-
-        (2) Build a design from a design_pk in targetdb. This will be just
-        collecting information that already exists in the db.
+        This function creates a manual design whether it is from
+        user inputted catalogids, or if it is a flat file list
+        of coordinates (and fiber assignments?)
 
         """
 
-        design = {}
-        design['design_pk'] = self.design_pk
-        design['targetID'] = np.array(500, dtype=np.int64)
-        design['fiberID'] = np.array(500, dtype=np.int64)
-        design['wokHoleID'] = np.array(500, dtype=np.int64)
-        design['obsWavelength'] = np.array(500, dtype=str)
-        design['priority'] = np.array(500, dtype=int)
-        design['x'] = np.array(500, dtype=float)
-        design['y'] = np.array(500, dtype=float)
+        self.design['design_pk'] = self.design_pk
+        self.design['catalogID'] = np.array(500, dtype=np.int64)
+        self.design['fiberID'] = np.array(500, dtype=np.int64)
+        self.design['wokHoleID'] = np.array(500, dtype=np.int64)
+        self.design['obsWavelength'] = np.array(500, dtype=str)
+        self.design['priority'] = np.array(500, dtype=int)
+        self.design['ra'] = np.array(500, dtype=float)
+        self.design['dec'] = np.array(500, dtype=float)
+        self.design['x'] = np.array(500, dtype=float)
+        self.design['y'] = np.array(500, dtype=float)
 
         if self.design_file is None:
             # manual design with targets in targetdv
-            design['targetID'] = self.target_ids
-            design['obsWavelength'] = self.obsWavelength
-            design['priority'] = self.priority
+            self.design['catalogID'] = self.catalogids
+            self.design['obsWavelength'] = self.obsWavelength
+            self.design['priority'] = self.priority
+
+            for i in range(len(self.design['catalogID'])):
+                targ_db = Target.get(catalogid=self.design['catalogID'][i])
+                self.design['ra'][i] = targ_db.ra
+                self.design['dec'][i] = targ_db.dec
 
             # here somehow assign these
             design['fiberID'], design['wokHoleID'] = something()
-
-            # here grab the ra/decs from targetdb based on targetID
-            ra, dec = something(design['targetID'])
         else:
             # manual design from flat file
             man_des = load(self.design_file)
@@ -203,7 +245,7 @@ class FPSDesign(object):
             # now need to load all the params to dictonary
 
         # here convert ra/dec to x/y based on field/HA observation
-        design['x'], design['y'] = self.radec_to_xy(ra, dec)
+        design['x'], design['y'] = self.radec_to_xy()
 
         return design
 

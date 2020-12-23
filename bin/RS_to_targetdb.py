@@ -10,9 +10,9 @@ sdss_path = sdss_access.path.Path(release='sdss5')
 
 if __name__ == '__main__':
 
-    #grabbed the parser from robostratgey code to keep consistent
-    #this will fidn the correct files based on the robostrategy plan and observatory used as input
-    #the way this code is writting right now, I think you would have to run apo first then lco
+    # grabbed the parser from robostratgey code to keep consistent
+    # this will fidn the correct files based on the robostrategy plan and observatory used as input
+    # the way this code is writting right now, I think you would have to run apo first then lco
 
     parser = argparse.ArgumentParser(
         prog=os.path.basename(sys.argv[0]),
@@ -44,16 +44,16 @@ if __name__ == '__main__':
     # add new robostratgey version to targetDB
     versionDB = targetdb.Version.create(plan=plan,
                                         target_selection=False,
-                                        robostrategy = True,
-                                        tag = '' ) # what is this supposed to be?
+                                        robostrategy=True,
+                                        tag='')  # what is this supposed to be?
 
     versionDB.save()
 
-    #write the candeces to the cadenceDB
-    
+    # write the candeces to the cadenceDB
+
     # rsCadences=fitsio.read(cadences_file,ext=1)
 
-    #need to pull out the pks for the instruments
+    # need to pull out the pks for the instruments
     # instDB=targetdb.Instrument()
 
     # bosspk=instDB.get(instDB.label=='BOSS').pk
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     versionDB = targetdb.Version()
     verpk = obsDB.get(versionDB.plan=plan).pk
 
-    for allo1,allo3 in zip(rsAllocation1, rsAllocation3):
+    for allo1, allo3 in zip(rsAllocation1, rsAllocation3):
         try:
             dbCadence = cadenceDB.get(cadenceDB.label=allo1['cadence']).pk
         except:
@@ -110,7 +110,7 @@ if __name__ == '__main__':
             pk=allo1['fieldid'],
             racen=allo1['racen'],
             deccen=allo1['deccen'],
-            position_angle=allo3['pa1'], # what is the difference between pa1 and pa2?
+            position_angle=allo3['pa2'],
             cadence=dbCadence,
             observatory=obspk,
             version=verpk)
@@ -132,16 +132,25 @@ if __name__ == '__main__':
 
             # creates new row in design database
             designDB = targetdb.Design.create(field=allo1['fieldid'],
-                                              exposure=i) # 0 indexed for exposure
+                                              exposure=i)
             # save row
             designDB.save()
 
             # add the assignments for the design to the assignment database
+            rows = []
             for j in range(len(design[:, i])):
+                row_dict = {}
 
                 # get the pk for the positioner_info
                 # (where I assume the ID is just the row # in the fits file)
                 this_pos_DB = positionerDB.get(positionerDB.id=j)
+
+                row_dict['design'] = designDB.pk
+                row_dict['instrument'] = ??
+                row_dict['positioner'] = this_pos_DB
+                row_dict['target'] = targetDB.get(targetDB.catalogid=design[j][i])
+
+                rows.append(row_dict)
 
                 # check in the positioner_info DB is this fiber is an apogee or boss fiber
                 # (and set key to whatever it coresponds to)
@@ -152,9 +161,12 @@ if __name__ == '__main__':
                 #     inst_key=bosspk
 
                 # add the assignment
-                assignDB = targetdb.Assignment.create(design=designDB, # can I call the row like this?
-                                                      instrument=??,
-                                                      positioner=this_pos_DB,
-                                                      target=targetDB.get(targetDB.catalogid=design[j][i]))
+                # assignDB = targetdb.Assignment.create(
+                #    design=designDB,  # can I call the row like this?
+                #    instrument=??,
+                #    positioner=this_pos_DB,
+                #    target=targetDB.get(targetDB.catalogid=design[j][i]))
 
-                assignDB.save()
+                # assignDB.save()
+
+            targetdb.Assignment.insert_many(rows).execute()

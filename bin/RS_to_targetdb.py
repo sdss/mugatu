@@ -114,7 +114,7 @@ if __name__ == '__main__':
 
                 # get the pk for the positioner_info
                 # (where I assume the ID is just the row # in the fits file)
-                this_pos_DB = positionerDB.get(id=j)
+                this_pos_DB = positionerDB.get(id=j).pk
 
                 # get the instrument for fiber
                 inst_assign = design_inst['fiberType'][
@@ -124,7 +124,7 @@ if __name__ == '__main__':
                 row_dict['design'] = designDB.pk
                 row_dict['instrument'] = instr_pks[inst_assign]
                 row_dict['positioner'] = this_pos_DB
-                row_dict['target'] = targetDB.get(catalogid=design[j][i])
+                row_dict['target'] = targetDB.get(catalogid=design[j][i]).pk
 
                 rows.append(row_dict)
 

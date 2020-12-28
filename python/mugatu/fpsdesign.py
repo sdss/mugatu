@@ -117,16 +117,18 @@ class FPSDesign(object):
             self.position_angle = position_angle
             self.observatory = observatory
         else:
-            design_field_db = (Design.select(Design.pk,
-                                             Field.racen,
-                                             Field.deccen,
-                                             Field.position_angle,
-                                             Observatory.label)
-                                     .join(Field,
-                                           on=(Design.field_pk == Field.pk))
-                                     .join(Observatory,
-                                           on=(Field.observatory_pk == Observatory.pk))
-                                     .where(Design.pk == self.design_pk))
+            design_field_db = (
+                Design.select(Design.pk,
+                              Field.racen,
+                              Field.deccen,
+                              Field.position_angle,
+                              Observatory.label)
+                      .join(Field,
+                            on=(Design.field_pk == Field.pk))
+                      .join(Observatory,
+                            on=(Field.observatory_pk == Observatory.pk))
+                      .where(Design.pk == self.design_pk))
+
             self.racen = design_field_db[0].field.racen
             self.deccen = design_field_db[0].field.deccen
             self.position_angle = design_field_db[0].field.position_angle
@@ -172,21 +174,22 @@ class FPSDesign(object):
         self.design['y'] = np.array(500, dtype=float)
 
         # need to add wokHole to query when in db (not there now)
-        design_targ_db = (Assignment.select(Target.catalogid,
-                                            Positioner.id,
-                                            Instrument.label,
-                                            CartonToTarget.priority,
-                                            Target.ra,
-                                            Target.dec)
-                                    .join(Target,
-                                          on=(Assignment.target_pk == Target.pk))
-                                    .join(Positioner,
-                                          on=(Assignment.positioner_pk == Positioner.pk))
-                                    .join(Instrument,
-                                          on=(Assignment.instrument_pk == Instrument.pk))
-                                    .join(CartonToTarget,
-                                          on=(Target.pj == CartonToTarget.target_pk))
-                                    .where(Assignment.design_pk == self.design_pk))
+        design_targ_db = (
+            Assignment.select(Target.catalogid,
+                              Positioner.id,
+                              Instrument.label,
+                              CartonToTarget.priority,
+                              Target.ra,
+                              Target.dec)
+                      .join(Target,
+                            on=(Assignment.target_pk == Target.pk))
+                      .join(Positioner,
+                            on=(Assignment.positioner_pk == Positioner.pk))
+                      .join(Instrument,
+                            on=(Assignment.instrument_pk == Instrument.pk))
+                      .join(CartonToTarget,
+                            on=(Target.pj == CartonToTarget.target_pk))
+                      .where(Assignment.design_pk == self.design_pk))
 
         for i in range(len(design_targ_db)):
             self.design['catalogID'][i] = design_targ_db[i].target.catalogid

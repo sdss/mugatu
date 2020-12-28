@@ -93,15 +93,15 @@ if __name__ == '__main__':
 
     # get observatory pk
     obsDB = targetdb.Observatory()
-    obspk = obsDB.get(obsDB.label=observatory).pk
+    obspk = obsDB.get(label=observatory).pk
 
     # get plan pk
     versionDB = targetdb.Version()
-    verpk = obsDB.get(versionDB.plan=plan).pk
+    verpk = obsDB.get(plan=plan).pk
 
     for allo1, allo3 in zip(rsAllocation1, rsAllocation3):
         try:
-            dbCadence = cadenceDB.get(cadenceDB.label=allo1['cadence']).pk
+            dbCadence = cadenceDB.get(label=allo1['cadence']).pk
         except:
             continue
 
@@ -143,12 +143,12 @@ if __name__ == '__main__':
 
                 # get the pk for the positioner_info
                 # (where I assume the ID is just the row # in the fits file)
-                this_pos_DB = positionerDB.get(positionerDB.id=j)
+                this_pos_DB = positionerDB.get(id=j)
 
                 row_dict['design'] = designDB.pk
                 row_dict['instrument'] = ??
                 row_dict['positioner'] = this_pos_DB
-                row_dict['target'] = targetDB.get(targetDB.catalogid=design[j][i])
+                row_dict['target'] = targetDB.get(catalogid=design[j][i])
 
                 rows.append(row_dict)
 

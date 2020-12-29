@@ -1,3 +1,9 @@
+# @Author: Ilija Medan and John Donor
+# @Date: December 29, 2020
+# @Filename: RS_to_targetdb.py
+# @License: BSD 3-Clause
+# @Copyright: Ilija Medan and John Donor
+
 import sys
 import argparse
 import os

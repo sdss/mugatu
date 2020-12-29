@@ -1,5 +1,5 @@
 # @Author: Ilija Medan
-# @Date: December 22, 2020
+# @Date: December 29, 2020
 # @Filename: fpsdesign.py
 # @License: BSD 3-Clause
 # @Copyright: Ilija Medan
@@ -7,6 +7,7 @@
 import numpy as np
 
 import kaiju
+import kaiju.robotGrid
 import coordio
 from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget
 
@@ -65,7 +66,7 @@ class FPSDesign(object):
         contains all of the design inputs for Kaiju needed to validate
         a design
 
-    robogrid: Kaiju RobotGrid object
+    rg: Kaiju RobotGrid object
         MIKE NOTE: I imay just want to inherit this? need to think about
         this when I get to writing Kaiju part of code.
 
@@ -111,6 +112,8 @@ class FPSDesign(object):
         self.design_pk = design_pk
         self.hour_angle = hour_angle
         self.design = {}
+        # either set field params or pull from db is design
+        # is in targetdb
         if manual_design:
             self.racen = racen
             self.deccen = deccen
@@ -138,6 +141,10 @@ class FPSDesign(object):
         self.priority = priority
         self.design_file = design_file
         self.manual_design = manual_design
+
+        # set dummy value for collision for now
+        # this may want to be a input, not sure the standard here
+        self.rg = kaiju.robotGrid.RobotGridFilledHex(collisionBuffer=2.)
 
     def radec_to_xy(self, ra, dec):
         """
@@ -252,7 +259,7 @@ class FPSDesign(object):
 
         return
 
-    def design_to_RobotGrid(self, design):
+    def design_to_RobotGrid(self):
         """
         contruct a Kaiju RobotGrid object
 
@@ -262,9 +269,31 @@ class FPSDesign(object):
 
        """
 
-        return kaiju.RobotGrid
+        for i in range(len(self.design['x'])):
+            if self.design['obsWavelength'][i] == 'BOSS':
+                self.rg.addTarget(targetID=self.design['catalogID'][i],
+                                  x=self.design['x'][i],
+                                  y=self.design['y'][i],
+                                  priority=self.design['priority'][i],
+                                  fiberType=kaiju.BossFiber)
+            else:
+                self.rg.addTarget(targetID=self.design['catalogID'][i],
+                                  x=self.design['x'][i],
+                                  y=self.design['y'][i],
+                                  priority=self.design['priority'][i],
+                                  fiberType=kaiju.ApogeeFiber)
+            try:
+                self.rg.assignRobot2Target(self.design['fiberID'][i],
+                                           self.design['catalogID'][i])
+            except RuntimeError:
+                # this catches the fact that robot cant be assigned to fiber
+                # something needs to be added here to signal that assignment
+                # isnt possible
+                pass
 
-    def RobotGrid_to_design(self, robogrid):
+        return
+
+    def RobotGrid_to_design(self):
         """
         construct design from RobotGrid object
 
@@ -274,7 +303,7 @@ class FPSDesign(object):
 
        """
 
-        return design
+        return valid_design
 
     def validate_design(self):
         """
@@ -289,10 +318,13 @@ class FPSDesign(object):
         """
 
         # build the design with all needed parameters
-        design = self.build_design()
+        if self.manual_design:
+            self.build_design_manual()
+        else:
+            self.build_design_db()
 
         # construct the Kaiju robotGrid
-        robogrid = self.design_to_RobotGrid(design=design)
+        self.design_to_RobotGrid()
 
         # validate the design
         # I don't know what would go here yet, but I imagine it would be calls
@@ -303,7 +335,7 @@ class FPSDesign(object):
         # collisions and deadlocks, so the below would take these Kaiju results
         # and put them back as a design object which will be the output of the
         # function
-        valid_design = self.RobotGrid_to_design(robogrid=robogrid)
+        valid_design = self.RobotGrid_to_design()
 
         # another note to add to this above design dictonary, is how will this
         # include paths? This seems important for manual designs and to send

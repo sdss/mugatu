@@ -70,6 +70,14 @@ class FPSDesign(object):
         MIKE NOTE: I imay just want to inherit this? need to think about
         this when I get to writing Kaiju part of code.
 
+    targets_unassigned: list
+        catalogid of targets that could not be assigned due to assigned
+        robot not being able to reach the assigned target
+
+    targets_collided: list
+        catalogid of targets that could not be assigned due to assigned
+        robot to assigned target resulting in a collision
+
     valid_design: dictonary
         same form as design dictonary, except this design has been
         validated by Kaiju and collision/delock assignments removed
@@ -90,7 +98,8 @@ class FPSDesign(object):
 
     design_to_RobotGrid(): construct the Kaiju RobotGrid object from a design
 
-    RobotGrid_to_design(): construct design from RobotGrid object
+    RobotGrid_to_valid_design(): construct valid design from validated
+        RobotGrid object
 
     validate_design(): calls appropriate functions to carry out creating
         the design object (manual or from db), converting coordinates,
@@ -144,7 +153,17 @@ class FPSDesign(object):
 
         # set dummy value for collision for now
         # this may want to be a input, not sure the standard here
+        # initialize robotGrid
         self.rg = kaiju.robotGrid.RobotGridFilledHex(collisionBuffer=2.)
+        # this is in Conor's test, I'm not quite sure what it does
+        # but without paths wont generate
+        for rID in self.rg.robotDict:
+            robot = self.rg.getRobot(rID)
+            robot.setXYUniform()
+        self.targets_unassigned = []
+        self.targets_collided = []
+
+        self.valid_design = {}
 
     def radec_to_xy(self, ra, dec):
         """
@@ -169,16 +188,19 @@ class FPSDesign(object):
 
         """
 
+        # initialize dict for the design
+        # not using None or nan for no assignments
+        # using -1 (for int) and -9999.99 (for float) for None assignment
         self.design['design_pk'] = self.design_pk
-        self.design['catalogID'] = np.array(500, dtype=np.int64)
-        self.design['fiberID'] = np.array(500, dtype=np.int64)
-        self.design['wokHoleID'] = np.array(500, dtype=np.int64)
-        self.design['obsWavelength'] = np.array(500, dtype=str)
-        self.design['priority'] = np.array(500, dtype=int)
-        self.design['ra'] = np.array(500, dtype=float)
-        self.design['dec'] = np.array(500, dtype=float)
-        self.design['x'] = np.array(500, dtype=float)
-        self.design['y'] = np.array(500, dtype=float)
+        self.design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
+        self.design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
+        self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
+        self.design['obsWavelength'] = np.zeros(500, dtype=str)
+        self.design['priority'] = np.zeros(500, dtype=int) - 1
+        self.design['ra'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['x'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['y'] = np.zeros(500, dtype=float) - 9999.99
 
         # need to add wokHole to query when in db (not there now)
         design_targ_db = (
@@ -199,13 +221,19 @@ class FPSDesign(object):
                       .where(Assignment.design_pk == self.design_pk))
 
         for i in range(len(design_targ_db)):
-            self.design['catalogID'][i] = design_targ_db[i].target.catalogid
-            self.design['fiberID'][i] = design_targ_db[i].positioner.id
+            # assign to index that corresponds to fiber assignment
+            # index should match length of arrays
+            pos_id = design_targ_db[i].positioner.id
+            self.design['catalogID'][pos_id] = (design_targ_db[i]
+                                                .target.catalogid)
+            self.design['fiberID'][pos_id] = pos_id
             # design['wokHoleID'][i] = design_targ_db[i]
-            self.design['obsWavelength'][i] = design_targ_db[i].instrument.label
-            self.design['priority'][i] = design_targ_db[i].cartontotarget.priority
-            self.design['ra'][i] = design_targ_db[i].target.ra
-            self.design['dec'][i] = design_targ_db[i].target.dec
+            self.design['obsWavelength'][pos_id] = (design_targ_db[i]
+                                                    .instrument.label)
+            self.design['priority'][pos_id] = (design_targ_db[i]
+                                               .cartontotarget.priority)
+            self.design['ra'][pos_id] = design_targ_db[i].target.ra
+            self.design['dec'][pos_id] = design_targ_db[i].target.dec
 
         # here convert ra/dec to x/y based on field/HA observation
         self.design['x'], self.design['y'] = self.radec_to_xy()
@@ -224,16 +252,19 @@ class FPSDesign(object):
 
         """
 
+        # initialize dict for the design
+        # not using None or nan for no assignments
+        # using -1 (for int) and -9999.99 (for float) for None assignment
         self.design['design_pk'] = self.design_pk
-        self.design['catalogID'] = np.array(500, dtype=np.int64)
-        self.design['fiberID'] = np.array(500, dtype=np.int64)
-        self.design['wokHoleID'] = np.array(500, dtype=np.int64)
-        self.design['obsWavelength'] = np.array(500, dtype=str)
-        self.design['priority'] = np.array(500, dtype=int)
-        self.design['ra'] = np.array(500, dtype=float)
-        self.design['dec'] = np.array(500, dtype=float)
-        self.design['x'] = np.array(500, dtype=float)
-        self.design['y'] = np.array(500, dtype=float)
+        self.design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
+        self.design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
+        self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
+        self.design['obsWavelength'] = np.zeros(500, dtype=str)
+        self.design['priority'] = np.zeros(500, dtype=int) - 1
+        self.design['ra'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['x'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['y'] = np.zeros(500, dtype=float) - 9999.99
 
         if self.design_file is None:
             # manual design with targets in targetdv
@@ -265,35 +296,36 @@ class FPSDesign(object):
 
         Notes:
         -----
-        I don't really know how this will work yet
+        Adds targets to the kaiju.robotGrid.RobotGridFilledHex and
+        assigns them to fibers based on the design dict parameters
 
        """
 
         for i in range(len(self.design['x'])):
-            if self.design['obsWavelength'][i] == 'BOSS':
-                self.rg.addTarget(targetID=self.design['catalogID'][i],
-                                  x=self.design['x'][i],
-                                  y=self.design['y'][i],
-                                  priority=self.design['priority'][i],
-                                  fiberType=kaiju.BossFiber)
-            else:
-                self.rg.addTarget(targetID=self.design['catalogID'][i],
-                                  x=self.design['x'][i],
-                                  y=self.design['y'][i],
-                                  priority=self.design['priority'][i],
-                                  fiberType=kaiju.ApogeeFiber)
-            try:
-                self.rg.assignRobot2Target(self.design['fiberID'][i],
-                                           self.design['catalogID'][i])
-            except RuntimeError:
-                # this catches the fact that robot cant be assigned to fiber
-                # something needs to be added here to signal that assignment
-                # isnt possible
-                pass
+            if self.design['fiberID'][i] != -1:
+                if self.design['obsWavelength'][i] == 'BOSS':
+                    self.rg.addTarget(targetID=self.design['catalogID'][i],
+                                      x=self.design['x'][i],
+                                      y=self.design['y'][i],
+                                      priority=self.design['priority'][i],
+                                      fiberType=kaiju.BossFiber)
+                else:
+                    self.rg.addTarget(targetID=self.design['catalogID'][i],
+                                      x=self.design['x'][i],
+                                      y=self.design['y'][i],
+                                      priority=self.design['priority'][i],
+                                      fiberType=kaiju.ApogeeFiber)
+                try:
+                    self.rg.assignRobot2Target(self.design['fiberID'][i],
+                                               self.design['catalogID'][i])
+                except RuntimeError:
+                    # this catches the fact that robot cant be
+                    # assigned to given fiber
+                    self.targets_unassigned.append(self.design['catalogID'][i])
 
         return
 
-    def RobotGrid_to_design(self):
+    def RobotGrid_to_valid_design(self):
         """
         construct design from RobotGrid object
 
@@ -303,7 +335,37 @@ class FPSDesign(object):
 
        """
 
-        return valid_design
+        # initialize dict for the validated design
+        # not using None or nan for no assignments
+        # using -1 (for int) and -9999.99 (for float) for None assignment
+        self.valid_design['design_pk'] = self.design_pk
+        self.valid_design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
+        self.valid_design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
+        self.valid_design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
+        self.valid_design['obsWavelength'] = np.zeros(500, dtype=str)
+        self.valid_design['priority'] = np.zeros(500, dtype=int) - 1
+        self.valid_design['ra'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['x'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['y'] = np.zeros(500, dtype=float) - 9999.99
+
+        for i in self.rg.robotDict:
+            self.valid_design['catalogID'][i] = (self.rg.robotDict[i]
+                                                 .assignedTargetID)
+            if self.valid_design['catalogID'][i] != -1:
+                self.valid_design['fiberID'][i] = i
+                # is below necessary? i dont know if decollide ever reassigns
+                # or just removes
+                cond = eval("self.design['catalogID'] == self.valid_design['catalogID'][i]")
+                self.valid_design['wokHoleID'][i] = self.design['wokHoleID'][cond][0]
+                self.valid_design['obsWavelength'][i] = self.design['obsWavelength'][cond][0]
+                self.valid_design['priority'][i] = self.design['priority'][cond][0]
+                self.valid_design['ra'][i] = self.design['ra'][cond][0]
+                self.valid_design['dec'][i] = self.design['dec'][cond][0]
+                self.valid_design['x'][i] = self.design['x'][cond][0]
+                self.valid_design['y'][i] = self.design['y'][cond][0]
+
+        return
 
     def validate_design(self):
         """
@@ -327,21 +389,39 @@ class FPSDesign(object):
         self.design_to_RobotGrid()
 
         # validate the design
-        # I don't know what would go here yet, but I imagine it would be calls
-        # to Kaiju that would look for collisions and generate the paths for
-        # the design that was built into the above robogrid
+
+        # de-collide the grid if collisions exist
+        # and check for targets removed
+        if self.rg.getNCollisions() > 0:
+            self.rg.decollideGrid()
+
+            # check if de-collision was successful
+            assert self.rg.getNCollisions() == 0, 'Kaiju decollideGrid failed'
+
+            # grab all of the targets removed due to collisions
+            for i in self.rg.robotDict:
+                fiber_idx = np.where(self.design['fiberID'] == i)[0]
+                if (self.rg.robotDict[i].assignedTargetID == -1
+                    and len(fiber_idx) > 0):
+                    targ_remove = self.design['catalogID'][fiber_idx[0]]
+                    if targ_remove not in self.targets_unassigned:
+                        self.targets_collided.append(targ_remove)
+
+        # generate paths
+        self.rg.pathGen()
+        assert not self.rg.didFail, 'Kaiju pathGen failed'
 
         # I imagine that the above step would manipulate the robogrid based on
         # collisions and deadlocks, so the below would take these Kaiju results
         # and put them back as a design object which will be the output of the
         # function
-        valid_design = self.RobotGrid_to_design()
+        self.RobotGrid_to_valid_design()
 
         # another note to add to this above design dictonary, is how will this
         # include paths? This seems important for manual designs and to send
         # to Jaeger
 
-        return valid_design
+        return
 
     def design_to_targetdb(self, design, version):
         """

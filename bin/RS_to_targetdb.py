@@ -34,12 +34,13 @@ if __name__ == '__main__':
     plan = args.plan
     observatory = args.observatory
 
+    # COMMENT OUT FOR TEST
     # file with cadences for each field
-    allocate_file = sdss_path.full('rsAllocation', plan=plan,
-                                   observatory=observatory)
+    # allocate_file = sdss_path.full('rsAllocation', plan=plan,
+    #                               observatory=observatory)
 
     # connect to targetdb
-    targetdb.database.connect_from_parameters(user='sdss_user',
+    targetdb.database.connect_from_parameters(user='sdss user',
                                               host='operations.sdss.utah.edu',
                                               port=5432)
 
@@ -47,14 +48,18 @@ if __name__ == '__main__':
     versionDB = targetdb.Version.create(plan=plan,
                                         target_selection=False,
                                         robostrategy=True,
-                                        tag='')  # what is this supposed to be?
+                                        tag='test')  # add test flag for now
 
     versionDB.save()
 
+    # COMMENT OUT FOR TEST
     # data describing field (besides PA) stored here
-    rsAllocation1 = fitsio.read(allocate_file, ext=1)
+    # rsAllocation1 = fitsio.read(allocate_file, ext=1)
     # PAs are stored here
-    rsAllocation3 = fitsio.read(allocate_file, ext=3)
+    # rsAllocation3 = fitsio.read(allocate_file, ext=3)
+
+    # USING FOR TEST, CHANGE LATER
+    fieldids = [4373, 4673]
 
     # need these databased for fks that will be stored in these tables
     cadenceDB = targetdb.Cadence()
@@ -75,64 +80,78 @@ if __name__ == '__main__':
     versionDB = targetdb.Version()
     verpk = obsDB.get(plan=plan).pk
 
-    for allo1, allo3 in zip(rsAllocation1, rsAllocation3):
+    for fieldid in fieldids:
+        # now grab the assignment file for this field
+        field_assigned_file = sdss_path.full('rsFieldAssignments',
+                                             plan=plan,
+                                             observatory=observatory,
+                                             fieldid=fieldid)
+
+        # get header with field info
+        head = fitsio.read_header(field_assigned_file)
+        # association between catalogid and instrument
+        design_inst = fitsio.read(field_assigned_file, ext=1)
+        # catalogid assignment for each fiber
+        design = fitsio.read(field_assigned_file, ext=2)
+
         try:
-            dbCadence = cadenceDB.get(label=allo1['cadence']).pk
+            dbCadence = cadenceDB.get(label=head['FCADENCE']).pk
         except:  # dont know how to catch custom error 'CadenceDoesNotExist'
-            print('No cadence found in db for field %d' % allo1['fieldid'])
-            continue
+            print('No cadence found in db for field %d' % fieldid)
+            # COMMENT OUT FOR TEST
+            # continue
+            # USING FOR TEST, CHANGE LATER
+            dbCadence = -1
 
         # creates new row in database
         fieldDB = targetdb.Field.create(
-            pk=allo1['fieldid'],
-            racen=allo1['racen'],
-            deccen=allo1['deccen'],
-            position_angle=allo3['pa2'],
+            pk=fieldid,
+            racen=head['RACEN'],
+            deccen=head['DECCEN'],
+            position_angle=head['PA'],
             cadence=dbCadence,
             observatory=obspk,
             version=verpk)
         # save row in database
         fieldDB.save()
 
-        # now grab the assignment file for this field
-        field_assigned_file = sdss_path.full('rsFieldAssignments',
-                                             plan=plan,
-                                             observatory=observatory,
-                                             fieldid=allo1['fieldid'])
+        # get number of exposures
+        n_exp = len(design['robotID'][0, :])
 
-        # association between catalogid and instrument
-        design_inst = fitsio.read(field_assigned_file, ext=1)
-        # catalogid assignment for each fiber
-        design = fitsio.read(field_assigned_file, ext=2)
-
-        for i in range(len(design[0, :])):
+        for i in range(n_exp):
 
             # creates new row in design database
-            designDB = targetdb.Design.create(field=allo1['fieldid'],
+            designDB = targetdb.Design.create(field=fieldid,
                                               exposure=i)
             # save row
             designDB.save()
 
             # add the assignments for the design to the assignment database
             rows = []
-            for j in range(len(design[:, i])):
+            for j in range(len(design['robotID'][:, i])):
                 row_dict = {}
 
-                # get the pk for the positioner_info
-                # (where I assume the ID is just the row # in the fits file)
-                this_pos_DB = positionerDB.get(id=j).pk
+                if design['robotID'][j][i] != -1:
+                    # get the pk for the positioner_info
+                    # (where I assume the ID is just the
+                    # row # in the fits file)
 
-                # get the instrument for fiber
-                inst_assign = design_inst['fiberType'][
-                    design_inst['catalogid'] == design[j][i]][0]
+                    # COMMENT OUT FOR TEST
+                    # this_pos_DB = positionerDB.get(id=j).pk
+                    # USING FOR TEST, CHANGE LATER
+                    this_pos_DB = design['robotID'][j][i]
 
-                # add db row info to dic
-                row_dict['design'] = designDB.pk
-                row_dict['instrument'] = instr_pks[inst_assign]
-                row_dict['positioner'] = this_pos_DB
-                row_dict['target'] = targetDB.get(catalogid=design[j][i]).pk
+                    # get the instrument for fiber
+                    inst_assign = design_inst['fiberType'][j][i]
 
-                rows.append(row_dict)
+                    # add db row info to dic
+                    row_dict['design'] = designDB.pk
+                    row_dict['instrument'] = instr_pks[inst_assign]
+                    row_dict['positioner'] = this_pos_DB
+                    row_dict['target'] = (targetDB.get(
+                        catalogid=design_inst['catalogid'][j][i]).pk)
+
+                    rows.append(row_dict)
 
             # write all exposures for field to targetdb
             targetdb.Assignment.insert_many(rows).execute()

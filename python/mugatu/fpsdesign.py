@@ -238,7 +238,7 @@ class FPSDesign(object):
                       .join(Instrument,
                             on=(Assignment.instrument_pk == Instrument.pk))
                       .join(CartonToTarget,
-                            on=(Target.pj == CartonToTarget.target_pk))
+                            on=(Target.pk == CartonToTarget.target_pk))
                       .where(Assignment.design_pk == self.design_pk))
 
         for i in range(len(design_targ_db)):

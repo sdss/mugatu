@@ -41,14 +41,32 @@ class FPSDesign(object):
         Observatory where observation is taking place
 
     catalogids: np.array
-        List of catalogids for a manual design in db
+        List of catalogids for a manual design in db.
+        Length of array must be n=500.
+
+    ra: np.array
+        List of right ascensions that correspond to catalogids.
+        If list not provided, but catalogids for a manual design
+        are provided, right ascensions will be pulled from
+        targetdb. Length of array must be n=500.
+
+    dec: np.array
+        List of declinations that correspond to catalogids.
+        If list not provided, but catalogids for a manual design
+        are provided, declinations will be pulled from
+        targetdb. Length of array must be n=500.
+
+    fiberID: np.array
+        Fiber assignement for each catalogid target in the
+        manual design. Length of array must be n=500.
 
     obsWavelength: np.array
         Wavelength of observation for each fiber in the
-        manual design in db
+        manual design in db. Length of array must be n=500.
 
     priority: np.array
-        Priorties for targets in a manual design in db
+        Priorties for targets in a manual design in db.
+        Length of array must be n=500.
 
     design_file: str
         Flate file with a manual design not in the db. The
@@ -116,8 +134,8 @@ class FPSDesign(object):
 
     def _init_(self, design_pk, hour_angle, racen=None, deccen=None,
                position_angle=None, observatory=None, catalogids=None,
-               obsWavelength=None, priority=None, design_file=None,
-               manual_design=False):
+               ra=None, dec=None, fiberID=None, obsWavelength=None,
+               priority=None, design_file=None, manual_design=False):
         self.design_pk = design_pk
         self.hour_angle = hour_angle
         self.design = {}
@@ -146,6 +164,9 @@ class FPSDesign(object):
             self.position_angle = design_field_db[0].field.position_angle
             self.observatory = design_field_db[0].observatory.label
         self.catalogids = catalogids
+        self.ra = ra
+        self.dec = dec
+        self.fiberID = fiberID
         self.obsWavelength = obsWavelength
         self.priority = priority
         self.design_file = design_file
@@ -194,7 +215,7 @@ class FPSDesign(object):
         self.design['design_pk'] = self.design_pk
         self.design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
         self.design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
-        self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
+        # self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
         self.design['obsWavelength'] = np.zeros(500, dtype=str)
         self.design['priority'] = np.zeros(500, dtype=int) - 1
         self.design['ra'] = np.zeros(500, dtype=float) - 9999.99
@@ -258,7 +279,7 @@ class FPSDesign(object):
         self.design['design_pk'] = self.design_pk
         self.design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
         self.design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
-        self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
+        # self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
         self.design['obsWavelength'] = np.zeros(500, dtype=str)
         self.design['priority'] = np.zeros(500, dtype=int) - 1
         self.design['ra'] = np.zeros(500, dtype=float) - 9999.99
@@ -272,13 +293,17 @@ class FPSDesign(object):
             self.design['obsWavelength'] = self.obsWavelength
             self.design['priority'] = self.priority
 
-            for i in range(len(self.design['catalogID'])):
-                targ_db = Target.get(catalogid=self.design['catalogID'][i])
-                self.design['ra'][i] = targ_db.ra
-                self.design['dec'][i] = targ_db.dec
+            if self.ra is None:
+                for i in range(len(self.design['catalogID'])):
+                    targ_db = Target.get(catalogid=self.design['catalogID'][i])
+                    self.design['ra'][i] = targ_db.ra
+                    self.design['dec'][i] = targ_db.dec
+            else:
+                self.design['ra'] = self.ra
+                self.design['dec'] = self.dec
 
             # here somehow assign these
-            self.design['fiberID'], self.design['wokHoleID'] = something()
+            self.design['fiberID'] = self.fiberID
         else:
             # manual design from flat file
             man_des = load(self.design_file)
@@ -341,7 +366,7 @@ class FPSDesign(object):
         self.valid_design['design_pk'] = self.design_pk
         self.valid_design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
         self.valid_design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
-        self.valid_design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
+        # self.valid_design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
         self.valid_design['obsWavelength'] = np.zeros(500, dtype=str)
         self.valid_design['priority'] = np.zeros(500, dtype=int) - 1
         self.valid_design['ra'] = np.zeros(500, dtype=float) - 9999.99
@@ -357,7 +382,7 @@ class FPSDesign(object):
                 # is below necessary? i dont know if decollide ever reassigns
                 # or just removes
                 cond = eval("self.design['catalogID'] == self.valid_design['catalogID'][i]")
-                self.valid_design['wokHoleID'][i] = self.design['wokHoleID'][cond][0]
+                # self.valid_design['wokHoleID'][i] = self.design['wokHoleID'][cond][0]
                 self.valid_design['obsWavelength'][i] = self.design['obsWavelength'][cond][0]
                 self.valid_design['priority'][i] = self.design['priority'][cond][0]
                 self.valid_design['ra'][i] = self.design['ra'][cond][0]

@@ -40,17 +40,21 @@ if __name__ == '__main__':
     #                               observatory=observatory)
 
     # connect to targetdb
-    targetdb.database.connect_from_parameters(user='sdss user',
+    targetdb.database.connect_from_parameters(user='sdss',
                                               host='operations.sdss.utah.edu',
                                               port=5432)
 
-    # add new robostratgey version to targetDB
-    versionDB = targetdb.Version.create(plan=plan,
-                                        target_selection=False,
-                                        robostrategy=True,
-                                        tag='test')  # add test flag for now
+    # add new robostratgey version to targetDB if it doesnt exist
+    try:
+        versionDB = targetdb.Version()
+        verpk = versionDB.get(plan=plan).pk
+    except:
+        versionDB = targetdb.Version.create(plan=plan,
+                                            target_selection=False,
+                                            robostrategy=True,
+                                            tag='test')  # add test flag for now
 
-    versionDB.save()
+        versionDB.save()
 
     # COMMENT OUT FOR TEST
     # data describing field (besides PA) stored here
@@ -65,7 +69,6 @@ if __name__ == '__main__':
     cadenceDB = targetdb.Cadence()
     targetDB = targetdb.Target()
     positionerDB = targetdb.Positioner()
-    postion_infoDB = targetdb.PositionerInfo()
 
     # get the instrument pks
     instr_pks = {}
@@ -74,11 +77,11 @@ if __name__ == '__main__':
 
     # get observatory pk
     obsDB = targetdb.Observatory()
-    obspk = obsDB.get(label=observatory).pk
+    obspk = obsDB.get(label=observatory.upper()).pk
 
     # get plan pk
     versionDB = targetdb.Version()
-    verpk = obsDB.get(plan=plan).pk
+    verpk = versionDB.get(plan=plan).pk
 
     for fieldid in fieldids:
         # now grab the assignment file for this field
@@ -86,6 +89,9 @@ if __name__ == '__main__':
                                              plan=plan,
                                              observatory=observatory,
                                              fieldid=fieldid)
+        # USING FOR TEST, CHANGE LATER
+        field_assigned_file = field_assigned_file.replace('/targets', '')
+        field_assigned_file = field_assigned_file[:-5] + '-example.fits'
 
         # get header with field info
         head = fitsio.read_header(field_assigned_file)
@@ -103,17 +109,20 @@ if __name__ == '__main__':
             # USING FOR TEST, CHANGE LATER
             dbCadence = -1
 
-        # creates new row in database
-        fieldDB = targetdb.Field.create(
-            pk=fieldid,
-            racen=head['RACEN'],
-            deccen=head['DECCEN'],
-            position_angle=head['PA'],
-            cadence=dbCadence,
-            observatory=obspk,
-            version=verpk)
-        # save row in database
-        fieldDB.save()
+        # creates new field in database if it doesnt exist
+        try:
+            fieldDB = targetdb.Field.create(
+                pk=fieldid,
+                racen=head['RACEN'],
+                deccen=head['DECCEN'],
+                position_angle=head['PA'],
+                cadence=dbCadence,
+                observatory=obspk,
+                version=verpk)
+            # save row in database
+            fieldDB.save()
+        except:  # again, need to load correct error here
+            pass
 
         # get number of exposures
         n_exp = len(design['robotID'][0, :])
@@ -121,6 +130,7 @@ if __name__ == '__main__':
         for i in range(n_exp):
 
             # creates new row in design database
+            # NEED TO CHECK IF DESIGN ALREADY EXISTS?
             designDB = targetdb.Design.create(field=fieldid,
                                               exposure=i)
             # save row
@@ -131,25 +141,24 @@ if __name__ == '__main__':
             for j in range(len(design['robotID'][:, i])):
                 row_dict = {}
 
-                if design['robotID'][j][i] != -1:
+                # right now calibrations are fake, so need to skip
+                if design['robotID'][j][i] != -1 and design_inst['program'][j] != 'CALIBRATION':
                     # get the pk for the positioner_info
                     # (where I assume the ID is just the
                     # row # in the fits file)
 
-                    # COMMENT OUT FOR TEST
-                    # this_pos_DB = positionerDB.get(id=j).pk
-                    # USING FOR TEST, CHANGE LATER
-                    this_pos_DB = design['robotID'][j][i]
+                    this_pos_DB = (positionerDB.get(
+                        id=design['robotID'][j][i]).pk)
 
                     # get the instrument for fiber
-                    inst_assign = design_inst['fiberType'][j][i]
+                    inst_assign = design_inst['fiberType'][j]
 
                     # add db row info to dic
                     row_dict['design'] = designDB.pk
                     row_dict['instrument'] = instr_pks[inst_assign]
                     row_dict['positioner'] = this_pos_DB
                     row_dict['target'] = (targetDB.get(
-                        catalogid=design_inst['catalogid'][j][i]).pk)
+                        catalogid=design_inst['catalogid'][j]).pk)
 
                     rows.append(row_dict)
 

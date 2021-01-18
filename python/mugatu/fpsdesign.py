@@ -132,10 +132,10 @@ class FPSDesign(object):
 
     """
 
-    def _init_(self, design_pk, hour_angle, racen=None, deccen=None,
-               position_angle=None, observatory=None, catalogids=None,
-               ra=None, dec=None, fiberID=None, obsWavelength=None,
-               priority=None, design_file=None, manual_design=False):
+    def __init__(self, design_pk, hour_angle, racen=None, deccen=None,
+                 position_angle=None, observatory=None, catalogids=None,
+                 ra=None, dec=None, fiberID=None, obsWavelength=None,
+                 priority=None, design_file=None, manual_design=False):
         self.design_pk = design_pk
         self.hour_angle = hour_angle
         self.design = {}

@@ -5,8 +5,7 @@ description = "Package to read, write and validate FPS designs"
 authors = ["Ilija Medan"]
 license = "BSD 3-Clause License"
 packages = [
-    { include = "mugatu" },
-    { include = "python/**/*.py" },
+    { include = "mugatu", from = "python" }
 ]
 
 [tool.poetry.dependencies]

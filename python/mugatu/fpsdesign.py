@@ -100,6 +100,11 @@ class FPSDesign(object):
         same form as design dictonary, except this design has been
         validated by Kaiju and collision/delock assignments removed
 
+    design_built: booleen
+        keeps track if design from db or file has already been built. If so,
+        this will save time on validating the design by not requiring it
+        to be rebuilt.
+
     Methods:
     --------
 
@@ -162,7 +167,7 @@ class FPSDesign(object):
             self.racen = design_field_db[0].field.racen
             self.deccen = design_field_db[0].field.deccen
             self.position_angle = design_field_db[0].field.position_angle
-            self.observatory = design_field_db[0].observatory.label
+            self.observatory = design_field_db[0].field.observatory.label
         self.catalogids = catalogids
         self.ra = ra
         self.dec = dec
@@ -186,7 +191,9 @@ class FPSDesign(object):
 
         self.valid_design = {}
 
-    def radec_to_xy(self, ra, dec):
+        self.design_built = False
+
+    def radec_to_xy(self):
         """
         convert ra/dec to x/y using field information and
         coordio
@@ -197,6 +204,10 @@ class FPSDesign(object):
         conversions
 
         """
+
+        x = np.zeros(500)
+        y = np.zeros(500)
+
         return x, y
 
     def build_design_db(self):
@@ -216,7 +227,7 @@ class FPSDesign(object):
         self.design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
         self.design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
         # self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
-        self.design['obsWavelength'] = np.zeros(500, dtype=str)
+        self.design['obsWavelength'] = np.zeros(500, dtype='<U6')
         self.design['priority'] = np.zeros(500, dtype=int) - 1
         self.design['ra'] = np.zeros(500, dtype=float) - 9999.99
         self.design['dec'] = np.zeros(500, dtype=float) - 9999.99
@@ -227,16 +238,19 @@ class FPSDesign(object):
         design_targ_db = (
             Assignment.select(Target.catalogid,
                               Positioner.id,
+                              Positioner.pk,
                               Instrument.label,
                               CartonToTarget.priority,
                               Target.ra,
                               Target.dec)
-                      .join(Target,
-                            on=(Assignment.target_pk == Target.pk))
                       .join(Positioner,
                             on=(Assignment.positioner_pk == Positioner.pk))
+                      .switch(Assignment)
                       .join(Instrument,
                             on=(Assignment.instrument_pk == Instrument.pk))
+                      .switch(Assignment)
+                      .join(Target,
+                            on=(Assignment.target_pk == Target.pk))
                       .join(CartonToTarget,
                             on=(Target.pk == CartonToTarget.target_pk))
                       .where(Assignment.design_pk == self.design_pk))
@@ -246,18 +260,25 @@ class FPSDesign(object):
             # index should match length of arrays
             pos_id = design_targ_db[i].positioner.id
             self.design['catalogID'][pos_id] = (design_targ_db[i]
-                                                .target.catalogid)
+                                                .target.catalogid.catalogid)
             self.design['fiberID'][pos_id] = pos_id
             # design['wokHoleID'][i] = design_targ_db[i]
             self.design['obsWavelength'][pos_id] = (design_targ_db[i]
                                                     .instrument.label)
-            self.design['priority'][pos_id] = (design_targ_db[i]
-                                               .cartontotarget.priority)
+            # catch targets with no assigned priority
+            try:
+                self.design['priority'][pos_id] = (design_targ_db[i]
+                                                   .target
+                                                   .cartontotarget.priority)
+            except AttributeError:
+                self.design['priority'][pos_id] = -1
             self.design['ra'][pos_id] = design_targ_db[i].target.ra
             self.design['dec'][pos_id] = design_targ_db[i].target.dec
 
         # here convert ra/dec to x/y based on field/HA observation
         self.design['x'], self.design['y'] = self.radec_to_xy()
+
+        self.design_built = True
 
         return
 
@@ -288,7 +309,7 @@ class FPSDesign(object):
         self.design['y'] = np.zeros(500, dtype=float) - 9999.99
 
         if self.design_file is None:
-            # manual design with targets in targetdv
+            # manual design with targets in targetdb
             self.design['catalogID'] = self.catalogids
             self.design['obsWavelength'] = self.obsWavelength
             self.design['priority'] = self.priority
@@ -312,6 +333,8 @@ class FPSDesign(object):
 
         # here convert ra/dec to x/y based on field/HA observation
         self.design['x'], self.design['y'] = self.radec_to_xy()
+
+        self.design_built = True
 
         return
 
@@ -404,11 +427,13 @@ class FPSDesign(object):
 
         """
 
-        # build the design with all needed parameters
-        if self.manual_design:
-            self.build_design_manual()
-        else:
-            self.build_design_db()
+        # build the design with all needed parameters if it has not been
+        # built already (save time by doing this check)
+        if not self.design_built:
+            if self.manual_design:
+                self.build_design_manual()
+            else:
+                self.build_design_db()
 
         # construct the Kaiju robotGrid
         self.design_to_RobotGrid()

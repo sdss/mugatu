@@ -4,6 +4,10 @@ version = "0.1.0alpha"
 description = "Package to read, write and validate FPS designs"
 authors = ["Ilija Medan"]
 license = "BSD 3-Clause License"
+packages = [
+    { include = "mugatu" },
+    { include = "python/**/*.py" },
+]
 
 [tool.poetry.dependencies]
 python = "^3.6"

@@ -8,7 +8,7 @@ import numpy as np
 
 import kaiju
 import kaiju.robotGrid
-import coordio
+# import coordio
 from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget
 
 

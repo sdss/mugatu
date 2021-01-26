@@ -365,6 +365,8 @@ class FPSDesign(object):
 
        """
 
+        is_unassigned = False
+
         for i in range(len(self.design['x'])):
             if self.design['fiberID'][i] != -1:
                 if self.design['obsWavelength'][i] == 'BOSS':
@@ -386,6 +388,11 @@ class FPSDesign(object):
                     # this catches the fact that robot cant be
                     # assigned to given fiber
                     self.targets_unassigned.append(self.design['catalogID'][i])
+                    is_unassigned = True
+
+        if is_unassigned:
+            flag = 'Some targets could not be assigned to fiber'
+            warnings.warn(flag, MugatuWarning)
 
         return
 
@@ -464,6 +471,9 @@ class FPSDesign(object):
             # check if de-collision was successful
             if not self.rg.getNCollisions() == 0:
                 raise MugatuError(message='Kaiju decollideGrid failed')
+
+            flag = 'Some targets removed from design due to collisions'
+            warnings.warn(flag, MugatuWarning)
 
             # grab all of the targets removed due to collisions
             for i in self.rg.robotDict:

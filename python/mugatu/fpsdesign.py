@@ -5,12 +5,14 @@
 # @Copyright: Ilija Medan
 
 import numpy as np
+import warnings
 
 import kaiju
 import kaiju.robotGrid
 # import coordio
 from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget
 import fitsio
+from mugatu.exceptions import MugatuError, MugatuWarning
 
 
 class FPSDesign(object):
@@ -221,6 +223,10 @@ class FPSDesign(object):
 
         """
 
+        if self.manual_design:
+            flag = 'Building database design with manual_design=True flag'
+            warnings.warn(flag, MugatuWarning)
+
         # initialize dict for the design
         # not using None or nan for no assignments
         # using -1 (for int) and -9999.99 (for float) for None assignment
@@ -294,6 +300,10 @@ class FPSDesign(object):
         of coordinates (and fiber assignments?), if manual_design=True
 
         """
+
+        if not self.manual_design:
+            flag = 'Building manual design with manual_design=False flag'
+            warnings.warn(flag, MugatuWarning)
 
         # initialize dict for the design
         # not using None or nan for no assignments
@@ -452,7 +462,8 @@ class FPSDesign(object):
             self.rg.decollideGrid()
 
             # check if de-collision was successful
-            assert self.rg.getNCollisions() == 0, 'Kaiju decollideGrid failed'
+            if not self.rg.getNCollisions() == 0:
+                raise MugatuError(message='Kaiju decollideGrid failed')
 
             # grab all of the targets removed due to collisions
             for i in self.rg.robotDict:
@@ -465,7 +476,8 @@ class FPSDesign(object):
 
         # generate paths
         self.rg.pathGen()
-        assert not self.rg.didFail, 'Kaiju pathGen failed'
+        if self.rg.didFail:
+            raise MugatuError(message='Kaiju pathGen failed')
 
         # I imagine that the above step would manipulate the robogrid based on
         # collisions and deadlocks, so the below would take these Kaiju results

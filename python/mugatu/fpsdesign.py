@@ -10,6 +10,7 @@ import kaiju
 import kaiju.robotGrid
 # import coordio
 from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget
+import fitsio
 
 
 class FPSDesign(object):
@@ -327,9 +328,14 @@ class FPSDesign(object):
             self.design['fiberID'] = self.fiberID
         else:
             # manual design from flat file
-            man_des = load(self.design_file)
+            man_des = fitsio.read(self.design_file)
 
-            # now need to load all the params to dictonary
+            self.design['catalogID'] = man_des['catalogID']
+            self.design['fiberID'] = man_des['fiberID']
+            self.design['obsWavelength'] = man_des['obsWavelength']
+            self.design['priority'] = man_des['priority']
+            self.design['ra'] = man_des['ra']
+            self.design['dec'] = man_des['dec']
 
         # here convert ra/dec to x/y based on field/HA observation
         self.design['x'], self.design['y'] = self.radec_to_xy()

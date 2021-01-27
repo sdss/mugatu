@@ -8,12 +8,12 @@ import sys
 import argparse
 import os
 
-from sdssdb.peewee.sdss5db import targetdb
-import sdss_access.path
 import fitsio
 
-sdss_path = sdss_access.path.Path(release='sdss5')
+from sdssdb.peewee.sdss5db import targetdb
+import sdss_access.path
 
+sdss_path = sdss_access.path.Path(release='sdss5')
 
 if __name__ == '__main__':
 
@@ -36,8 +36,8 @@ if __name__ == '__main__':
 
     # COMMENT OUT FOR TEST
     # file with cadences for each field
-    # allocate_file = sdss_path.full('rsAllocation', plan=plan,
-    #                               observatory=observatory)
+    allocate_file = sdss_path.full('rsAllocation', plan=plan,
+                                   observatory=observatory)
 
     # connect to targetdb
     targetdb.database.connect_from_parameters(user='sdss',
@@ -52,18 +52,19 @@ if __name__ == '__main__':
         versionDB = targetdb.Version.create(plan=plan,
                                             target_selection=False,
                                             robostrategy=True,
-                                            tag='test')  # add test flag for now
+                                            tag="test")  # add test flag for now
 
         versionDB.save()
 
     # COMMENT OUT FOR TEST
     # data describing field (besides PA) stored here
-    # rsAllocation1 = fitsio.read(allocate_file, ext=1)
+    rsAllocation1 = fitsio.read(allocate_file, ext=1)
     # PAs are stored here
     # rsAllocation3 = fitsio.read(allocate_file, ext=3)
 
     # USING FOR TEST, CHANGE LATER
-    fieldids = [4373, 4673]
+    # fieldids = [4373, 4673]
+    fieldids = rsAllocation1["fieldid"]
 
     # need these databased for fks that will be stored in these tables
     cadenceDB = targetdb.Cadence()
@@ -90,8 +91,8 @@ if __name__ == '__main__':
                                              observatory=observatory,
                                              fieldid=fieldid)
         # USING FOR TEST, CHANGE LATER
-        field_assigned_file = field_assigned_file.replace('/targets', '')
-        field_assigned_file = field_assigned_file[:-5] + '-example.fits'
+        # field_assigned_file = field_assigned_file.replace('/targets', '')
+        # field_assigned_file = field_assigned_file[:-5] + '-example.fits'
 
         # get header with field info
         head = fitsio.read_header(field_assigned_file)
@@ -100,19 +101,22 @@ if __name__ == '__main__':
         # catalogid assignment for each fiber
         design = fitsio.read(field_assigned_file, ext=2)
 
-        try:
-            dbCadence = cadenceDB.get(label=head['FCADENCE']).pk
-        except:  # dont know how to catch custom error 'CadenceDoesNotExist'
-            print('No cadence found in db for field %d' % fieldid)
-            # COMMENT OUT FOR TEST
-            # continue
-            # USING FOR TEST, CHANGE LATER
-            dbCadence = -1
+        # print("loading field ", fieldid)
+        dbCadence = cadenceDB.get(label=head['FCADENCE']).pk
+
+        # try:
+        #     dbCadence = cadenceDB.get(label=head['FCADENCE']).pk
+        # except:  # dont know how to catch custom error 'CadenceDoesNotExist'
+        #     print('No cadence found in db for field %d' % fieldid)
+        #     # COMMENT OUT FOR TEST
+        #     # continue
+        #     # USING FOR TEST, CHANGE LATER
+        #     dbCadence = -1
 
         # creates new field in database if it doesnt exist
         try:
             fieldDB = targetdb.Field.create(
-                pk=fieldid,
+                field_id=fieldid,
                 racen=head['RACEN'],
                 deccen=head['DECCEN'],
                 position_angle=head['PA'],
@@ -125,13 +129,18 @@ if __name__ == '__main__':
             pass
 
         # get number of exposures
-        n_exp = len(design['robotID'][0, :])
+        try:
+            n_exp = len(design['robotID'][0, :])
+        except IndexError:
+            # some fields only have 1 design which is encoded as 1-D array apparently
+            n_exp = 1
 
         for i in range(n_exp):
+            # print("field {} pk {} design: {}".format(fieldid, fieldDB.pk, i))
 
             # creates new row in design database
             # NEED TO CHECK IF DESIGN ALREADY EXISTS?
-            designDB = targetdb.Design.create(field=fieldid,
+            designDB = targetdb.Design.create(field=fieldDB.pk,
                                               exposure=i)
             # save row
             designDB.save()

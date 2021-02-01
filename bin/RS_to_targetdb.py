@@ -7,6 +7,7 @@
 import sys
 import argparse
 import os
+import numpy as np
 
 import fitsio
 
@@ -18,7 +19,8 @@ sdss_path = sdss_access.path.Path(release='sdss5')
 if __name__ == '__main__':
 
     # grabbed the parser from robostratgey code to keep consistent
-    # to initiate code use 'python RS_to_targetdb.py -p PLAN -o OBSERVATORY'
+    # to initiate code use
+    # 'python RS_to_targetdb.py -p PLAN -o OBSERVATORY -v target_selection_version_pk'
 
     parser = argparse.ArgumentParser(
         prog=os.path.basename(sys.argv[0]),
@@ -29,10 +31,14 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--observatory', dest='observatory',
                         type=str, help='apo or lco',
                         choices=['apo', 'lco'], required=True)
+    parser.add_argument('-v', '--targetdb_ver', dest='targetdb_ver',
+                        type=str, help='target_selection version_pk',
+                        required=True)
 
     args = parser.parse_args()
     plan = args.plan
     observatory = args.observatory
+    targetdb_ver = args.targetdb_ver
 
     # COMMENT OUT FOR TEST
     # file with cadences for each field
@@ -69,7 +75,9 @@ if __name__ == '__main__':
     # need these databased for fks that will be stored in these tables
     cadenceDB = targetdb.Cadence()
     targetDB = targetdb.Target()
+    carton_to_targetDB = targetdb.CartonToTarget()
     positionerDB = targetdb.Positioner()
+    cartonDB = targetdb.Carton()
 
     # get the instrument pks
     instr_pks = {}
@@ -103,6 +111,15 @@ if __name__ == '__main__':
 
         # print("loading field ", fieldid)
         dbCadence = cadenceDB.get(label=head['FCADENCE']).pk
+
+        # grab all carton pks here
+        cart_pks = {}
+        for cart in np.unique(design_inst['carton']):
+            # skip calibration from now
+            if cart != 'CALIBRATION':
+                cart_pks[cart] = (cartonDB.select(cartonDB.pk)
+                                          .where((cartonDB.carton == cart) &
+                                                 (cartonDB.version_pk == targetdb_ver))[0].pk)
 
         # try:
         #     dbCadence = cadenceDB.get(label=head['FCADENCE']).pk
@@ -166,8 +183,13 @@ if __name__ == '__main__':
                     row_dict['design'] = designDB.pk
                     row_dict['instrument'] = instr_pks[inst_assign]
                     row_dict['positioner'] = this_pos_DB
-                    row_dict['target'] = (targetDB.get(
-                        catalogid=design_inst['catalogid'][j]).pk)
+                    cart_pk = cart_pks[design_inst['carton'][j]]
+                    row_dict['carton_to_target'] = (carton_to_targetDB.select(
+                        carton_to_targetDB.pk)
+                        .join(targetDB,
+                              on=(carton_to_targetDB.target_pk == targetDB.pk))
+                        .where((targetDB.catalogid == design_inst['catalogid'][j]) &
+                               (carton_to_targetDB.carton_pk == cart_pk))[0].pk)
 
                     rows.append(row_dict)
 

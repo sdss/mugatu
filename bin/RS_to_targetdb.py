@@ -130,8 +130,13 @@ if __name__ == '__main__':
         #     # USING FOR TEST, CHANGE LATER
         #     dbCadence = -1
 
+        # check if field exists
+        field_test = (targetdb.Field
+                      .select()
+                      .where((targetdb.Field.field_id == fieldid) &
+                             (targetdb.Field.version == verpk)))
         # creates new field in database if it doesnt exist
-        try:
+        if len(field_test) == 0:
             fieldDB = targetdb.Field.create(
                 field_id=fieldid,
                 racen=head['RACEN'],
@@ -142,8 +147,6 @@ if __name__ == '__main__':
                 version=verpk)
             # save row in database
             fieldDB.save()
-        except:  # again, need to load correct error here
-            pass
 
         # get number of exposures
         try:

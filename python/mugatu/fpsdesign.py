@@ -183,7 +183,7 @@ class FPSDesign(object):
         # set dummy value for collision for now
         # this may want to be a input, not sure the standard here
         # initialize robotGrid
-        self.rg = kaiju.robotGrid.RobotGridFilledHex(collisionBuffer=2.)
+        self.rg = kaiju.robotGrid.RobotGridFilledHex()
         # this is in Conor's test, I'm not quite sure what it does
         # but without paths wont generate
         for rID in self.rg.robotDict:
@@ -242,6 +242,7 @@ class FPSDesign(object):
         self.design['y'] = np.zeros(500, dtype=float) - 9999.99
 
         # need to add wokHole to query when in db (not there now)
+        # I need to test this when v05 is up, im unsure about Joins
         design_targ_db = (
             Assignment.select(Target.catalogid,
                               Positioner.id,
@@ -256,10 +257,10 @@ class FPSDesign(object):
                       .join(Instrument,
                             on=(Assignment.instrument_pk == Instrument.pk))
                       .switch(Assignment)
-                      .join(Target,
-                            on=(Assignment.target_pk == Target.pk))
                       .join(CartonToTarget,
-                            on=(Target.pk == CartonToTarget.target_pk))
+                            on=(Assignment.carton_to_target_pk == CartonToTarget.pk))
+                      .join(Target,
+                            on=(CartonToTarget.target_pk == Target.pk))
                       .where(Assignment.design_pk == self.design_pk))
 
         for i in range(len(design_targ_db)):
@@ -267,6 +268,7 @@ class FPSDesign(object):
             # index should match length of arrays
             pos_id = design_targ_db[i].positioner.id
             self.design['catalogID'][pos_id] = (design_targ_db[i]
+                                                .cartontotarget
                                                 .target.catalogid.catalogid)
             self.design['fiberID'][pos_id] = pos_id
             # design['wokHoleID'][i] = design_targ_db[i]
@@ -275,12 +277,13 @@ class FPSDesign(object):
             # catch targets with no assigned priority
             try:
                 self.design['priority'][pos_id] = (design_targ_db[i]
-                                                   .target
                                                    .cartontotarget.priority)
             except AttributeError:
                 self.design['priority'][pos_id] = -1
-            self.design['ra'][pos_id] = design_targ_db[i].target.ra
-            self.design['dec'][pos_id] = design_targ_db[i].target.dec
+            self.design['ra'][pos_id] = (design_targ_db[i].cartontotarget
+                                                          .target.ra)
+            self.design['dec'][pos_id] = (design_targ_db[i].cartontotarget
+                                                           .target.dec)
 
         # here convert ra/dec to x/y based on field/HA observation
         self.design['x'], self.design['y'] = self.radec_to_xy()

@@ -171,6 +171,9 @@ class FPSDesign(object):
             self.deccen = design_field_db[0].field.deccen
             self.position_angle = design_field_db[0].field.position_angle
             self.observatory = design_field_db[0].field.observatory.label
+        # should these be catalogids or carton_to_target?
+        # either way, I think I need to specify carton info
+        # for checking modes here
         self.catalogids = catalogids
         self.ra = ra
         self.dec = dec

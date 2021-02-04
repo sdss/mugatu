@@ -241,6 +241,7 @@ class FPSDesign(object):
         # not using None or nan for no assignments
         # using -1 (for int) and -9999.99 (for float) for None assignment
         self.design['design_pk'] = self.design_pk
+        self.design['mode_pk'] = self.mode_pk
         self.design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
         self.design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
         # self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
@@ -322,6 +323,7 @@ class FPSDesign(object):
         # not using None or nan for no assignments
         # using -1 (for int) and -9999.99 (for float) for None assignment
         self.design['design_pk'] = self.design_pk
+        self.design['mode_pk'] = self.mode_pk
         self.design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
         self.design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
         # self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
@@ -423,6 +425,7 @@ class FPSDesign(object):
         # not using None or nan for no assignments
         # using -1 (for int) and -9999.99 (for float) for None assignment
         self.valid_design['design_pk'] = self.design_pk
+        self.valid_design['mode_pk'] = self.mode_pk
         self.valid_design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
         self.valid_design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
         # self.valid_design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1

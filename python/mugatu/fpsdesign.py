@@ -43,6 +43,9 @@ class FPSDesign(object):
     observatory: str
         Observatory where observation is taking place
 
+    mode_pk: int
+        The pk in targetdb for the observing mode for the design
+
     catalogids: np.array
         List of catalogids for a manual design in db.
         Length of array must be n=500.
@@ -141,9 +144,10 @@ class FPSDesign(object):
     """
 
     def __init__(self, design_pk, hour_angle, racen=None, deccen=None,
-                 position_angle=None, observatory=None, catalogids=None,
-                 ra=None, dec=None, fiberID=None, obsWavelength=None,
-                 priority=None, design_file=None, manual_design=False):
+                 position_angle=None, observatory=None, mode_pk=None,
+                 catalogids=None, ra=None, dec=None, fiberID=None,
+                 obsWavelength=None, priority=None, design_file=None,
+                 manual_design=False):
         self.design_pk = design_pk
         self.hour_angle = hour_angle
         self.design = {}
@@ -154,9 +158,11 @@ class FPSDesign(object):
             self.deccen = deccen
             self.position_angle = position_angle
             self.observatory = observatory
+            self.mode_pk = mode_pk
         else:
             design_field_db = (
                 Design.select(Design.pk,
+                              Design.mode_pk,
                               Field.racen,
                               Field.deccen,
                               Field.position_angle,
@@ -171,6 +177,7 @@ class FPSDesign(object):
             self.deccen = design_field_db[0].field.deccen
             self.position_angle = design_field_db[0].field.position_angle
             self.observatory = design_field_db[0].field.observatory.label
+            self.mode_pk = design_field_db[0].mode_pk
         # should these be catalogids or carton_to_target?
         # either way, I think I need to specify carton info
         # for checking modes here

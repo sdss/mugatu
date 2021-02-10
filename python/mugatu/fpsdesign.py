@@ -112,11 +112,14 @@ class FPSDesign(object):
         this will save time on validating the design by not requiring it
         to be rebuilt.
 
+    hourAngle: float
+        Hour angle of field center from coordio radec2wokxy
+
+    positionAngle_coordio: float
+        position angle of field center from coordio radec2wokxy
+
     Methods:
     --------
-
-    radec_to_xy(): convert ra/dec to x/y using field information and
-        coordio
 
     build_design_db(): compile the parameters for a design that exists in
         targetdb. This method will generally be triggered when
@@ -207,23 +210,6 @@ class FPSDesign(object):
 
         self.design_built = False
 
-    def radec_to_xy(self):
-        """
-        convert ra/dec to x/y using field information and
-        coordio
-
-        Notes:
-        ------
-        This function will mainly rely on calling coordio for the
-        conversions
-
-        """
-
-        x = np.zeros(500)
-        y = np.zeros(500)
-
-        return x, y
-
     def build_design_db(self):
         """
         compile the parameters for a design that exists in targetdb
@@ -309,6 +295,10 @@ class FPSDesign(object):
                                                                                                                         obsSite=self.observatory,
                                                                                                                         obsTime=self.obsTime)
 
+        if np.any(fieldWarn):
+            flag = 'Coordio xy coordinates converted should be eyed with suspicion.'
+            warnings.warn(flag, MugatuWarning)
+
         self.design_built = True
 
         return
@@ -383,6 +373,10 @@ class FPSDesign(object):
                                                                                                                         obsAngle=self.position_angle,
                                                                                                                         obsSite=self.observatory,
                                                                                                                         obsTime=self.obsTime)
+
+        if np.any(fieldWarn):
+            flag = 'Coordio xy coordinates converted should be eyed with suspicion.'
+            warnings.warn(flag, MugatuWarning)
 
         self.design_built = True
 

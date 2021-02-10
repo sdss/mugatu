@@ -13,6 +13,7 @@ import kaiju.robotGrid
 from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget
 import fitsio
 from mugatu.exceptions import MugatuError, MugatuWarning
+from coordio.utils import radec2wokxy, wokxy2radec
 
 
 class FPSDesign(object):
@@ -23,8 +24,8 @@ class FPSDesign(object):
     design_pk: int
         The pk of the design as it appears in targetdb
 
-    hour_angle: np.float64
-        Hour angle of the observation
+    obsTime: np.float64
+        Julian date of the observation
 
     design: dict
         Dictonary that contains all parameters related to the design.
@@ -143,13 +144,13 @@ class FPSDesign(object):
 
     """
 
-    def __init__(self, design_pk, hour_angle, racen=None, deccen=None,
+    def __init__(self, design_pk, obsTime, racen=None, deccen=None,
                  position_angle=None, observatory=None, mode_pk=None,
                  catalogids=None, ra=None, dec=None, fiberID=None,
                  obsWavelength=None, priority=None, design_file=None,
                  manual_design=False):
         self.design_pk = design_pk
-        self.hour_angle = hour_angle
+        self.obsTime = obsTime
         self.design = {}
         # either set field params or pull from db is design
         # is in targetdb
@@ -296,8 +297,17 @@ class FPSDesign(object):
             self.design['dec'][pos_id] = (design_targ_db[i].cartontotarget
                                                            .target.dec)
 
-        # here convert ra/dec to x/y based on field/HA observation
-        self.design['x'], self.design['y'] = self.radec_to_xy()
+        # here convert ra/dec to x/y based on field/time of observation
+        ev = eval("(self.design['ra'] != -9999.99)")
+        self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra'][ev],
+                                                                                                                        dec=self.design['dec'][ev],
+                                                                                                                        coordEpoch=np.array([2457174] * len(self.design['ra'][ev])),
+                                                                                                                        waveName=np.array(list(map(lambda x:x.title(), self.design['obsWavelength'][ev]))),
+                                                                                                                        raCen=self.racen,
+                                                                                                                        decCen=self.deccen,
+                                                                                                                        obsAngle=self.position_angle,
+                                                                                                                        obsSite=self.observatory,
+                                                                                                                        obsTime=self.obsTime)
 
         self.design_built = True
 
@@ -362,8 +372,17 @@ class FPSDesign(object):
             self.design['ra'] = man_des['ra']
             self.design['dec'] = man_des['dec']
 
-        # here convert ra/dec to x/y based on field/HA observation
-        self.design['x'], self.design['y'] = self.radec_to_xy()
+        # here convert ra/dec to x/y based on field/time of observation
+        ev = eval("(self.design['ra'] != -9999.99)")
+        self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra'][ev],
+                                                                                                                        dec=self.design['dec'][ev],
+                                                                                                                        coordEpoch=np.array([2457174] * len(self.design['ra'][ev])),  # this is roughly 2015.5, need to ask about this and change it
+                                                                                                                        waveName=np.array(list(map(lambda x:x.title(), self.design['obsWavelength'][ev]))),
+                                                                                                                        raCen=self.racen,
+                                                                                                                        decCen=self.deccen,
+                                                                                                                        obsAngle=self.position_angle,
+                                                                                                                        obsSite=self.observatory,
+                                                                                                                        obsTime=self.obsTime)
 
         self.design_built = True
 

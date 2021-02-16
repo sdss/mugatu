@@ -6,6 +6,7 @@
 
 import numpy as np
 import warnings
+from scipy.spatial import cKDTree
 
 from sdssdb.peewee.sdss5db.targetdb import Carton, CartonToTarget, Magnitude, Mode, Assignment, Instrument, Positioner
 
@@ -111,3 +112,56 @@ def mode_validation(design):
         return False
     else:
         return True
+
+
+def bright_neighbors(fps_design, bright_limit, bright_neighbor_limit):
+    """
+    looks for bright neighbors some distance away from all of
+    the assigned targets in a design
+
+    Parameters:
+    -----------
+    fps_design: object
+        FPSDesign object
+
+    bright_limit: float
+        Bright limit for the design in mags. This will search
+        for Gaia(?) mags brighter than this
+
+    bright_neighbor_limit: float
+        the max distance a fiber should be away from a bright target.
+        this is provided in degrees.
+
+    Outputs:
+    --------
+    fiber_bright: np.array
+        Array of booleens to signify if fiber close to a bright neighbor.
+        True means too close to bright neighbor.
+    """
+
+    # first thing here will be to query bright objects
+    # dont really know where this will come from, so leave
+    # blank for now
+    query_bright = something()
+
+    ra_bright, dec_bright, mag_bright = map(np.array, zip(*np.array(query_bright.tuples())))
+
+    # make trees for bright targets and designs
+    tree_bright = cKDTree(np.column_stack((ra_bright, dec_bright)))
+    tree_design = cKDTree(np.column_stack((fps_design.design['ra'],
+                                           fps_design.design['dec'])))
+
+    # get idnexes of fibers close to right targets
+    index_bright = tree_design.query_ball_tree(tree_bright,
+                                               r=bright_neighbor_limit)
+
+    # set fibers close enough to bright objects to True
+    fiber_bright = np.array([False] * len(index_bright))
+    for i in range(len(index_bright)):
+        if len(index_bright[i]) > 0.:
+            fiber_bright[i] = True
+
+    # don't count any fibers unassigned
+    fiber_bright[fps_design.design['fiberID'] == -1] = False
+
+    return fiber_bright

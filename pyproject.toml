@@ -16,6 +16,7 @@ sdssdb = "^0.4.6"
 sdss-access = "^1.1.1"
 sdss-kaiju = {git = "https://github.com/sdss/kaiju", rev = "int64"}
 sdss-coordio = {git = "https://github.com/sdss/coordio"}
+scipy = "^1.6.0"
 
 [tool.poetry.dev-dependencies]
 

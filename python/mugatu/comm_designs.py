@@ -14,10 +14,11 @@ from sdssdb.peewee.sdss5db.targetdb import Carton, Target, CartonToTarget
 from mugatu.exceptions import MugatuError, MugatuWarning
 from mugatu.fpsdesign import FPSDesign
 from coordio.utils import radec2wokxy
+import robostrategy.field as field
 
 
-def all_sky_design(racen, deccen, position_angle, observatory,
-                   obsTime, n_sky_apogee, n_sky_boss):
+def all_sky_design_RS(racen, deccen, position_angle, observatory,
+                      obsTime, n_sky_apogee, n_sky_boss):
     """
     creates a design that consists of all sky targets
 
@@ -63,7 +64,8 @@ def all_sky_design(racen, deccen, position_angle, observatory,
     # grab the skies from targetdb
     apogee_sky = (Target.select(Target.catalogid,
                                 Target.ra,
-                                Target.dec)
+                                Target.dec,
+                                Target.pk)
                         .join(CartonToTarget)
                         .join(Carton)
                         .where((Carton.carton == 'ops_sky_apogee') & 
@@ -74,7 +76,8 @@ def all_sky_design(racen, deccen, position_angle, observatory,
 
     boss_sky = (Target.select(Target.catalogid,
                               Target.ra,
-                              Target.dec)
+                              Target.dec,
+                              Target.pk)
                       .join(CartonToTarget)
                       .join(Carton)
                       .where((Carton.carton == 'ops_sky_boss') & 
@@ -83,10 +86,11 @@ def all_sky_design(racen, deccen, position_angle, observatory,
     if len(boss_sky) < n_sky_boss:
         raise MugatuError(message='Not enough boss skies in field')
 
-    catalogid_apogee, ra_apogee, dec_apogee = map(list, zip(*list(apogee_sky.tuples())))
-    catalogid_apogee = np.array(catalogid_apogee, dtype=int)
+    catalogid_apogee, ra_apogee, dec_apogee, target_pk_apogee = map(list, zip(*list(apogee_sky.tuples())))
+    catalogid_apogee = np.array(catalogid_apogee, dtype=np.int64)
     ra_apogee = np.array(ra_apogee)
     dec_apogee = np.array(dec_apogee)
+    target_pk_apogee = np.array(target_pk_apogee, dtype=np.int64)
     x_apogee, y_apogee, fieldWarn, HA, PA_coordio = radec2wokxy(ra=ra_apogee,
                                                                 dec=dec_apogee,
                                                                 coordEpoch=np.array([2457174] * len(ra_apogee)),
@@ -98,10 +102,11 @@ def all_sky_design(racen, deccen, position_angle, observatory,
                                                                 obsTime=obsTime)
 
 
-    catalogid_boss, ra_boss, dec_boss = map(list, zip(*list(boss_sky.tuples())))
-    catalogid_boss = np.array(catalogid_boss, dtype=int)
+    catalogid_boss, ra_boss, dec_boss, target_pk_boss = map(list, zip(*list(boss_sky.tuples())))
+    catalogid_boss = np.array(catalogid_boss, dtype=np.int64)
     ra_boss = np.array(ra_boss)
     dec_boss = np.array(dec_boss)
+    target_pk_boss = np.array(target_pk_boss, dtype=np.int64)
     x_boss, y_boss, fieldWarn, HA, PA_coordio = radec2wokxy(ra=ra_boss,
                                                             dec=dec_boss,
                                                             coordEpoch=np.array([2457174] * len(ra_boss)),
@@ -118,102 +123,66 @@ def all_sky_design(racen, deccen, position_angle, observatory,
     catalogid_apogee = catalogid_apogee[~idx_dup]
     ra_apogee = ra_apogee[~idx_dup]
     dec_apogee = dec_apogee[~idx_dup]
+    target_pk_apogee = target_pk_apogee[~idx_dup]
+    x_apogee = x_apogee[~idx_dup]
+    y_apogee = y_apogee[~idx_dup]
 
-    # make a robot grid
-    rg = kaiju.robotGrid.RobotGridFilledHex()
-    for rID in rg.robotDict:
-        robot = rg.getRobot(rID)
-        robot.setXYUniform()
+    # create field object
+    f = field.Field(racen=racen, deccen=deccen, pa=position_angle,
+                    field_cadence='bright_single-5', observatory=observatory.lower())
 
-    # add all targets to grid
-    for i in range(len(ra_apogee)):
-        rg.addTarget(targetID=catalogid_apogee[i],
-                     x=x_apogee[i],
-                     y=y_apogee[i],
-                     priority=1,
-                     fiberType=kaiju.ApogeeFiber)
+    # set the required skies
+    f.required_calibrations['sky_boss'] = n_sky_boss
+    f.required_calibrations['sky_apogee'] = n_sky_apogee
 
-    for i in range(len(ra_boss)):
-        rg.addTarget(targetID=catalogid_boss[i],
-                     x=x_boss[i],
-                     y=y_boss[i],
-                     priority=1,
-                     fiberType=kaiju.BossFiber)
+    # create array for RS field
+    N = len(ra_apogee) + len(ra_boss)
+    # these are datatypes from robostrategy.Field
+    targets_dtype = np.dtype([('ra', np.float64),
+                              ('dec', np.float64),
+                              ('x', np.float64),
+                              ('y', np.float64),
+                              ('within', np.int32),
+                              ('incadence', np.int32),
+                              ('priority', np.int32),
+                              ('value', np.float32),
+                              ('program', np.unicode_, 30),
+                              ('carton', np.unicode_, 30),
+                              ('category', np.unicode_, 30),
+                              ('cadence', np.unicode_, 30),
+                              ('fiberType', np.unicode_, 10),
+                              ('catalogid', np.int64),
+                              ('rsid', np.int64),
+                              ('target_pk', np.int64)])
+    targs = np.zeros(N, dtype=targets_dtype)
+    targs['ra'] = np.append(ra_apogee, ra_boss)
+    targs['dec'] = np.append(dec_apogee, dec_boss)
+    targs['x'] = np.append(x_apogee, x_boss)
+    targs['y'] = np.append(y_apogee, y_boss)
+    targs['within'] = np.zeros(len(targs), dtype=np.int32) + 1
+    targs['incadence'] = np.zeros(len(targs), dtype=np.int32) + 1
+    targs['priority'] = np.zeros(len(targs), dtype=np.int32) + 100000
+    targs['value'] = np.zeros(len(targs), dtype=np.int32) + 1
+    targs['program'] = np.array(['CALIBRATION'] * len(targs),
+                                dtype='<U30')
+    targs['carton'] = np.array(['CALIBRATION'] * len(targs),
+                               dtype='<U30')
+    targs['category'] = np.append(np.array(['sky_apogee'] * len(ra_apogee),
+                                           dtype='<U30'),
+                                  np.array(['sky_boss'] * len(ra_boss),
+                                           dtype='<U30'))
+    targs['cadence'] = np.array(['bright_single-5'] * len(targs),
+                                dtype='<U30')
+    targs['fiberType'] = np.append(np.array(['APOGEE'] * len(ra_apogee),
+                                            dtype='<U10'),
+                                   np.array(['BOSS'] * len(ra_boss),
+                                            dtype='<U10'))
+    targs['catalogid'] = np.append(catalogid_apogee, catalogid_boss)
+    targs['rsid'] = np.arange(len(targs), dtype=np.int64) + 1
+    targs['target_pk'] = np.append(target_pk_apogee, target_pk_boss)
 
-    # this assignment below basically works
-    # issues is idk if assigning boss and then apogee makes sense
-    # also, a few tests show that a lot of collisions can still happen
-    # may need to be a reassign step after this?
+    # assign targets
+    f.targets_fromarray(targs)
 
-    # assign BOSS first as there are less of them
-    fiberID_boss = np.zeros(len(catalogid_boss), dtype=int) - 9999
-    n_boss_assigned = 0
-    for i in range(len(rg.robotDict)):
-        if n_boss_assigned == n_sky_boss:
-            break
-        valid_targs = np.isin(rg.robotDict[i].validTargetIDs,
-                              catalogid_boss[fiberID_boss == -9999])
-        valid_targs_arr = np.array(rg.robotDict[i].validTargetIDs, dtype=int)
-        if np.any(valid_targs):
-            fiberID_boss[catalogid_boss == valid_targs_arr[valid_targs][0]] = i
-            n_boss_assigned += 1
-
-    if n_boss_assigned < n_sky_boss:
-        flag = 'Not enough boss skies could be assigned'
-        warnings.warn(flag, MugatuWarning)
-
-    # now assign the apogee fibers
-    fiberID_apogee = np.zeros(len(catalogid_apogee), dtype=int) - 9999
-    n_apogee_assigned = 0
-    for i in range(len(rg.robotDict)):
-        if n_apogee_assigned == n_sky_apogee:
-            break
-        elif i in fiberID_boss:
-            pass
-        else:
-            valid_targs = np.isin(rg.robotDict[i].validTargetIDs,
-                                  catalogid_apogee[fiberID_apogee == -9999])
-            valid_targs_arr = np.array(rg.robotDict[i].validTargetIDs, dtype=int)
-            if np.any(valid_targs):
-                fiberID_apogee[catalogid_apogee == valid_targs_arr[valid_targs][0]] = i
-                n_apogee_assigned += 1
-
-    if n_apogee_assigned < n_sky_apogee:
-        flag = 'Not enough apogee skies could be assigned'
-        warnings.warn(flag, MugatuWarning)
-
-    # get indexes for assigments
-    idx_apogee = np.where(fiberID_apogee != -9999)
-
-    idx_boss = np.where(fiberID_boss != -9999)
-
-    catalogids = np.append(catalogid_apogee[idx_apogee], catalogid_boss[idx_boss])
-    ras = np.append(ra_apogee[idx_apogee], ra_boss[idx_boss])
-    decs = np.append(dec_apogee[idx_apogee], dec_boss[idx_boss])
-    fiberIDs = np.append(fiberID_apogee[idx_apogee], fiberID_boss[idx_boss])
-    obsWaves = np.array(['APOGEE'] * n_apogee_assigned + ['BOSS'] * n_boss_assigned)
-
-    if len(catalogids) < 500:
-        size = len(catalogids)
-        catalogids = np.append(catalogids, [-1] * (500 - size))
-        ras = np.append(ras, [-9999.99] * (500 - size))
-        decs = np.append(decs, [-9999.99] * (500 - size))
-        fiberIDs = np.append(fiberIDs, [-1] * (500 - size))
-        obsWaves = np.append(obsWaves, [''] * (500 - size))
-
-    # create the initial design
-    init_design = FPSDesign(-1, obsTime, racen=racen, deccen=deccen,
-                            position_angle=position_angle,
-                            observatory=observatory, mode_pk=None,
-                            catalogids=catalogids,
-                            ra=ras,
-                            dec=decs,
-                            fiberID=fiberIDs,
-                            obsWavelength=obsWaves,
-                            priority=np.array([1] * 500), design_file=None,
-                            manual_design=True)
-
-    # validate the design
-    init_design.validate_design()
-
-    return init_design
+    f.assign()
+    print(f.assess())

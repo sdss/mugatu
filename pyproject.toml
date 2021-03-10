@@ -11,12 +11,14 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.7.1"
 numpy = "^1.19.5"
-fitsio = "^1.1.3"
-sdssdb = "^0.4.6"
+fitsio = "^1.0.5"
+sdssdb = "=0.4.6"
 sdss-access = "^1.1.1"
 sdss-kaiju = {git = "https://github.com/sdss/kaiju", rev = "int64"}
 sdss-coordio = {git = "https://github.com/sdss/coordio"}
 scipy = "^1.6.0"
+robostrategy = {git = "https://github.com/sdss/robostrategy"}
+roboscheduler = {git = "https://github.com/sdss/roboscheduler", rev = "fromdb"}
 
 [tool.poetry.dev-dependencies]
 

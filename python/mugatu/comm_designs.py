@@ -22,7 +22,7 @@ def all_sky_design_RS(racen, deccen, position_angle, observatory,
     """
     creates a design that consists of all sky targets
 
-    Parameters:
+    Parameters
     ----------
 
     racen: np.float64

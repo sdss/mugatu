@@ -10,7 +10,7 @@ import roboscheduler.cadence as cadence
 from mugatu.comm_designs import all_sky_design_RS
 
 
-targetdb.database.connect_from_parameters(user='sdss_user',
+targetdb.database.connect_from_parameters(user='sdss',
                                           host='localhost',
                                           port=7500)
 

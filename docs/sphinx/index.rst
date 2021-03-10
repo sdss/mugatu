@@ -26,6 +26,16 @@ Reference
    :maxdepth: 1
 
    api
+   mugatu modules <modules>
+
+
+Examples
+--------
+
+.. toctree::
+   :maxdepth: 1
+
+   Examples with mugatu <example>
 
 
 Indices and tables

@@ -1,7 +1,7 @@
 
-.. _intro:
+.. _getting-started:
 
-Introduction to mugatu
+Getting Started with Mugatu
 ===============================
 
-We should write an introduction here.
+``mugatu`` provides a framewrrok to load, read and create FPS designs that can be validated based on various criteria.

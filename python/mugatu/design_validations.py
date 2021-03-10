@@ -119,8 +119,8 @@ def bright_neighbors(fps_design, bright_limit, bright_neighbor_limit):
     looks for bright neighbors some distance away from all of
     the assigned targets in a design
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     fps_design: object
         FPSDesign object
 
@@ -132,8 +132,8 @@ def bright_neighbors(fps_design, bright_limit, bright_neighbor_limit):
         the max distance a fiber should be away from a bright target.
         this is provided in degrees.
 
-    Outputs:
-    --------
+    Outputs
+    -------
     fiber_bright: np.array
         Array of booleens to signify if fiber close to a bright neighbor.
         True means too close to bright neighbor.

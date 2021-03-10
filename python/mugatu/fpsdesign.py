@@ -18,8 +18,8 @@ from coordio.utils import radec2wokxy, wokxy2radec
 
 class FPSDesign(object):
     """
-    Parameters:
-    -----------
+    Parameters
+    ----------
 
     design_pk: int
         The pk of the design as it appears in targetdb
@@ -84,8 +84,8 @@ class FPSDesign(object):
         Boolean if the design being validated is manual
         (manual_design=True) or in targetdb (manual_design=False)
 
-    Attributes:
-    -----------
+    Attributes
+    ----------
 
     design: dictonary
         contains all of the design inputs for Kaiju needed to validate
@@ -118,8 +118,8 @@ class FPSDesign(object):
     positionAngle_coordio: float
         position angle of field center from coordio radec2wokxy
 
-    Methods:
-    --------
+    Methods
+    -------
 
     build_design_db(): compile the parameters for a design that exists in
         targetdb. This method will generally be triggered when
@@ -214,8 +214,8 @@ class FPSDesign(object):
         """
         compile the parameters for a design that exists in targetdb
 
-        Notes:
-        ------
+        Notes
+        -----
         This method will build a design from the db if manual_design=False
 
         """
@@ -307,8 +307,8 @@ class FPSDesign(object):
         """
         compile the parameters for a manual design
 
-        Notes:
-        ------
+        Notes
+        -----
         This function creates a manual design whether it is from
         user inputted catalogids, or if it is a flat file list
         of coordinates (and fiber assignments?), if manual_design=True
@@ -386,7 +386,7 @@ class FPSDesign(object):
         """
         contruct a Kaiju RobotGrid object
 
-        Notes:
+        Notes
         -----
         Adds targets to the kaiju.robotGrid.RobotGridFilledHex and
         assigns them to fibers based on the design dict parameters
@@ -428,7 +428,7 @@ class FPSDesign(object):
         """
         construct design from RobotGrid object
 
-        Notes:
+        Notes
         -----
         I don't really know how this will work yet
 
@@ -471,8 +471,8 @@ class FPSDesign(object):
         """
         validate the design
 
-        Notes:
-        ------
+        Notes
+        -----
         This function will call all the necessary steps to create the design
         file for Kaiju and validate the design (following steps 3-7 in Conor's
         outline). This will utlize multiple functions that will be above.
@@ -534,7 +534,7 @@ class FPSDesign(object):
         """
         write a design to targetdb
 
-        Notes:
+        Notes
         -----
         version above should allow for manual designs to be added under
         version = 'manual' to seperate them from robostrategy ingested designs
@@ -545,7 +545,7 @@ class FPSDesign(object):
         """
         write a validated design to opsdb
 
-        Notes:
+        Notes
         -----
         I dont know what needs to be included in opsdb yet, need to look
         at the schema

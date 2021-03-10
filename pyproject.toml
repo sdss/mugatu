@@ -12,7 +12,7 @@ packages = [
 python = "^3.7.1"
 numpy = "^1.19.5"
 fitsio = "^1.0.5"
-sdssdb = "=0.4.6"
+sdssdb = "^0.4.6"
 sdss-access = "^1.1.1"
 sdss-kaiju = {git = "https://github.com/sdss/kaiju", rev = "int64"}
 sdss-coordio = {git = "https://github.com/sdss/coordio"}

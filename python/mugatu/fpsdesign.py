@@ -200,9 +200,11 @@ class FPSDesign(object):
         self.rg = kaiju.robotGrid.RobotGridFilledHex()
         # this is in Conor's test, I'm not quite sure what it does
         # but without paths wont generate
-        for rID in self.rg.robotDict:
-            robot = self.rg.getRobot(rID)
-            robot.setXYUniform()
+        for k in self.rg.robotDict.keys():
+            self.rg.homeRobot(k)
+        # for rID in self.rg.robotDict:
+            # robot = self.rg.getRobot(rID)
+            # robot.setXYUniform()
         self.targets_unassigned = []
         self.targets_collided = []
 
@@ -409,6 +411,8 @@ class FPSDesign(object):
                                       y=self.design['y'][i],
                                       priority=self.design['priority'][i],
                                       fiberType=kaiju.ApogeeFiber)
+        for i in range(len(self.design['x'])):
+            if self.design['fiberID'][i] != -1:
                 try:
                     self.rg.assignRobot2Target(self.design['fiberID'][i],
                                                self.design['catalogID'][i])
@@ -491,6 +495,11 @@ class FPSDesign(object):
         self.design_to_RobotGrid()
 
         # validate the design
+
+        # decollide the unassigned robots
+        for robotID in self.rg.robotDict:
+            if(self.rg.robotDict[robotID].isAssigned() == False):
+                self.rg.decollideRobot(robotID)
 
         # de-collide the grid if collisions exist
         # and check for targets removed

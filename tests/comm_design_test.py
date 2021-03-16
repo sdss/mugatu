@@ -14,8 +14,6 @@ targetdb.database.connect_from_parameters(user='sdss',
                                           host='localhost',
                                           port=7500)
 
-os.environ['KAIJU_DIR'] = '/Users/imedan/Desktop/Graduate_Coursework/SDSS_V/Design_Package/kaiju-int64'
-
 
 def test_comm():
     """
@@ -27,7 +25,8 @@ def test_comm():
                            observatory='APO',
                            obsTime=2459145.5,
                            n_sky_apogee=10,
-                           n_sky_boss=490)
+                           n_sky_boss=490,
+                           cadence='bright_single-1')
 
 
 if __name__ == "__main__":

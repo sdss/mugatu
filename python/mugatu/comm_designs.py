@@ -6,19 +6,18 @@
 
 import numpy as np
 import warnings
-import random
 
-import kaiju
-import kaiju.robotGrid
 from sdssdb.peewee.sdss5db.targetdb import Carton, Target, CartonToTarget
 from mugatu.exceptions import MugatuError, MugatuWarning
 from mugatu.fpsdesign import FPSDesign
 from coordio.utils import radec2wokxy
 import robostrategy.field as field
+import coordio
+import datetime
 
 
 def all_sky_design_RS(racen, deccen, position_angle, observatory,
-                      obsTime, n_sky_apogee, n_sky_boss):
+                      obsTime, n_sky_apogee, n_sky_boss, cadence):
     """
     creates a design that consists of all sky targets
 
@@ -45,6 +44,20 @@ def all_sky_design_RS(racen, deccen, position_angle, observatory,
 
     n_sky_boss: int
         number of fibers that should be boss skies
+
+    cadence: str
+        Name of the cadence for the design
+
+    Returns
+    -------
+
+    f: robostrategy.Field()
+        robostrategy.Field object with the assignmends
+        for the design
+
+    fps_design: mugatu.FPSDesign()
+        mugatu.FPSDesign() object created using the assingments
+        from robostrategy
     """
 
     # one not for the below is it assumes the field has
@@ -129,7 +142,7 @@ def all_sky_design_RS(racen, deccen, position_angle, observatory,
 
     # create field object
     f = field.Field(racen=racen, deccen=deccen, pa=position_angle,
-                    field_cadence='bright_single-5', observatory=observatory.lower())
+                    field_cadence=cadence, observatory=observatory.lower())
 
     # set the required skies
     f.required_calibrations['sky_boss'] = n_sky_boss
@@ -171,7 +184,7 @@ def all_sky_design_RS(racen, deccen, position_angle, observatory,
                                            dtype='<U30'),
                                   np.array(['sky_boss'] * len(ra_boss),
                                            dtype='<U30'))
-    targs['cadence'] = np.array(['bright_single-5'] * len(targs),
+    targs['cadence'] = np.array([cadence] * len(targs),
                                 dtype='<U30')
     targs['fiberType'] = np.append(np.array(['APOGEE'] * len(ra_apogee),
                                             dtype='<U10'),
@@ -185,4 +198,117 @@ def all_sky_design_RS(racen, deccen, position_angle, observatory,
     f.targets_fromarray(targs)
 
     f.assign()
-    print(f.assess())
+    # create mugatu FPSDesign object
+    catalogids = np.zeros(500, dtype=np.int64) - 1
+    ra = np.zeros(500, dtype=float) - 9999.99
+    dec = np.zeros(500, dtype=float) - 9999.99
+    fiberID = np.zeros(500, dtype=np.int64) - 1
+    obsWavelength = np.zeros(500, dtype='<U10')
+    priority = np.zeros(500, dtype=int) - 1
+
+    for i in range(len(f.targets)):
+        if f.assignments[i][2][0] != -1:
+            rid = f.assignments[i][2][0]
+            catalogids[rid] = f.targets[i]['catalogid']
+            ra[rid] = f.targets[i]['ra']
+            dec[rid] = f.targets[i]['dec']
+            fiberID[rid] = rid
+            obsWavelength[rid] = f.targets[i]['fiberType']
+            priority[rid] = f.targets[i]['priority']
+
+    fps_design = FPSDesign(design_pk=-1,
+                           obsTime=obsTime,
+                           racen=racen,
+                           deccen=deccen,
+                           position_angle=position_angle,
+                           observatory=observatory,
+                           mode_pk=None,
+                           catalogids=catalogids,
+                           ra=ra,
+                           dec=dec,
+                           fiberID=fiberID,
+                           obsWavelength=obsWavelength,
+                           priority=priority,
+                           design_file=None,
+                           manual_design=True)
+
+    return f, fps_design
+
+
+class ObsTime(object):
+    """Class for finding appropriate observing times
+    Parameters
+    ----------
+    observatory : str
+        'apo' or 'lco'
+    year : int
+        nominal year to consider (default 2021)
+    Attributes
+    ----------
+    observatory : str
+        'apo' or 'lco'
+    year : int
+        nominal year to consider
+    utcoff : int
+        offset of local time from UTC
+    transit_lst : ndarray of np.float64
+        [365] LST (deg) transiting at each local standard midnight of year
+    midnights : list of datetime.datetime objects
+        [365] datetime format for each local standard midnight of year
+    Methods
+    -------
+    nominal(lst=) : returns nominal observing time for a given RA
+    Notes
+    -----
+    This class provides a way to assign a nominal observation time for
+    a given LST.
+    nominal() returns the local midnight at which the the LST is
+    closest to transiting. It differs slightly from this at the 0/360
+    deg boundary of LSTs.
+    It uses SDSS's coordio for the astronomy calculation.
+    This is taken from Robostrategy (not in current branch, so moved here)
+    """
+    def __init__(self, observatory='apo', year=2021):
+        self.observatory = observatory
+        self.year = year
+        if(observatory == 'apo'):
+            self.utcoff = - 7
+        if(observatory == 'lco'):
+            self.utcoff = - 4
+
+        oneday = datetime.timedelta(days=1)
+        onehour = datetime.timedelta(hours=1)
+
+        site = coordio.site.Site(self.observatory.upper())
+
+        self.transit_lst = np.zeros(365, dtype=np.float64)
+        self.midnight = []
+
+        day = datetime.datetime(year, 1, 1) - self.utcoff * onehour
+        for n in range(365):
+            midnight = day + oneday * n
+            site.set_time(midnight)
+            south = coordio.sky.Observed([[45., 180.]], site=site)
+            self.transit_lst[n] = south.ra
+            self.midnight.append(midnight)
+
+        return
+
+    def nominal(self, lst=None):
+        """Return a nominal observation time for a given LST
+        Parameters
+        ----------
+        lst : np.float64 or float
+            LST desired for the observation (deg)
+        Returns
+        -------
+        nominal_time : datetime object
+            datetime object describing the midnight at which this LST
+            is closest to transiting.
+        Notes
+        ------
+        At 0/360 boundary picks the closest night to that boundary.
+        This should be a very minor effect (few minutes).
+"""
+        imin = np.abs(self.transit_lst - lst).argmin()
+        return(self.midnight[imin])

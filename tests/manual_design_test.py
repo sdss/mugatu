@@ -9,9 +9,6 @@ import os
 from mugatu.fpsdesign import FPSDesign
 
 
-os.environ['KAIJU_DIR'] = '/Users/imedan/Desktop/Graduate_Coursework/SDSS_V/Design_Package/kaiju-int64'
-
-
 def test_warn_manual():
     """
     test a manual design with inputs that generate

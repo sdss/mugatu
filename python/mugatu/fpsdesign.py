@@ -322,19 +322,10 @@ class FPSDesign(object):
             warnings.warn(flag, MugatuWarning)
 
         # initialize dict for the design
-        # not using None or nan for no assignments
-        # using -1 (for int) and -9999.99 (for float) for None assignment
+        # for manual design, dont make arrays since length
+        # will be defined by user
         self.design['design_pk'] = self.design_pk
         self.design['mode_pk'] = self.mode_pk
-        self.design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
-        self.design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
-        # self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
-        self.design['obsWavelength'] = np.zeros(500, dtype=str)
-        self.design['priority'] = np.zeros(500, dtype=int) - 1
-        self.design['ra'] = np.zeros(500, dtype=float) - 9999.99
-        self.design['dec'] = np.zeros(500, dtype=float) - 9999.99
-        self.design['x'] = np.zeros(500, dtype=float) - 9999.99
-        self.design['y'] = np.zeros(500, dtype=float) - 9999.99
 
         if self.design_file is None:
             # manual design with targets in targetdb
@@ -363,6 +354,10 @@ class FPSDesign(object):
             self.design['priority'] = man_des['priority']
             self.design['ra'] = man_des['ra']
             self.design['dec'] = man_des['dec']
+
+        # make empty x,y arrays
+        self.design['x'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99
+        self.design['y'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99
 
         # here convert ra/dec to x/y based on field/time of observation
         ev = eval("(self.design['ra'] != -9999.99)")

@@ -78,20 +78,27 @@ if __name__ == '__main__':
     # targetDB = targetdb.Target()
     # carton_to_targetDB = targetdb.CartonToTarget()
     # positionerDB = targetdb.Positioner()
-    # cartonDB = targetdb.Carton()
+    cartonDB = targetdb.Carton()
+    fieldDB = targetdb.Field()
+    positionerDB = targetdb.Positioner()
+
+    # create dict of fiber pks
+    fiber_pks = {}
+    for fp in range(500):
+        fiber_pks[fp] = positionerDB.get(id=fp).pk
 
     # get the instrument pks
-    # instr_pks = {}
-    # instr_pks['BOSS'] = targetdb.Instrument.get(label='BOSS').pk
-    # instr_pks['APOGEE'] = targetdb.Instrument.get(label='APOGEE').pk
+    instr_pks = {}
+    instr_pks['BOSS'] = targetdb.Instrument.get(label='BOSS').pk
+    instr_pks['APOGEE'] = targetdb.Instrument.get(label='APOGEE').pk
 
     # get observatory pk
-    # obsDB = targetdb.Observatory()
-    # obspk = obsDB.get(label=observatory.upper()).pk
+    obsDB = targetdb.Observatory()
+    obs_inst = obsDB.get(label=observatory.upper())
 
     # get plan pk
-    # versionDB = targetdb.Version()
-    # verpk = versionDB.get(plan=plan).pk
+    versionDB = targetdb.Version()
+    ver_inst = versionDB.get(plan=plan)
 
     for fieldid in fieldids:
         # now grab the assignment file for this field
@@ -110,11 +117,16 @@ if __name__ == '__main__':
         # use mugatu function to create field in targetdb
         make_design_field_targetdb(cadence=head['FCADENCE'],
                                    fieldid=fieldid,
-                                   plan=plan,
+                                   plan=ver_inst,
                                    racen=head['RACEN'],
                                    deccen=head['DECCEN'],
                                    position_angle=head['PA'],
-                                   observatory=observatory)
+                                   observatory=obs_inst)
+
+        fieldid_inst = (fieldDB.select()
+                               .join(versionDB)
+                               .where((fieldDB.field_id=fieldid) &
+                                      (versionDB.plan=plan)))
 
         # get number of exposures
         try:
@@ -123,13 +135,25 @@ if __name__ == '__main__':
             # some fields only have 1 design which is encoded as 1-D array apparently
             n_exp = 1
 
+        # create the carton pk dict
+        cart_pks = {}
+        for cart in np.unique(design_inst['carton']):
+            # skip calibration from now
+            if cart != 'CALIBRATION':
+                cart_pks[cart] = (cartonDB.select(cartonDB.pk)
+                                          .where((cartonDB.carton == cart) &
+                                                 (cartonDB.version_pk == targetdb_ver))[0].pk)
+
         for i in range(n_exp):
             # add design for ith exposure to targetdb
             make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
-                                             plan=plan,
-                                             fieldid=fieldid,
+                                             plan=ver_inst,
+                                             fieldid=fieldid_inst,
                                              exposure=i,
                                              catalogID=design_inst['catalogid'],
                                              fiberID=design['robotID'][:, i],
                                              obsWavelength=design_inst['fiberType'],
-                                             carton=design_inst['carton'])
+                                             carton=design_inst['carton'],
+                                             instr_pks=instr_pks,
+                                             cart_pks=cart_pks,
+                                             fiber_pks=fiber_pks)

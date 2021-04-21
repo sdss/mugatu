@@ -1,4 +1,5 @@
 import warnings
+import numpy as np
 
 from sdssdb.peewee.sdss5db import targetdb
 from mugatu.exceptions import MugatuError, MugatuWarning
@@ -148,24 +149,23 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
 
     # grab all carton pks here
     if cart_pks is None:
-        cartonDB = targetdb.Carton()
         cart_pks = {}
         for cart in np.unique(carton):
             # skip calibration from now
             if cart != 'CALIBRATION':
-                cart_pks[cart] = (cartonDB.select(cartonDB.pk)
-                                          .where((cartonDB.carton == cart) &
-                                                 (cartonDB.version_pk == targetdb_ver))[0].pk)
+                cart_pks[cart] = (targetdb.Carton.select(targetdb.Carton.pk)
+                                                 .where((targetdb.Carton.carton == cart) &
+                                                        (targetdb.Carton.version_pk == targetdb_ver))[0].pk)
 
     # get the fieldpk
     if isinstance(fieldid, targetdb.Field):
         fieldpk = fieldid[0].pk
     else:
         fieldDB = targetdb.Field()
-        field = (fieldDB.select()
-                        .join(versionDB)
-                        .where((fieldDB.field_id=fieldid) &
-                               (versionDB.plan=plan)))
+        field = (targetdb.Field.select()
+                               .join(targetdb.Version)
+                               .where((targetdb.Field.field_id == fieldid) &
+                                      (targetdb.Version.plan == plan)))
         fieldpk = field[0].pk
 
     designDB = targetdb.Design.create(field=fieldpk,
@@ -185,7 +185,7 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
             # row # in the fits file)
 
             if fiber_pks is None:
-                this_pos_DB = (positionerDB.get(
+                this_pos_DB = (targetdb.Positioner.get(
                     id=fiberID[j]).pk)
             else:
                 this_pos_DB = fiber_pks[fiberID[j]]
@@ -198,12 +198,12 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
             row_dict['instrument'] = instr_pks[inst_assign]
             row_dict['positioner'] = this_pos_DB
             cart_pk = cart_pks[carton[j]]
-            row_dict['carton_to_target'] = (carton_to_targetDB.select(
-                carton_to_targetDB.pk)
-                .join(targetDB,
-                      on=(carton_to_targetDB.target_pk == targetDB.pk))
-                .where((targetDB.catalogid == catalogID[j]) &
-                       (carton_to_targetDB.carton_pk == cart_pk))[0].pk)
+            row_dict['carton_to_target'] = (targetdb.CartonToTarget.select(
+                targetdb.CartonToTarget.pk)
+                .join(targetdb.Target,
+                      on=(targetdb.CartonToTarget.target_pk == targetdb.Target.pk))
+                .where((targetdb.Target.catalogid == catalogID[j]) &
+                       (targetdb.CartonToTarget.carton_pk == cart_pk))[0].pk)
 
             rows.append(row_dict)
 

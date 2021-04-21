@@ -14,6 +14,7 @@ from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignmen
 import fitsio
 from mugatu.exceptions import MugatuError, MugatuWarning
 from coordio.utils import radec2wokxy, wokxy2radec
+from mugatu.designs_to_targetdb import make_design_assignments_targetdb, make_design_field_targetdb
 
 
 class FPSDesign(object):
@@ -441,7 +442,7 @@ class FPSDesign(object):
         self.valid_design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
         self.valid_design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
         # self.valid_design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
-        self.valid_design['obsWavelength'] = np.zeros(500, dtype=str)
+        self.valid_design['obsWavelength'] = np.zeros(500, dtype='<U6')
         self.valid_design['priority'] = np.zeros(500, dtype=int) - 1
         self.valid_design['ra'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['dec'] = np.zeros(500, dtype=float) - 9999.99
@@ -534,15 +535,61 @@ class FPSDesign(object):
 
         return
 
-    def design_to_targetdb(self, design, version):
+    def design_to_targetdb(self, cadence, fieldid, targetdb_ver,
+                           exposure, carton):
         """
         write a design to targetdb
+
+        Parameters
+        ----------
+
+        cadence: str
+            Cadence label for the field
+
+        fieldid: int
+            fieldid for the field
+
+        targetdb_ver: int
+            pk for the targetdb version of this design
+
+        exposure: int
+            The exposure of this set of designs. 0th indexed
+
+        carton: str
+            carton that the design belongs to
 
         Notes
         -----
         version above should allow for manual designs to be added under
         version = 'manual' to seperate them from robostrategy ingested designs
         """
+        if not self.manual_design:
+            raise MugatuError(message='Can only write manual designs to targetdb')
+
+        if len(self.valid_design) == 0:
+            raise MugatuError(message='Need to validate design first')
+
+        # create the manual field for the design
+        make_design_field_targetdb(cadence=cadence,
+                                   fieldid=fieldid,
+                                   plan='manual',
+                                   racen=self.racen,
+                                   deccen=self.deccen,
+                                   position_angle=self.position_angle,
+                                   observatory=self.observatory)
+
+        # add the design to targetdb
+        make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
+                                         plan='manual',
+                                         fieldid=fieldid,
+                                         exposure=exposure,
+                                         catalogID=self.valid_design['catalogID'][self.valid_design['catalogID'] != -1],
+                                         fiberID=self.valid_design['fiberID'][self.valid_design['catalogID'] != -1],
+                                         obsWavelength=self.valid_design['obsWavelength'][self.valid_design['catalogID'] != -1],
+                                         carton=np.array([carton] * len(self.valid_design['catalogID'][self.valid_design['catalogID'] != -1])),
+                                         instr_pks=None,
+                                         cart_pks=None,
+                                         fiber_pks=None)
         return
 
     def design_to_opsdb(self, design):

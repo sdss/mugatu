@@ -555,8 +555,9 @@ class FPSDesign(object):
         exposure: int
             The exposure of this set of designs. 0th indexed
 
-        carton: str
-            carton that the design belongs to
+        carton: np.array
+            array that specifies thet cartons for each target in the desin
+            should be of same length as self.valid_design
 
         Notes
         -----
@@ -586,7 +587,7 @@ class FPSDesign(object):
                                          catalogID=self.valid_design['catalogID'][self.valid_design['catalogID'] != -1],
                                          fiberID=self.valid_design['fiberID'][self.valid_design['catalogID'] != -1],
                                          obsWavelength=self.valid_design['obsWavelength'][self.valid_design['catalogID'] != -1],
-                                         carton=np.array([carton] * len(self.valid_design['catalogID'][self.valid_design['catalogID'] != -1])),
+                                         carton=carton[self.valid_design['catalogID'] != -1],
                                          instr_pks=None,
                                          cart_pks=None,
                                          fiber_pks=None)

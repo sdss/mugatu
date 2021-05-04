@@ -90,8 +90,9 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
                                      carton, instr_pks=None, cart_pks=None,
                                      fiber_pks=None):
     """
-    targetdb_ver: int
-        pk for the targetdb version of this design
+    targetdb_ver: dict
+        dictonary of pks for the targetdb version of each carton
+        used in this design
 
     plan: str or targetdb.Version instance
         Either robostratgegy plan as a str or a targetdb.Version.get
@@ -155,7 +156,7 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
             if cart != 'CALIBRATION':
                 cart_pks[cart] = (targetdb.Carton.select(targetdb.Carton.pk)
                                                  .where((targetdb.Carton.carton == cart) &
-                                                        (targetdb.Carton.version_pk == targetdb_ver))[0].pk)
+                                                        (targetdb.Carton.version_pk == targetdb_ver[cart]))[0].pk)
 
     # get the fieldpk
     if isinstance(fieldid, targetdb.Field):

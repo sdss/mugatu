@@ -76,6 +76,10 @@ class FPSDesign(object):
         Priorties for targets in a manual design in db.
         Length of array must be n=500.
 
+    carton_pk: np.array
+        The carton_pks (as in targetdb) for the targets in
+        the design. Length of array must be n=500.
+
     design_file: str
         Flate file with a manual design not in the db. The
         file should have the columns: RA, DEC, obsWavelength,
@@ -151,8 +155,8 @@ class FPSDesign(object):
     def __init__(self, design_pk, obsTime, racen=None, deccen=None,
                  position_angle=None, observatory=None, mode_pk=None,
                  catalogids=None, ra=None, dec=None, fiberID=None,
-                 obsWavelength=None, priority=None, design_file=None,
-                 manual_design=False):
+                 obsWavelength=None, priority=None, carton_pk=None,
+                 design_file=None, manual_design=False):
         self.design_pk = design_pk
         self.obsTime = obsTime
         self.design = {}
@@ -192,6 +196,7 @@ class FPSDesign(object):
         self.fiberID = fiberID
         self.obsWavelength = obsWavelength
         self.priority = priority
+        self.carton_pk = carton_pk
         self.design_file = design_file
         self.manual_design = manual_design
 
@@ -237,6 +242,7 @@ class FPSDesign(object):
         # self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
         self.design['obsWavelength'] = np.zeros(500, dtype='<U6')
         self.design['priority'] = np.zeros(500, dtype=int) - 1
+        self.design['carton_pk'] = np.zeros(500, dtype=int) - 1
         self.design['ra'] = np.zeros(500, dtype=float) - 9999.99
         self.design['dec'] = np.zeros(500, dtype=float) - 9999.99
         self.design['x'] = np.zeros(500, dtype=float) - 9999.99
@@ -251,7 +257,8 @@ class FPSDesign(object):
                               Instrument.label,
                               CartonToTarget.priority,
                               Target.ra,
-                              Target.dec)
+                              Target.dec,
+                              CartonToTarget.carton)
                       .join(Positioner,
                             on=(Assignment.positioner_pk == Positioner.pk))
                       .switch(Assignment)
@@ -281,12 +288,15 @@ class FPSDesign(object):
                                                    .cartontotarget.priority)
             except AttributeError:
                 self.design['priority'][pos_id] = -1
+            self.design['carton_pk'][pos_id] = (design_targ_db[i]
+                                                .cartontotarget.carton.pk)
             self.design['ra'][pos_id] = (design_targ_db[i].cartontotarget
                                                           .target.ra)
             self.design['dec'][pos_id] = (design_targ_db[i].cartontotarget
                                                            .target.dec)
 
         # here convert ra/dec to x/y based on field/time of observation
+        # I think I need to add inertial in here at some point, dont see this in targetdb though
         ev = eval("(self.design['ra'] != -9999.99)")
         self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra'][ev],
                                                                                                                         dec=self.design['dec'][ev],
@@ -333,6 +343,7 @@ class FPSDesign(object):
             self.design['catalogID'] = self.catalogids
             self.design['obsWavelength'] = self.obsWavelength
             self.design['priority'] = self.priority
+            self.design['carton_pk'] = self.carton_pk
 
             if self.ra is None:
                 for i in range(len(self.design['catalogID'])):
@@ -444,6 +455,7 @@ class FPSDesign(object):
         # self.valid_design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
         self.valid_design['obsWavelength'] = np.zeros(500, dtype='<U6')
         self.valid_design['priority'] = np.zeros(500, dtype=int) - 1
+        self.valid_design['carton_pk'] = np.zeros(500, dtype=int) - 1
         self.valid_design['ra'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['dec'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['x'] = np.zeros(500, dtype=float) - 9999.99
@@ -460,6 +472,7 @@ class FPSDesign(object):
                 # self.valid_design['wokHoleID'][i] = self.design['wokHoleID'][cond][0]
                 self.valid_design['obsWavelength'][i] = self.design['obsWavelength'][cond][0]
                 self.valid_design['priority'][i] = self.design['priority'][cond][0]
+                self.valid_design['carton_pk'][i] = self.design['carton_pk'][cond][0]
                 self.valid_design['ra'][i] = self.design['ra'][cond][0]
                 self.valid_design['dec'][i] = self.design['dec'][cond][0]
                 self.valid_design['x'][i] = self.design['x'][cond][0]
@@ -536,7 +549,7 @@ class FPSDesign(object):
         return
 
     def design_to_targetdb(self, cadence, fieldid, targetdb_ver,
-                           exposure, carton):
+                           exposure):
         """
         write a design to targetdb
 
@@ -554,10 +567,6 @@ class FPSDesign(object):
 
         exposure: int
             The exposure of this set of designs. 0th indexed
-
-        carton: np.array
-            array that specifies thet cartons for each target in the desin
-            should be of same length as self.valid_design
 
         Notes
         -----
@@ -579,6 +588,11 @@ class FPSDesign(object):
                                    position_angle=self.position_angle,
                                    observatory=self.observatory)
 
+        # create dictonary for unique carton pks
+        cart_pks = {}
+        for pk in np.unique(self.valid_design['carton_pk'][self.valid_design['catalogID'] != -1]):
+            cart_pks[pk] = pk
+
         # add the design to targetdb
         make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
                                          plan='manual',
@@ -587,9 +601,9 @@ class FPSDesign(object):
                                          catalogID=self.valid_design['catalogID'][self.valid_design['catalogID'] != -1],
                                          fiberID=self.valid_design['fiberID'][self.valid_design['catalogID'] != -1],
                                          obsWavelength=self.valid_design['obsWavelength'][self.valid_design['catalogID'] != -1],
-                                         carton=carton[self.valid_design['catalogID'] != -1],
+                                         carton=self.valid_design['carton_pk'][self.valid_design['catalogID'] != -1],
                                          instr_pks=None,
-                                         cart_pks=None,
+                                         cart_pks=cart_pks,
                                          fiber_pks=None)
         return
 

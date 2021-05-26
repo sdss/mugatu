@@ -17,7 +17,6 @@ sdss-access = "^1.1.1"
 sdss-kaiju = {git = "https://github.com/sdss/kaiju", rev = "int64"}
 sdss-coordio = {git = "https://github.com/sdss/coordio"}
 scipy = "^1.6.0"
-robostrategy = {git = "https://github.com/sdss/robostrategy"}
 roboscheduler = {git = "https://github.com/sdss/roboscheduler"}
 jupyter = "^1.0.0"
 

@@ -986,31 +986,6 @@ reference = "master"
 resolved_reference = "ac495a7cdaf870cdded3fef9e7c320b9bf1ab77d"
 
 [[package]]
-name = "robostrategy"
-version = "0.1.0.dev0"
-description = "Description of your project."
-category = "main"
-optional = false
-python-versions = "*"
-develop = false
-
-[package.dependencies]
-matplotlib = "*"
-numpy = "*"
-ortools = "*"
-pygments = "*"
-pyyaml = "*"
-scipy = "*"
-sdss-access = ">=0.2.3"
-sdss-tree = ">=2.15.2"
-
-[package.source]
-type = "git"
-url = "https://github.com/sdss/robostrategy"
-reference = "master"
-resolved_reference = "69d228411835ccbd7082079c5a7dfdd49832f2a0"
-
-[[package]]
 name = "scipy"
 version = "1.6.1"
 description = "SciPy: Scientific Library for Python"
@@ -1042,7 +1017,7 @@ docs = ["Sphinx (>=2.1.0)", "sphinx-bootstrap-theme (>=0.4.12)", "recommonmark (
 
 [[package]]
 name = "sdss-coordio"
-version = "0.1.0-alpha.0"
+version = "1.0.0"
 description = "Coordinate conversion for SDSS-V"
 category = "main"
 optional = false
@@ -1063,7 +1038,7 @@ docs = ["Sphinx (>=3.2.0,<4.0.0)"]
 type = "git"
 url = "https://github.com/sdss/coordio"
 reference = "master"
-resolved_reference = "bbefd34a4328e7491364a6bafe1b03dcf6611cb2"
+resolved_reference = "61e3d537e69880dbf4433be9a052949e0a76fc2a"
 
 [[package]]
 name = "sdss-kaiju"
@@ -1336,7 +1311,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.1"
-content-hash = "5378422b96759a4d1e2a9ac36ed7411e027963144dd576acee558e45a649a2df"
+content-hash = "f3998095c67332074c19043929ac3ffccf4c74764512ad099b539f6375c790df"
 
 [metadata.files]
 absl-py = [
@@ -2086,7 +2061,6 @@ requests = [
     {file = "requests-2.25.1.tar.gz", hash = "sha256:27973dd4a904a4f13b263a19c866c13b92a39ed1c964655f025f3f8d3d75b804"},
 ]
 roboscheduler = []
-robostrategy = []
 scipy = [
     {file = "scipy-1.6.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:a15a1f3fc0abff33e792d6049161b7795909b40b97c6cc2934ed54384017ab76"},
     {file = "scipy-1.6.1-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:e79570979ccdc3d165456dd62041d9556fb9733b86b4b6d818af7a0afc15f092"},

@@ -364,6 +364,7 @@ class FPSDesign(object):
             self.design['fiberID'] = man_des['fiberID']
             self.design['obsWavelength'] = man_des['obsWavelength']
             self.design['priority'] = man_des['priority']
+            self.design['carton_pk'] = man_des['carton_pk']
             self.design['ra'] = man_des['ra']
             self.design['dec'] = man_des['dec']
 

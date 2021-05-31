@@ -117,22 +117,34 @@ class ObsMode(object):
 
     def skies_fov(self, instrument):
         # get x,y of the skies
-        x = self.design['x'][(self.design['catalogID'] != -1) &
-                             (np.isin(self.design['carton_pk'],
-                                      self.carton_classes['sky'])) &
-                             (self.design['obsWavelength'] == instrument)]
-        y = self.design['y'][(self.design['catalogID'] != -1) &
-                             (np.isin(self.design['carton_pk'],
-                                      self.carton_classes['sky'])) &
-                             (self.design['obsWavelength'] == instrument)]
+        x_sky = self.design['x'][(self.design['catalogID'] != -1) &
+                                 (np.isin(self.design['carton_pk'],
+                                          self.carton_classes['sky'])) &
+                                 (self.design['obsWavelength'] == instrument)]
+        y_sky = self.design['y'][(self.design['catalogID'] != -1) &
+                                 (np.isin(self.design['carton_pk'],
+                                          self.carton_classes['sky'])) &
+                                 (self.design['obsWavelength'] == instrument)]
+
+        x_sci = self.design['x'][(self.design['catalogID'] != -1) &
+                                 (np.isin(self.design['carton_pk'],
+                                          self.carton_classes['science'])) &
+                                 (self.design['obsWavelength'] == instrument)]
+        y_sci = self.design['y'][(self.design['catalogID'] != -1) &
+                                 (np.isin(self.design['carton_pk'],
+                                          self.carton_classes['science'])) &
+                                 (self.design['obsWavelength'] == instrument)]
+
         # create KDE tree
-        tree = cKDTree(np.column_stack((x, y)))
+        tree = cKDTree(np.column_stack((x_sky, y_sky)))
         # get distances for nearest neighbors
-        # NOTE have to do +1 for metric to avoid match with itself
-        dd, ii = tree.query(np.column_stack((x, y)),
-                            k=self.min_stds_fovmetric[instrument][0] + 1)
-        # second column is the nth neighbor distance
-        dists = dd[:, 1]
+        dd, ii = tree.query(np.column_stack((x_sci, y_sci)),
+                            k=self.min_skies_fovmetric[instrument][0])
+        # second column is the nth neighbor distance if k>1
+        if self.min_skies_fovmetric[instrument][0] == 1:
+            dists = dd
+        else:
+            dists = dd[:, 1]
         # this assumes percentile is on 0 to 100 scale
         perc_dist = np.percentile(dists,
                                   self.min_stds_fovmetric[instrument][1])
@@ -143,22 +155,34 @@ class ObsMode(object):
 
     def stds_fov(self, instrument):
         # get x,y of the standards
-        x = self.design['x'][(self.design['catalogID'] != -1) &
-                             (np.isin(self.design['carton_pk'],
-                                      self.carton_classes['std'])) &
-                             (self.design['obsWavelength'] == instrument)]
-        y = self.design['y'][(self.design['catalogID'] != -1) &
-                             (np.isin(self.design['carton_pk'],
-                                      self.carton_classes['std'])) &
-                             (self.design['obsWavelength'] == instrument)]
+        x_std = self.design['x'][(self.design['catalogID'] != -1) &
+                                 (np.isin(self.design['carton_pk'],
+                                          self.carton_classes['std'])) &
+                                 (self.design['obsWavelength'] == instrument)]
+        y_std = self.design['y'][(self.design['catalogID'] != -1) &
+                                 (np.isin(self.design['carton_pk'],
+                                          self.carton_classes['std'])) &
+                                 (self.design['obsWavelength'] == instrument)]
+
+        x_sci = self.design['x'][(self.design['catalogID'] != -1) &
+                                 (np.isin(self.design['carton_pk'],
+                                          self.carton_classes['science'])) &
+                                 (self.design['obsWavelength'] == instrument)]
+        y_sci = self.design['y'][(self.design['catalogID'] != -1) &
+                                 (np.isin(self.design['carton_pk'],
+                                          self.carton_classes['science'])) &
+                                 (self.design['obsWavelength'] == instrument)]
+
         # create KDE tree
-        tree = cKDTree(np.column_stack((x, y)))
+        tree = cKDTree(np.column_stack((x_std, y_std)))
         # get distances for nearest neighbors
-        # NOTE have to do +1 for metric to avoid match with itself
-        dd, ii = tree.query(np.column_stack((x, y)),
-                            k=self.min_skies_fovmetric[instrument][0] + 1)
-        # second column is the nth neighbor distance
-        dists = dd[:, 1]
+        dd, ii = tree.query(np.column_stack((x_sci, y_sci)),
+                            k=self.min_skies_fovmetric[instrument][0])
+        # second column is the nth neighbor distance if k>1
+        if self.min_skies_fovmetric[instrument][0] == 1:
+            dists = dd
+        else:
+            dists = dd[:, 1]
         # this assumes percentile is on 0 to 100 scale
         perc_dist = np.percentile(dists,
                                   self.min_skies_fovmetric[instrument][1])

@@ -131,7 +131,8 @@ class ObsMode(object):
         # NOTE have to do +1 for metric to avoid match with itself
         dd, ii = tree.query(np.column_stack((x, y)),
                             k=self.min_stds_fovmetric[instrument][0] + 1)
-        dists = np.sqrt(dd[:, 0] ** 2 + dd[:, 1] ** 2)
+        # second column is the nth neighbor distance
+        dists = dd[:, 1]
         # this assumes percentile is on 0 to 100 scale
         perc_dist = np.percentile(dists,
                                   self.min_stds_fovmetric[instrument][1])
@@ -156,7 +157,8 @@ class ObsMode(object):
         # NOTE have to do +1 for metric to avoid match with itself
         dd, ii = tree.query(np.column_stack((x, y)),
                             k=self.min_skies_fovmetric[instrument][0] + 1)
-        dists = np.sqrt(dd[:, 0] ** 2 + dd[:, 1] ** 2)
+        # second column is the nth neighbor distance
+        dists = dd[:, 1]
         # this assumes percentile is on 0 to 100 scale
         perc_dist = np.percentile(dists,
                                   self.min_skies_fovmetric[instrument][1])

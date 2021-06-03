@@ -31,36 +31,35 @@ class ObsMode(object):
         # grab the design mode params
         obsmode = DesignMode.get(DesignMode.label == obsmode_label)
         self.n_skies_min = {}
-        self.n_skies_min['BOSS'] = obsmode.n_boss_skies_min
-        self.n_skies_min['APOGEE'] = obsmode.n_apogee_skies_min
+        self.n_skies_min['BOSS'] = obsmode.boss_skies_min
+        self.n_skies_min['APOGEE'] = obsmode.apogee_skies_min
 
         self.min_skies_fovmetric = {}
-        self.min_skies_fovmetric['BOSS'] = obsmode.min_boss_skies_fovmetric
-        self.min_skies_fovmetric['APOGEE'] = obsmode.min_apogee_skies_fovmetric
+        self.min_skies_fovmetric['BOSS'] = obsmode.boss_skies_fov
+        self.min_skies_fovmetric['APOGEE'] = obsmode.apogee_skies_fov
 
         self.n_stds_min = {}
-        self.n_stds_min['BOSS'] = obsmode.n_boss_stds_min
-        self.n_stds_min['APOGEE'] = obsmode.n_apogee_stds_min
+        self.n_stds_min['BOSS'] = obsmode.boss_stds_min
+        self.n_stds_min['APOGEE'] = obsmode.apogee_stds_min
 
         self.min_stds_fovmetric = {}
-        self.min_stds_fovmetric['BOSS'] = obsmode.min_boss_stds_fovmetric
-        self.min_stds_fovmetric['APOGEE'] = obsmode.min_apogee_stds_fovmetric
+        self.min_stds_fovmetric['BOSS'] = obsmode.boss_stds_fov
+        self.min_stds_fovmetric['APOGEE'] = obsmode.apogee_stds_fov
 
-        self.bright_limit = {}
-        self.bright_limit['BOSS'] = obsmode.boss_bright_limit
-        self.bright_limit['APOGEE'] = obsmode.apogee_bright_limit
+        self.stds_mags = {}
+        self.stds_mags['BOSS'] = obsmode.boss_stds_mags
+        self.stds_mags['APOGEE'] = obsmode.apogee_stds_mags
 
-        self.faint_limit = {}
-        self.faint_limit['BOSS'] = obsmode.boss_faint_limit
-        self.faint_limit['APOGEE'] = obsmode.apogee_faint_limit
+        self.bright_limit_targets = {}
+        self.bright_limit_targets['BOSS'] = obsmode.boss_bright_limit_targets
+        self.bright_limit_targets['APOGEE'] = obsmode.apogee_bright_limit_targets
 
-        self.epoch_snrgoal = {}
-        self.epoch_snrgoal['BOSS'] = obsmode.boss_epoch_snrgoal
-        self.epoch_snrgoal['APOGEE'] = obsmode.apogee_epoch_snrgoal
+        self.sky_neighbors_targets = {}
+        self.sky_neighbors_targets['BOSS'] = obsmode.boss_sky_neighbors_targets
+        self.sky_neighbors_targets['APOGEE'] = obsmode.apogee_sky_neighbors_targets
 
-        self.design_minsnr = {}
-        self.design_minsnr['BOSS'] = obsmode.boss_design_minsnr
-        self.design_minsnr['APOGEE'] = obsmode.apogee_design_minsnr
+        self.trace_diff_targets = {}
+        self.trace_diff_targets['APOGEE'] = obsmode.apogee_trace_diff_targets
 
         # classify cartons as skies, standards or science
         self.carton_classes = {}
@@ -79,8 +78,8 @@ class ObsMode(object):
                 self.carton_classes['science'].append(pk)
 
         # collect magntiudes of design
-        # here I am doing g,r,i,BP,G,RP
-        self.mags = np.zeros((500, 6)) - 9999.99
+        # here I am doing g,r,i,BP,G,RP,H
+        self.mags = np.zeros((500, 7)) - 9999.99
         for i in range(500):
             if self.design['catalogID'][i] != -1:
                 mag_query = (Magnitude.select()
@@ -94,6 +93,7 @@ class ObsMode(object):
                 self.mags[i][3] = mag_query[0].bp
                 self.mags[i][4] = mag_query[0].gaia_g
                 self.mags[i][5] = mag_query[0].rp
+                self.mags[i][6] = mag_query[0].h
 
     def skies_min(self, instrument):
         n_skies = len(self.design['catalogID'][(self.design['catalogID'] != -1) &
@@ -192,11 +192,13 @@ class ObsMode(object):
             return False
 
     def bright_limit(self, instrument):
-        bright_checks = np.zeros(500, dtype=bool)
+        bright_checks = np.zeros(len(self.design['catalogID']),
+                                 dtype=bool)
         # if complete, all bands for target present in check
         # if incomplete, then
-        complete_check = np.array(['COMPLETE' for _ in range(500)],
+        complete_check = np.array(['COMPLETE' for _ in range(len(self.design['catalogID']))],
                                   dtype='<U12')
+
 
         # check which limits are defined for mode
         check_inds = []
@@ -205,9 +207,9 @@ class ObsMode(object):
                 check_inds.append(i)
 
         # run checks
-        for i in range(bright_checks):
+        for i in range(len(bright_checks)):
             if self.design['catalogID'][i] != -1:
-                # check in each band
+                # check in each band that has check defined
                 targ_check = np.zeros(len(check_inds), dtype=bool)
                 for j, ind in enumerate(check_inds):
                     if self.mags[i][ind] is None:
@@ -225,11 +227,13 @@ class ObsMode(object):
         return bright_checks, complete_check
 
     def faint_limit(self, instrument):
-        faint_checks = np.zeros(500, dtype=bool)
+        faint_checks = np.zeros(len(self.design['catalogID']),
+                                dtype=bool)
         # if complete, all bands for target present in check
         # if incomplete, then
-        complete_check = np.array(['COMPLETE' for _ in range(500)],
+        complete_check = np.array(['COMPLETE' for _ in range(len(self.design['catalogID']))],
                                   dtype='<U12')
+
 
         # check which limits are defined for mode
         check_inds = []
@@ -238,9 +242,9 @@ class ObsMode(object):
                 check_inds.append(i)
 
         # run checks
-        for i in range(faint_checks):
+        for i in range(len(faint_checks)):
             if self.design['catalogID'][i] != -1:
-                # check in each band
+                # check in each band that has check defined
                 targ_check = np.zeros(len(check_inds), dtype=bool)
                 for j, ind in enumerate(check_inds):
                     if self.mags[i][ind] is None:
@@ -256,6 +260,52 @@ class ObsMode(object):
                 complete_check[i] = 'INCOMPLETE'
 
         return faint_checks, complete_check
+
+    def mag_limits(self, mag_metric,
+                   instrument, carton_class):
+        mag_checks = np.zeros(len(self.design['catalogID']),
+                              dtype=bool)
+        # if complete, all bands for target present in check
+        # if incomplete, then
+        complete_check = np.array(['COMPLETE' for _ in range(len(self.design['catalogID']))],
+                                  dtype='<U12')
+
+        # check which limits are defined for mode
+        check_inds = []
+        for i in range(mag_metric.shape[0]):
+            if mag_metric[i][0] is not None or mag_metric[i][1] is not None:
+                check_inds.append(i)
+
+        # run checks
+        for i in range(len(mag_checks)):
+            if (self.design['catalogID'][i] != -1 and
+                self.design['carton_pk'][i] in self.carton_classes[carton_class] and
+                self.design['obsWavelength'][i] == instrument):
+                # check in each band that has check defined
+                targ_check = np.zeros(len(check_inds), dtype=bool)
+                for j, ind in enumerate(check_inds):
+                    if self.mags[i][ind] is None:
+                        complete_check[i] = 'INCOMPLETE'
+                        # set True, no mag is not a fail
+                        targ_check[j] = True
+                    # check when greater than and less than
+                    elif mag_metric[ind][0] is not None and mag_metric[ind][1] is not None:
+                        if (mag_metric[ind][0] < self.mags[i][ind] < mag_metric[ind][1]):
+                            targ_check[j] = True
+                    # check when just greater than
+                    elif mag_metric[ind][0] is not None:
+                        if self.mags[i][ind] > mag_metric[ind][0]:
+                            targ_check[j] = True
+                    # check when less than
+                    else:
+                        if self.mags[i][ind] < mag_metric[ind][1]:
+                            targ_check[j] = True
+                # if all True, then passes
+                if np.all(targ_check):
+                    mag_checks[i] = True
+            else:
+                complete_check[i] = 'INCOMPLETE'
+        return mag_checks, complete_check
 
     def design_mode_check_all(self, verbose=True):
         self.n_skies_min_check = {}
@@ -274,33 +324,61 @@ class ObsMode(object):
         self.min_stds_fovmetric_check['BOSS'] = self.stds_fov(instrument='BOSS')
         self.min_stds_fovmetric_check['APOGEE'] = self.stds_fov(instrument='APOGEE')
 
-        self.bright_limit_check = {}
-        self.bright_limit_check['BOSS'] = self.bright_limit(instrument='BOSS')
-        self.bright_limit_check['APOGEE'] = self.bright_limit(instrument='APOGEE')
+        self.stds_mags_check = {}
+        self.stds_mags_check['BOSS'] = self.mag_limits(self.stds_mags['BOSS'],
+                                                       'BOSS',
+                                                       'std')
+        self.stds_mags_check['APOGEE'] = self.mag_limits(self.stds_mags['APOGEE'],
+                                                         'APOGEE',
+                                                         'std')
 
-        self.faint_limit_check = {}
-        self.faint_limit_check['BOSS'] = self.faint_limit(instrument='BOSS')
-        self.faint_limit_check['APOGEE'] = self.faint_limit(instrument='APOGEE')
+        self.bright_limit_targets_check = {}
+        self.bright_limit_targets_check['BOSS'] = self.mag_limits(self.bright_limit_targets['BOSS'],
+                                                                  'BOSS',
+                                                                  'science')
+        self.bright_limit_targets_check['APOGEE'] = self.mag_limits(self.bright_limit_targets['APOGEE'],
+                                                                    'APOGEE',
+                                                                    'science')
 
         if verbose:
-            design_tot = len(self.design['x'][self.design['catalogID'] != -1])
             verbose_output = ''
-            verbose_output += 'DesignMode Param               | Pass Check?\n'
-            verbose_output += '-------------------------------|-----------------\n'
-            verbose_output += 'N Skies Min (BOSS):            | %s\n' % self.n_skies_min_check['BOSS']
-            verbose_output += 'N Skies Min (APOGEE):          | %s\n' % self.n_skies_min_check['APOGEE']
-            verbose_output += 'N Standards Min (BOSS):        | %s\n' % self.n_stds_min_check['BOSS']
-            verbose_output += 'N Standards Min (APOGEE):      | %s\n' % self.n_stds_min_check['APOGEE']
-            verbose_output += 'FOV Metric Skies (BOSS):       | %s\n' % self.min_skies_fovmetric_check['BOSS']
-            verbose_output += 'FOV Metric Skies (APOGEE):     | %s\n' % self.min_skies_fovmetric_check['APOGEE']
-            verbose_output += 'FOV Metric Standards (BOSS):   | %s\n' % self.min_stds_fovmetric_check['BOSS']
-            verbose_output += 'FOV Metric Standards (APOGEE): | %s\n' % self.min_stds_fovmetric_check['APOGEE']
-            check_tot = len(self.bright_limit_check['BOSS'][self.bright_limit_check['BOSS']])
-            verbose_output += 'Bright Limit (BOSS):           | %d out of %d\n' % (check_tot, design_tot)
-            check_tot = len(self.bright_limit_check['APOGEE'][self.bright_limit_check['APOGEE']])
-            verbose_output += 'Bright Limit (APOGEE):         | %d out of %d\n' % (check_tot, design_tot)
-            check_tot = len(self.faint_limit_check['BOSS'][self.faint_limit_check['BOSS']])
-            verbose_output += 'Faint Limit (BOSS):            | %d out of %d\n' % (check_tot, design_tot)
-            check_tot = len(self.faint_limit_check['APOGEE'][self.faint_limit_check['APOGEE']])
-            verbose_output += 'Faint Limit (APOGEE):          | %d out of %d\n' % (check_tot, design_tot)
+            verbose_output += 'DesignMode Param                  | Pass Check?\n'
+            verbose_output += '----------------------------------|-----------------\n'
+            verbose_output += 'N Skies Min (BOSS):               | %s\n' % self.n_skies_min_check['BOSS']
+            verbose_output += 'N Skies Min (APOGEE):             | %s\n' % self.n_skies_min_check['APOGEE']
+            verbose_output += 'N Standards Min (BOSS):           | %s\n' % self.n_stds_min_check['BOSS']
+            verbose_output += 'N Standards Min (APOGEE):         | %s\n' % self.n_stds_min_check['APOGEE']
+            verbose_output += 'FOV Metric Skies (BOSS):          | %s\n' % self.min_skies_fovmetric_check['BOSS']
+            verbose_output += 'FOV Metric Skies (APOGEE):        | %s\n' % self.min_skies_fovmetric_check['APOGEE']
+            verbose_output += 'FOV Metric Standards (BOSS):      | %s\n' % self.min_stds_fovmetric_check['BOSS']
+            verbose_output += 'FOV Metric Standards (APOGEE):    | %s\n' % self.min_stds_fovmetric_check['APOGEE']
+
+            check_tot = len(self.stds_mags_check['BOSS'][0][self.stds_mags_check['BOSS'][0]])
+            design_tot = len(self.design['x'][(self.design['catalogID'] != -1) &
+                                              (np.isin(self.design['carton_pk'],
+                                                       self.carton_classes['std'])) &
+                                              (self.design['obsWavelength'] == 'BOSS')])
+            verbose_output += 'Magnitude Limit Stds (BOSS):      | %d out of %d\n' % (check_tot, design_tot)
+
+            check_tot = len(self.stds_mags_check['APOGEE'][0][self.stds_mags_check['APOGEE'][0]])
+            design_tot = len(self.design['x'][(self.design['catalogID'] != -1) &
+                                              (np.isin(self.design['carton_pk'],
+                                                       self.carton_classes['std'])) &
+                                              (self.design['obsWavelength'] == 'APOGEE')])
+            verbose_output += 'Magnitude Limit Stds (APOGEE):    | %d out of %d\n' % (check_tot, design_tot)
+
+            check_tot = len(self.bright_limit_targets_check['BOSS'][0][self.bright_limit_targets_check['BOSS'][0]])
+            design_tot = len(self.design['x'][(self.design['catalogID'] != -1) &
+                                              (np.isin(self.design['carton_pk'],
+                                                       self.carton_classes['science'])) &
+                                              (self.design['obsWavelength'] == 'BOSS')])
+            verbose_output += 'Magnitude Limit Targets (BOSS):   | %d out of %d\n' % (check_tot, design_tot)
+
+            check_tot = len(self.bright_limit_targets_check['APOGEE'][0][self.bright_limit_targets_check['APOGEE'][0]])
+            design_tot = len(self.design['x'][(self.design['catalogID'] != -1) &
+                                              (np.isin(self.design['carton_pk'],
+                                                       self.carton_classes['science'])) &
+                                              (self.design['obsWavelength'] == 'APOGEE')])
+            verbose_output += 'Magnitude Limit Targets (APOGEE): | %d out of %d\n' % (check_tot, design_tot)
+
             print(verbose_output)

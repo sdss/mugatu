@@ -21,7 +21,8 @@ def ang_sep(ra1, dec1, ra2, dec2):
     return (180 / np.pi) * np.arcos(np.sin(dec1) * np.sin(dec2) +
                                     np.cos(dec1) * np.cos(dec2) * np.cos(ra1 - ra2))
 
-class DesignMode(object):
+
+class DesignModeCheck(object):
     """
     Parameters
     ----------

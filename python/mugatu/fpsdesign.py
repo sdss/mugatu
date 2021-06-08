@@ -122,34 +122,6 @@ class FPSDesign(object):
 
     positionAngle_coordio: float
         position angle of field center from coordio radec2wokxy
-
-    Methods
-    -------
-
-    build_design_db(): compile the parameters for a design that exists in
-        targetdb. This method will generally be triggered when
-        manual_design=False
-
-    build_design_manual(): compile the parameters for a design that has
-        been manually created. This method with work for manual designs that
-        are flat files (not in targetdb) and those targets in targetdb
-
-    design_to_RobotGrid(): construct the Kaiju RobotGrid object from a design
-
-    RobotGrid_to_valid_design(): construct valid design from validated
-        RobotGrid object
-
-    validate_design(): calls appropriate functions to carry out creating
-        the design object (manual or from db), converting coordinates,
-        creating Kaiju.RobotGrid, assigning targets, checking for
-        collisions and generating paths for design
-
-    design_to_targetdb(): write a design to targetdb
-
-    design_to_opsdb(): write a validated design to opsdb. NOTE: Need to
-        address here that "designs" do not go to opsdb, "configurations"
-        do.
-
     """
 
     def __init__(self, design_pk, obsTime, racen=None, deccen=None,

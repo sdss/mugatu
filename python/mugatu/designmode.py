@@ -10,9 +10,18 @@ from scipy.spatial import cKDTree
 
 from mugatu.exceptions import MugatuError, MugatuWarning
 from sdssdb.peewee.sdss5db.targetdb import DesignMode, Carton, Category, Magnitude, CartonToTarget, Target
+from sdssdb.peewee.sdss5db import catalogdb
 
 
-class ObsMode(object):
+def ang_sep(ra1, dec1, ra2, dec2):
+    ra1 = np.radians(ra1)
+    dec1 = np.radians(dec1)
+    ra2 = np.radians(ra2)
+    dec2 = np.radians(dec2)
+    return (180 / np.pi) * np.arcos(np.sin(dec1) * np.sin(dec2) +
+                                    np.cos(dec1) * np.cos(dec2) * np.cos(ra1 - ra2))
+
+class DesignMode(object):
     """
     Parameters
     ----------
@@ -24,42 +33,42 @@ class ObsMode(object):
     -------
     """
 
-    def __init__(self, FPSDesign, obsmode_label):
+    def __init__(self, FPSDesign, desmode_label):
         self.design = FPSDesign.design
-        self.obsmode_label = obsmode_label
+        self.desmode_label = desmode_label
 
         # grab the design mode params
-        obsmode = DesignMode.get(DesignMode.label == obsmode_label)
+        desmode = DesignMode.get(DesignMode.label == desmode_label)
         self.n_skies_min = {}
-        self.n_skies_min['BOSS'] = obsmode.boss_skies_min
-        self.n_skies_min['APOGEE'] = obsmode.apogee_skies_min
+        self.n_skies_min['BOSS'] = desmode.boss_skies_min
+        self.n_skies_min['APOGEE'] = desmode.apogee_skies_min
 
         self.min_skies_fovmetric = {}
-        self.min_skies_fovmetric['BOSS'] = obsmode.boss_skies_fov
-        self.min_skies_fovmetric['APOGEE'] = obsmode.apogee_skies_fov
+        self.min_skies_fovmetric['BOSS'] = desmode.boss_skies_fov
+        self.min_skies_fovmetric['APOGEE'] = desmode.apogee_skies_fov
 
         self.n_stds_min = {}
-        self.n_stds_min['BOSS'] = obsmode.boss_stds_min
-        self.n_stds_min['APOGEE'] = obsmode.apogee_stds_min
+        self.n_stds_min['BOSS'] = desmode.boss_stds_min
+        self.n_stds_min['APOGEE'] = desmode.apogee_stds_min
 
         self.min_stds_fovmetric = {}
-        self.min_stds_fovmetric['BOSS'] = obsmode.boss_stds_fov
-        self.min_stds_fovmetric['APOGEE'] = obsmode.apogee_stds_fov
+        self.min_stds_fovmetric['BOSS'] = desmode.boss_stds_fov
+        self.min_stds_fovmetric['APOGEE'] = desmode.apogee_stds_fov
 
         self.stds_mags = {}
-        self.stds_mags['BOSS'] = obsmode.boss_stds_mags
-        self.stds_mags['APOGEE'] = obsmode.apogee_stds_mags
+        self.stds_mags['BOSS'] = desmode.boss_stds_mags
+        self.stds_mags['APOGEE'] = desmode.apogee_stds_mags
 
         self.bright_limit_targets = {}
-        self.bright_limit_targets['BOSS'] = obsmode.boss_bright_limit_targets
-        self.bright_limit_targets['APOGEE'] = obsmode.apogee_bright_limit_targets
+        self.bright_limit_targets['BOSS'] = desmode.boss_bright_limit_targets
+        self.bright_limit_targets['APOGEE'] = desmode.apogee_bright_limit_targets
 
         self.sky_neighbors_targets = {}
-        self.sky_neighbors_targets['BOSS'] = obsmode.boss_sky_neighbors_targets
-        self.sky_neighbors_targets['APOGEE'] = obsmode.apogee_sky_neighbors_targets
+        self.sky_neighbors_targets['BOSS'] = desmode.boss_sky_neighbors_targets
+        self.sky_neighbors_targets['APOGEE'] = desmode.apogee_sky_neighbors_targets
 
         self.trace_diff_targets = {}
-        self.trace_diff_targets['APOGEE'] = obsmode.apogee_trace_diff_targets
+        self.trace_diff_targets['APOGEE'] = desmode.apogee_trace_diff_targets
 
         # classify cartons as skies, standards or science
         self.carton_classes = {}
@@ -306,6 +315,61 @@ class ObsMode(object):
             else:
                 complete_check[i] = 'INCOMPLETE'
         return mag_checks, complete_check
+
+    def sky_neighbors(self, instrument, catalogdb_ver):
+        sky_checks = np.zeros(len(self.design['catalogID']),
+                              dtype=bool)
+        # set the columns/catalog based on instrument
+        if instrument == 'BOSS':
+            cat = catalogdb.Gaia_DR2
+            ra_col = catalogdb.Gaia_DR2.ra
+            dec_col = catalogdb.Gaia_DR2.dec
+            mag_col = catalogdb.Gaia_DR2.phot_g_mean_mag
+        else:
+            cat = catalogdb.TwoMassPSC
+            ra_col = catalogdb.TwoMassPSC.ra
+            dec_col = catalogdb.TwoMassPSC.decl
+            mag_col = catalogdb.TwoMassPSC.h_m
+
+        # grab the params for check
+        R_0 = self.sky_neighbors_targets[instrument][0]
+        beta = self.sky_neighbors_targets[instrument][1]
+        lim = self.sky_neighbors_targets[instrument][2]
+
+        # go through all skies
+        # grab magnitudes within 1' of skies
+        # NOTE (is 1' big enough to catch everything?)
+        for i in range(len(sky_checks)):
+            if (self.design['catalogID'][i] != -1 and
+                self.design['carton_pk'][i] in self.carton_classes['sky'] and
+                self.design['obsWavelength'][i] == instrument):
+                sky_neigh = (cat.select(ra_col,
+                                        dec_col,
+                                        mag_col,
+                                        catalogdb.Catalog.catalogid)
+                                .join(catalogdb.TIC_v8)
+                                .join(catalogdb.CatalogToTIC_v8)
+                                .join(catalogdb.Catalog)
+                                .join(catalogdb.Version)
+                                .where((cat.cone_search(self.design['ra'][i],
+                                                        self.design['dec'][i],
+                                                        1 / 60)) &
+                                       (catalogdb.Version.id == catalogdb_ver)))
+                # get result
+                ras, decs, mags, catalogids = map(list, zip(*list(sky_neigh.tuples())))
+                # remove the sky if in result
+                ev_sky = np.isin(catalogids, [self.design['catalogID'][i]])
+                ras = np.array(ras)[ev_sky]
+                decs = np.array(decs)[ev_sky]
+                mags = np.array(mags)[ev_sky]
+
+                dists = 3600 * ang_sep(self.design['ra'][i],
+                                       self.design['dec'][i],
+                                       ras,
+                                       decs)
+                if np.all(dists > R_0 * (lim - mags) ** beta):
+                    sky_checks[i] = True
+        return sky_checks
 
     def design_mode_check_all(self, verbose=True):
         self.n_skies_min_check = {}

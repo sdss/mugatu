@@ -9,7 +9,8 @@ import warnings
 from scipy.spatial import cKDTree
 
 from mugatu.exceptions import MugatuError, MugatuWarning
-from sdssdb.peewee.sdss5db.targetdb import DesignMode, Carton, Category, Magnitude, CartonToTarget, Target
+# from sdssdb.peewee.sdss5db.targetdb import DesignMode
+from sdssdb.peewee.sdss5db.targetdb import Carton, Category, Magnitude, CartonToTarget, Target
 from sdssdb.peewee.sdss5db import catalogdb
 
 
@@ -34,42 +35,77 @@ class DesignModeCheck(object):
     -------
     """
 
-    def __init__(self, FPSDesign, desmode_label):
+    def __init__(self, FPSDesign, desmode_label,
+                 desmode_manual=None):
         self.design = FPSDesign.design
         self.desmode_label = desmode_label
 
         # grab the design mode params
-        desmode = DesignMode.get(DesignMode.label == desmode_label)
-        self.n_skies_min = {}
-        self.n_skies_min['BOSS'] = desmode.boss_skies_min
-        self.n_skies_min['APOGEE'] = desmode.apogee_skies_min
+        if desmode_manual is None:
+            # uncomment once in database
+            # desmode = DesignMode.get(DesignMode.label == desmode_label)
+            desmode = desmode_manual
+            self.n_skies_min = {}
+            self.n_skies_min['BOSS'] = desmode.boss_skies_min
+            self.n_skies_min['APOGEE'] = desmode.apogee_skies_min
 
-        self.min_skies_fovmetric = {}
-        self.min_skies_fovmetric['BOSS'] = desmode.boss_skies_fov
-        self.min_skies_fovmetric['APOGEE'] = desmode.apogee_skies_fov
+            self.min_skies_fovmetric = {}
+            self.min_skies_fovmetric['BOSS'] = desmode.boss_skies_fov
+            self.min_skies_fovmetric['APOGEE'] = desmode.apogee_skies_fov
 
-        self.n_stds_min = {}
-        self.n_stds_min['BOSS'] = desmode.boss_stds_min
-        self.n_stds_min['APOGEE'] = desmode.apogee_stds_min
+            self.n_stds_min = {}
+            self.n_stds_min['BOSS'] = desmode.boss_stds_min
+            self.n_stds_min['APOGEE'] = desmode.apogee_stds_min
 
-        self.min_stds_fovmetric = {}
-        self.min_stds_fovmetric['BOSS'] = desmode.boss_stds_fov
-        self.min_stds_fovmetric['APOGEE'] = desmode.apogee_stds_fov
+            self.min_stds_fovmetric = {}
+            self.min_stds_fovmetric['BOSS'] = desmode.boss_stds_fov
+            self.min_stds_fovmetric['APOGEE'] = desmode.apogee_stds_fov
 
-        self.stds_mags = {}
-        self.stds_mags['BOSS'] = desmode.boss_stds_mags
-        self.stds_mags['APOGEE'] = desmode.apogee_stds_mags
+            self.stds_mags = {}
+            self.stds_mags['BOSS'] = desmode.boss_stds_mags
+            self.stds_mags['APOGEE'] = desmode.apogee_stds_mags
 
-        self.bright_limit_targets = {}
-        self.bright_limit_targets['BOSS'] = desmode.boss_bright_limit_targets
-        self.bright_limit_targets['APOGEE'] = desmode.apogee_bright_limit_targets
+            self.bright_limit_targets = {}
+            self.bright_limit_targets['BOSS'] = desmode.boss_bright_limit_targets
+            self.bright_limit_targets['APOGEE'] = desmode.apogee_bright_limit_targets
 
-        self.sky_neighbors_targets = {}
-        self.sky_neighbors_targets['BOSS'] = desmode.boss_sky_neighbors_targets
-        self.sky_neighbors_targets['APOGEE'] = desmode.apogee_sky_neighbors_targets
+            self.sky_neighbors_targets = {}
+            self.sky_neighbors_targets['BOSS'] = desmode.boss_sky_neighbors_targets
+            self.sky_neighbors_targets['APOGEE'] = desmode.apogee_sky_neighbors_targets
 
-        self.trace_diff_targets = {}
-        self.trace_diff_targets['APOGEE'] = desmode.apogee_trace_diff_targets
+            self.trace_diff_targets = {}
+            self.trace_diff_targets['APOGEE'] = desmode.apogee_trace_diff_targets
+        else:
+            self.n_skies_min = {}
+            self.n_skies_min['BOSS'] = desmode_manual['boss_skies_min']
+            self.n_skies_min['APOGEE'] = desmode_manual['apogee_skies_min']
+
+            self.min_skies_fovmetric = {}
+            self.min_skies_fovmetric['BOSS'] = desmode_manual['boss_skies_fov']
+            self.min_skies_fovmetric['APOGEE'] = desmode_manual['apogee_skies_fov']
+
+            self.n_stds_min = {}
+            self.n_stds_min['BOSS'] = desmode_manual['boss_stds_min']
+            self.n_stds_min['APOGEE'] = desmode_manual['apogee_stds_min']
+
+            self.min_stds_fovmetric = {}
+            self.min_stds_fovmetric['BOSS'] = desmode_manual['boss_stds_fov']
+            self.min_stds_fovmetric['APOGEE'] = desmode_manual['apogee_stds_fov']
+
+            self.stds_mags = {}
+            self.stds_mags['BOSS'] = desmode_manual['boss_stds_mags']
+            self.stds_mags['APOGEE'] = desmode_manual['apogee_stds_mags']
+
+            self.bright_limit_targets = {}
+            self.bright_limit_targets['BOSS'] = desmode_manual['boss_bright_limit_targets']
+            self.bright_limit_targets['APOGEE'] = desmode_manual['apogee_bright_limit_targets']
+
+            self.sky_neighbors_targets = {}
+            self.sky_neighbors_targets['BOSS'] = desmode_manual['boss_sky_neighbors_targets']
+            self.sky_neighbors_targets['APOGEE'] = desmode_manual['apogee_sky_neighbors_targets']
+
+            self.trace_diff_targets = {}
+            self.trace_diff_targets['APOGEE'] = desmode_manual['apogee_trace_diff_targets']
 
         # classify cartons as skies, standards or science
         self.carton_classes = {}
@@ -77,10 +113,10 @@ class DesignModeCheck(object):
         self.carton_classes['sky'] = []
         self.carton_classes['std'] = []
         for pk in np.unique(self.design['carton_pk'][self.design['catalogID'] != -1]):
-            carton = Carton.select().join(Category).where(Carton.pk == pk)
-            if 'sky' in carton.category.label:
+            carton = Category.select().join(Carton).where(Carton.pk == pk)[0]
+            if 'sky' in carton.label:
                 self.carton_classes['sky'].append(pk)
-            elif 'standard' in carton.category.label:
+            elif 'standard' in carton.label:
                 self.carton_classes['std'].append(pk)
             # I think else makes sense here as there are science
             # and open fiber labels?
@@ -89,21 +125,23 @@ class DesignModeCheck(object):
 
         # collect magntiudes of design
         # here I am doing g,r,i,BP,G,RP,H
-        self.mags = np.zeros((500, 7)) - 9999.99
-        for i in range(500):
+        self.mags = np.zeros((len(self.design['catalogID']), 7)) - 9999.99
+        for i in range(len(self.design['catalogID'])):
             if self.design['catalogID'][i] != -1:
-                mag_query = (Magnitude.select()
-                                      .join(CartonToTarget)
-                                      .join(Target)
-                                      .where((Target.catalogid == self.design['catalogID'][i]) &
-                                             (CartonToTarget.carton_pk == self.design['carton_pk'][i])))
-                self.mags[i][0] = mag_query[0].g
-                self.mags[i][1] = mag_query[0].r
-                self.mags[i][2] = mag_query[0].i
-                self.mags[i][3] = mag_query[0].bp
-                self.mags[i][4] = mag_query[0].gaia_g
-                self.mags[i][5] = mag_query[0].rp
-                self.mags[i][6] = mag_query[0].h
+                # do not query skies, they have no mag
+                if self.design['carton_pk'][i] not in self.carton_classes['sky']:
+                    mag_query = (Magnitude.select()
+                                          .join(CartonToTarget)
+                                          .join(Target)
+                                          .where((Target.catalogid == self.design['catalogID'][i]) &
+                                                 (CartonToTarget.carton_pk == self.design['carton_pk'][i])))
+                    self.mags[i][0] = mag_query[0].g
+                    self.mags[i][1] = mag_query[0].r
+                    self.mags[i][2] = mag_query[0].i
+                    self.mags[i][3] = mag_query[0].bp
+                    self.mags[i][4] = mag_query[0].gaia_g
+                    self.mags[i][5] = mag_query[0].rp
+                    self.mags[i][6] = mag_query[0].h
 
     def skies_min(self, instrument):
         n_skies = len(self.design['catalogID'][(self.design['catalogID'] != -1) &

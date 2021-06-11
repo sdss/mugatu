@@ -36,7 +36,8 @@ class DesignModeCheck(object):
     """
 
     def __init__(self, FPSDesign, desmode_label,
-                 desmode_manual=None):
+                 desmode_manual=None,
+                 mags=None):
         self.design = FPSDesign.design
         self.desmode_label = desmode_label
 
@@ -44,6 +45,7 @@ class DesignModeCheck(object):
         if desmode_manual is None:
             # uncomment once in database
             # desmode = DesignMode.get(DesignMode.label == desmode_label)
+            # NOTE: Null in arrays will be -999, so add check here for this
             desmode = desmode_manual
             self.n_skies_min = {}
             self.n_skies_min['BOSS'] = desmode.boss_skies_min
@@ -125,23 +127,26 @@ class DesignModeCheck(object):
 
         # collect magntiudes of design
         # here I am doing g,r,i,BP,G,RP,H
-        self.mags = np.zeros((len(self.design['catalogID']), 7)) - 9999.99
-        for i in range(len(self.design['catalogID'])):
-            if self.design['catalogID'][i] != -1:
-                # do not query skies, they have no mag
-                if self.design['carton_pk'][i] not in self.carton_classes['sky']:
-                    mag_query = (Magnitude.select()
-                                          .join(CartonToTarget)
-                                          .join(Target)
-                                          .where((Target.catalogid == self.design['catalogID'][i]) &
-                                                 (CartonToTarget.carton_pk == self.design['carton_pk'][i])))
-                    self.mags[i][0] = mag_query[0].g
-                    self.mags[i][1] = mag_query[0].r
-                    self.mags[i][2] = mag_query[0].i
-                    self.mags[i][3] = mag_query[0].bp
-                    self.mags[i][4] = mag_query[0].gaia_g
-                    self.mags[i][5] = mag_query[0].rp
-                    self.mags[i][6] = mag_query[0].h
+        if mags is None:
+            self.mags = np.zeros((len(self.design['catalogID']), 7)) - 9999.99
+            for i in range(len(self.design['catalogID'])):
+                if self.design['catalogID'][i] != -1:
+                    # do not query skies, they have no mag
+                    if self.design['carton_pk'][i] not in self.carton_classes['sky']:
+                        mag_query = (Magnitude.select()
+                                              .join(CartonToTarget)
+                                              .join(Target)
+                                              .where((Target.catalogid == self.design['catalogID'][i]) &
+                                                     (CartonToTarget.carton_pk == self.design['carton_pk'][i])))
+                        self.mags[i][0] = mag_query[0].g
+                        self.mags[i][1] = mag_query[0].r
+                        self.mags[i][2] = mag_query[0].i
+                        self.mags[i][3] = mag_query[0].bp
+                        self.mags[i][4] = mag_query[0].gaia_g
+                        self.mags[i][5] = mag_query[0].rp
+                        self.mags[i][6] = mag_query[0].h
+        else:
+            self.mags = mags
 
     def skies_min(self, instrument):
         n_skies = len(self.design['catalogID'][(self.design['catalogID'] != -1) &
@@ -183,6 +188,13 @@ class DesignModeCheck(object):
                                           self.carton_classes['science'])) &
                                  (self.design['obsWavelength'] == instrument)]
 
+        # if no skies, dont do check
+        if len(x_sky) == 0:
+            return False
+        # if no science in band, doesnt matter?
+        if len(x_sci) == 0:
+            return True
+
         # create KDE tree
         tree = cKDTree(np.column_stack((x_sky, y_sky)))
         # get distances for nearest neighbors
@@ -220,6 +232,13 @@ class DesignModeCheck(object):
                                  (np.isin(self.design['carton_pk'],
                                           self.carton_classes['science'])) &
                                  (self.design['obsWavelength'] == instrument)]
+
+        # if no skies, dont do check
+        if len(x_std) == 0:
+            return False
+        # if no science in band, doesnt matter?
+        if len(x_sci) == 0:
+            return True
 
         # create KDE tree
         tree = cKDTree(np.column_stack((x_std, y_std)))

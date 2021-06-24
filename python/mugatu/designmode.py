@@ -15,12 +15,35 @@ from sdssdb.peewee.sdss5db import catalogdb
 
 
 def ang_sep(ra1, dec1, ra2, dec2):
+    """
+    Returns angular separation between objects.
+
+    Parameters
+    ----------
+    ra1: float or np.array
+        Right ascension(s) of first object(s).
+
+    dec1: float or np.array
+        Declination(s) of first object(s).
+
+    ra2: float or np.array
+        Right ascension(s) of second object(s).
+
+    dec2: float or np.array
+        Declination(s) of second object(s).
+
+    Returns
+    -------
+    sep: float or np.array
+        Angular seperation between objects in degrees.
+    """
     ra1 = np.radians(ra1)
     dec1 = np.radians(dec1)
     ra2 = np.radians(ra2)
     dec2 = np.radians(dec2)
-    return (180 / np.pi) * np.arcos(np.sin(dec1) * np.sin(dec2) +
-                                    np.cos(dec1) * np.cos(dec2) * np.cos(ra1 - ra2))
+    sep = (180 / np.pi) * np.arcos(np.sin(dec1) * np.sin(dec2) +
+                                   np.cos(dec1) * np.cos(dec2) * np.cos(ra1 - ra2))
+    return sep
 
 
 class DesignModeCheck(object):
@@ -41,7 +64,7 @@ class DesignModeCheck(object):
         Array of magntiudes of shape (N,M), where N is the length
         of mugatu.fpsdesign.FPSDesign.design and M=7. Columns of
         length M in array correspond to magntidues: [g, r, i, bp,
-                gaia_g, rp, h].
+        gaia_g, rp, h].
 
     Attributes
     ----------

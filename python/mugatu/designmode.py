@@ -27,12 +27,75 @@ class DesignModeCheck(object):
     """
     Parameters
     ----------
+    FPSDesign: object
+        mugatu.fpsdesign.FPSDesign object with a built design.
+
+    desmode_label: str
+        The DesignMode label from targetdb.
+
+    desmode_manual: dict
+        Dictonary of DesignMode parameters to be used as manual
+        inputs to validate the design, rather than from targetdb.
+
+    mags: np.array
+        Array of magntiudes of shape (N,M), where N is the length
+        of mugatu.fpsdesign.FPSDesign.design and M=7. Columns of
+        length M in array correspond to magntidues: [g, r, i, bp,
+                gaia_g, rp, h].
 
     Attributes
     ----------
+    n_skies_min: dict
+        Dictonary with the minimum number of skies for a design
+        for each instrument ('APOGEE' and 'BOSS').
 
-    Methods
-    -------
+    min_skies_fovmetric: dict
+        Dictonary wih the FOV metric for the skies in a design
+        for each instrument('APOGEE' and 'BOSS').
+        The FOV metric is described by three parameters, the
+        nth neighbor to get distances to, the percentle distance
+        to calculate and the distace to compare against for validation
+        (in mm).
+
+    n_stds_min: dict
+        Dictonary with the minimum number of standards for a design
+        for each instrument ('APOGEE' and 'BOSS').
+
+    min_stds_fovmetric: dict
+        Dictonary wih the FOV metric for the standards in a design
+        for each instrument ('APOGEE' and 'BOSS').
+        The FOV metric is described by three parameters, the
+        nth neighbor to get distances to, the percentle distance
+        to calculate and the distace to compare against for validation
+        (in mm).
+
+    stds_mags: dict
+        Dictonary for the min/max magnitude for the standards in a
+        design for each instrument ('APOGEE' and 'BOSS'). Indexes
+        correspond to magntidues: [g, r, i, bp, gaia_g, rp, h].
+
+    bright_limit_targets: dict
+        Dictonary for the min/max magnitude for the science targets
+        in adesign for each instrument ('APOGEE' and 'BOSS'). Indexes
+        correspond to magntidues: [g, r, i, bp, gaia_g, rp, h].
+
+    sky_neighbors_targets: dict
+        Dictonary for the parameters used to check distance between
+        skies and all possible sources in field for each instrument
+        ('APOGEE' and 'BOSS'). Distances to targets (r, in arcseconds)
+        must be r > R_0 * (lim - mags) ** beta, where mags is G band
+        for BOSS and H band for APOGEE. Indexes correspond to:
+        [R_0, beta, lim]
+
+    trace_diff_targets: dict
+        Dictonary for the maximum magnitude difference allowed between
+        fibers next to each ther on the chip for each instrument
+        ('APOGEE' and 'BOSS'). Here the magntidue difference is checked
+        in the G band for BOSS and H band for APOGEE.
+
+    carton_classes: dict
+        Dictonary of arrays for the carton pks in each category
+        (i.e. science, standards and skies).
     """
 
     def __init__(self, FPSDesign, desmode_label,
@@ -149,6 +212,23 @@ class DesignModeCheck(object):
             self.mags = mags
 
     def skies_min(self, instrument):
+        """
+        Checks if design has the required number of skies
+        for some instrument. Returns True if number skies is
+        greater than the minimum and False if not.
+
+        Parameters
+        ----------
+        instrument: str
+            Instrument to check number of sky fibers.
+            Must be 'BOSS' or 'APOGEE'.
+
+        Returns
+        -------
+        : boolean
+            True if number skies is
+            greater than the minimum and False if not.
+        """
         n_skies = len(self.design['catalogID'][(self.design['catalogID'] != -1) &
                                                      (np.isin(self.design['carton_pk'],
                                                               self.carton_classes['sky'])) &
@@ -159,6 +239,23 @@ class DesignModeCheck(object):
             return False
 
     def stds_min(self, instrument):
+        """
+        Checks if design has the required number of standards
+        for some instrument. Returns True if number standards is
+        greater than the minimum and False if not.
+
+        Parameters
+        ----------
+        instrument: str
+            Instrument to check number of standard fibers.
+            Must be 'BOSS' or 'APOGEE'.
+
+        Returns
+        -------
+        : boolean
+            True if number standards is
+            greater than the minimum and False if not.
+        """
         n_stds = len(self.design['catalogID'][(self.design['catalogID'] != -1) &
                                                     (np.isin(self.design['carton_pk'],
                                                              self.carton_classes['std'])) &
@@ -169,6 +266,25 @@ class DesignModeCheck(object):
             return False
 
     def skies_fov(self, instrument):
+        """
+        Checks if design meets the FOV metric for the skies
+        for some instrument. Returns True FOV metric met,
+        False if not. Also, if no science targets in design
+        returns True, while no skies returns False.
+
+        Parameters
+        ----------
+        instrument: str
+            Instrument to FOV metric.
+            Must be 'BOSS' or 'APOGEE'.
+
+        Returns
+        -------
+        : boolean
+            True FOV metric met,
+            False if not. Also, if no science targets in design
+            returns True, while no skies returns False.
+        """
         # get x,y of the skies
         x_sky = self.design['x'][(self.design['catalogID'] != -1) &
                                  (np.isin(self.design['carton_pk'],
@@ -214,6 +330,25 @@ class DesignModeCheck(object):
             return False
 
     def stds_fov(self, instrument):
+        """
+        Checks if design meets the FOV metric for the standards
+        for some instrument. Returns True FOV metric met,
+        False if not. Also, if no science targets in design
+        returns True, while no standards returns False.
+
+        Parameters
+        ----------
+        instrument: str
+            Instrument to FOV metric.
+            Must be 'BOSS' or 'APOGEE'.
+
+        Returns
+        -------
+        : boolean
+            True FOV metric met,
+            False if not. Also, if no science targets in design
+            returns True, while no standards returns False.
+        """
         # get x,y of the standards
         x_std = self.design['x'][(self.design['catalogID'] != -1) &
                                  (np.isin(self.design['carton_pk'],
@@ -330,6 +465,41 @@ class DesignModeCheck(object):
 
     def mag_limits(self, mag_metric,
                    instrument, carton_class):
+        """
+        Checks the if magnitude of assignments agree with
+        design mode for some instrument and carton class
+
+        Parameters
+        ----------
+        mag_metric: np.array
+            Array of shape (N,M), where N=7 corresponds to
+            magntiudes [g, r, i, bp, gaia_g, rp, h], and M=2
+            where 0th column is minimum magnitude and 1st column
+            is maximum magnitude. If no check in certain band,
+            use None as value.
+
+        instrument: str
+            Instrument to check magnitudes.
+            Must be 'BOSS' or 'APOGEE'.
+
+        carton_class: str
+            Carton class to check magnitude limits of.
+            Must be 'std' or 'science'.
+
+        Returns
+        -------
+        mag_checks: np.array
+            Array of booleans equal to length of self.design.
+            If True, assignment within magnitude limits, False
+            if not. If assignment is not with instrument or in
+            carton_class, will be False.
+
+        complete_check: np.array
+            Array of str equal to length of self.design.
+            If 'INCOMPLETE', then assignment either did not have
+            all required photometry for check, or assignment is
+            not with instrument or in carton_class.
+        """
         mag_checks = np.zeros(len(self.design['catalogID']),
                               dtype=bool)
         # if complete, all bands for target present in check
@@ -375,6 +545,29 @@ class DesignModeCheck(object):
         return mag_checks, complete_check
 
     def sky_neighbors(self, instrument, catalogdb_ver):
+        """
+        Check if any skies are within some distance
+        from another source where distances to targets
+        (r, in arcseconds) must be r > R_0 * (lim - mags) ** beta,
+        where mags is G band for BOSS and H band for APOGEE.
+
+        Parameters
+        ----------
+        instrument: str
+            Instrument to check sky distances.
+            Must be 'BOSS' or 'APOGEE'.
+
+        catalogdb_ver: int
+            catalogdb.Version.id to check for targets
+            in design field for check.
+
+        Returns
+        -------
+        sky_checks: np.array
+            Array of booleans equal to length of self.design.
+            True if r > R_0 * (lim - mags) ** beta, False if not
+            or assignment is not sky for specified instrument.
+        """
         sky_checks = np.zeros(len(self.design['catalogID']),
                               dtype=bool)
         # set the columns/catalog based on instrument
@@ -430,6 +623,37 @@ class DesignModeCheck(object):
         return sky_checks
 
     def design_mode_check_all(self, verbose=True):
+        """
+        Perform all DesignMode checks for the given design.
+
+        Parameters
+        ----------
+        verbose: boolean
+            True if want print statement summarizing results
+            of all checks.
+
+        Attributes
+        ----------
+        n_skies_min_check: dict
+            Results of minumum sky check for each instrument.
+
+        min_skies_fovmetric_check: dict
+            Results of sky FOV metric check for each instrument.
+
+        n_stds_min_check: dict
+            Results of minumum standard check for each instrument.
+
+        min_stds_fovmetric_check: dict
+            Results of standard FOV metric check for each instrument.
+
+        stds_mags_check: dict
+            Results of standard magnitude limit check for
+            each instrument.
+
+        bright_limit_targets_check: dict
+             Results of science magnitude limit check for
+            each instrument.
+        """
         self.n_skies_min_check = {}
         self.n_skies_min_check['BOSS'] = self.skies_min(instrument='BOSS')
         self.n_skies_min_check['APOGEE'] = self.skies_min(instrument='APOGEE')

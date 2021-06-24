@@ -19,71 +19,67 @@ from mugatu.designs_to_targetdb import make_design_assignments_targetdb, make_de
 
 class FPSDesign(object):
     """
+    Class to load, validate and export a design.
+
     Parameters
     ----------
-
     design_pk: int
-        The pk of the design as it appears in targetdb
+        The pk of the design as it appears in targetdb.
 
-    obsTime: np.float64
-        Julian date of the observation
-
-    design: dict
-        Dictonary that contains all parameters related to the design.
-        This is initiallized as empty and is populated using either
-        build_design_db() or build_design_manual().
+    obsTime: float
+        Julian date of the observation.
 
     racen: np.float64
-        Right Ascension of center of the field
+        Right Ascension of center of the field in degrees.
 
     deccen: np.float64
-        Declination of center of the field
+        Declination of center of the field in degrees.
 
     position_angle: np.float64
-        Position angle of the field
+        Position angle of the field E of N in degrees.
 
     observatory: str
-        Observatory where observation is taking place
+        Observatory where observation is taking place, either
+        'LCO' or 'APO'.
 
     mode_pk: int
-        The pk in targetdb for the observing mode for the design
+        The pk in targetdb for the observing mode for the design.
 
     catalogids: np.array
         List of catalogids for a manual design in db.
-        Length of array must be n=500.
 
     ra: np.array
         List of right ascensions that correspond to catalogids.
         If list not provided, but catalogids for a manual design
         are provided, right ascensions will be pulled from
-        targetdb. Length of array must be n=500.
+        targetdb.
 
     dec: np.array
         List of declinations that correspond to catalogids.
         If list not provided, but catalogids for a manual design
         are provided, declinations will be pulled from
-        targetdb. Length of array must be n=500.
+        targetdb.
 
     fiberID: np.array
         Fiber assignement for each catalogid target in the
-        manual design. Length of array must be n=500.
+        manual design.
 
     obsWavelength: np.array
-        Wavelength of observation for each fiber in the
-        manual design in db. Length of array must be n=500.
+        Wavelength of observation for each fiber
+        that correspond to catalogids.
+        Must be either 'BOSS' or 'APOGEE'.
 
     priority: np.array
-        Priorties for targets in a manual design in db.
-        Length of array must be n=500.
+        Priorties for targets that correspond to catalogids.
 
     carton_pk: np.array
-        The carton_pks (as in targetdb) for the targets in
-        the design. Length of array must be n=500.
+        The carton_pks (as in targetdb) for the targets
+        that correspond to catalogids.
 
     design_file: str
-        Flate file with a manual design not in the db. The
-        file should have the columns: RA, DEC, obsWavelength,
-        priority, ???
+        FITS file with a manual design. The file must have the
+        following columns: catalogID, fiberID, obsWavelength,
+        priority, carton_pk, ra, dec.
 
     manual_design: boolean
         Boolean if the design being validated is manual
@@ -91,37 +87,33 @@ class FPSDesign(object):
 
     Attributes
     ----------
-
-    design: dictonary
+    design: dict
         contains all of the design inputs for Kaiju needed to validate
-        a design
+        a design.
 
     rg: Kaiju RobotGrid object
-        MIKE NOTE: I imay just want to inherit this? need to think about
-        this when I get to writing Kaiju part of code.
+        Kaiju RobotGrid with the assignments from design.
 
     targets_unassigned: list
         catalogid of targets that could not be assigned due to assigned
-        robot not being able to reach the assigned target
+        robot not being able to reach the assigned target.
 
     targets_collided: list
         catalogid of targets that could not be assigned due to assigned
-        robot to assigned target resulting in a collision
+        robot to assigned target resulting in a collision.
 
     valid_design: dictonary
-        same form as design dictonary, except this design has been
-        validated by Kaiju and collision/delock assignments removed
+        Same format as design dictonary, except this is validated
+        design by Kaiju with collision/delock assignments removed.
 
     design_built: booleen
-        keeps track if design from db or file has already been built. If so,
-        this will save time on validating the design by not requiring it
-        to be rebuilt.
+        True if design dictonary has been populated, False if not.
 
     hourAngle: float
-        Hour angle of field center from coordio radec2wokxy
+        Hour angle of field center from coordio.utils.radec2wokxy.
 
     positionAngle_coordio: float
-        position angle of field center from coordio radec2wokxy
+        position angle of field center from coordio.utils.radec2wokxy.
     """
 
     def __init__(self, design_pk, obsTime, racen=None, deccen=None,
@@ -192,7 +184,7 @@ class FPSDesign(object):
 
     def build_design_db(self):
         """
-        compile the parameters for a design that exists in targetdb
+        Populate the design dictonary for design in targetdb.
 
         Notes
         -----
@@ -290,13 +282,13 @@ class FPSDesign(object):
 
     def build_design_manual(self):
         """
-        compile the parameters for a manual design
+        Populate the design dictonary for manual design.
 
         Notes
         -----
         This function creates a manual design whether it is from
-        user inputted catalogids, or if it is a flat file list
-        of coordinates (and fiber assignments?), if manual_design=True
+        user inputted catalogids, or if it is a FITS file 
+        if manual_design=True.
 
         """
 
@@ -366,12 +358,12 @@ class FPSDesign(object):
 
     def design_to_RobotGrid(self):
         """
-        contruct a Kaiju RobotGrid object
+        Add assignments to Kaiju RobotGrid.
 
         Notes
         -----
         Adds targets to the kaiju.robotGrid.RobotGridFilledHex and
-        assigns them to fibers based on the design dict parameters
+        assigns them to fibers based on the design dictonary.
 
        """
 
@@ -410,12 +402,7 @@ class FPSDesign(object):
 
     def RobotGrid_to_valid_design(self):
         """
-        construct design from RobotGrid object
-
-        Notes
-        -----
-        I don't really know how this will work yet
-
+        Construct valid design from Kaiju Robotgrid
        """
 
         # initialize dict for the validated design
@@ -455,14 +442,7 @@ class FPSDesign(object):
 
     def validate_design(self):
         """
-        validate the design
-
-        Notes
-        -----
-        This function will call all the necessary steps to create the design
-        file for Kaiju and validate the design (following steps 3-7 in Conor's
-        outline). This will utlize multiple functions that will be above.
-
+        Validate design for deadlocks and collisions using Kaiju.
         """
 
         # build the design with all needed parameters if it has not been
@@ -524,26 +504,26 @@ class FPSDesign(object):
     def design_to_targetdb(self, cadence, fieldid, targetdb_ver,
                            exposure):
         """
-        write a design to targetdb
+        Write a validated esign to targetdb
 
         Parameters
         ----------
 
         cadence: str
-            Cadence label for the field
+            Cadence label for the field.
 
         fieldid: int
-            fieldid for the field
+            fieldid for the field.
 
         targetdb_ver: int
-            pk for the targetdb version of this design
+            pk for the targetdb version of this design.
 
         exposure: int
-            The exposure of this set of designs. 0th indexed
+            The exposure of this set of designs, 0th indexed.
 
         Notes
         -----
-        version above should allow for manual designs to be added under
+        Version above should allow for manual designs to be added under
         version = 'manual' to seperate them from robostrategy ingested designs
         """
         if not self.manual_design:
@@ -582,7 +562,7 @@ class FPSDesign(object):
 
     def design_to_opsdb(self, design):
         """
-        write a validated design to opsdb
+        Write a validated design to opsdb
 
         Notes
         -----

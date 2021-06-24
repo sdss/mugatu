@@ -1,21 +1,18 @@
 mugatu package
 ==============
 
-Submodules
-----------
+mugatu.designmode module
+---------------------------------
 
-mugatu.comm\_designs module
----------------------------
-
-.. automodule:: mugatu.comm_designs
+.. automodule:: mugatu.designmode
    :members:
    :undoc-members:
    :show-inheritance:
 
-mugatu.design\_validations module
+mugatu.designs_to_targetdb module
 ---------------------------------
 
-.. automodule:: mugatu.design_validations
+.. automodule:: mugatu.designs_to_targetdb
    :members:
    :undoc-members:
    :show-inheritance:
@@ -32,14 +29,6 @@ mugatu.fpsdesign module
 -----------------------
 
 .. automodule:: mugatu.fpsdesign
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: mugatu
    :members:
    :undoc-members:
    :show-inheritance:

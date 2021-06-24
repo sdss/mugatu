@@ -25,8 +25,7 @@ Reference
 .. toctree::
    :maxdepth: 1
 
-   api
-   mugatu modules <modules>
+  mugatu modules <modules>
 
 
 Examples

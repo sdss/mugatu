@@ -24,7 +24,7 @@ except ModuleNotFoundError:
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
 # Sphinx template selected in cookiecutter and whether to use releases
-sphinx_template = 'alabaster'
+sphinx_template = 'sphinx_rtd_theme'
 use_releases = 'no'
 
 if sphinx_template == 'sphinx-bootstrap':
@@ -249,6 +249,13 @@ elif sphinx_template == 'alabaster':
     }
 
     html_css_files += ["custom.css"]
+elif sphinx_template == 'sphinx_rtd_theme':
+    html_theme = 'sphinx_rtd_theme'
+    html_logo = '_static/sdssv_logo.png'
+    html_theme_options = {
+        'logo_only': False,
+        'display_version': False,
+    }
 
 html_favicon = './_static/favicon_sdssv.ico'
 

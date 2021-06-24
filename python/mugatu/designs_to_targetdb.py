@@ -90,6 +90,10 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
                                      carton, instr_pks=None, cart_pks=None,
                                      fiber_pks=None):
     """
+    Add assignments for a design to targetdb.
+
+    Parameters
+    ----------
     targetdb_ver: dict
         dictonary of pks for the targetdb version of each carton
         used in this design

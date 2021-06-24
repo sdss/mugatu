@@ -171,7 +171,7 @@ if __name__ == '__main__':
     start = time.time()
     bad = 0
 
-    with open('rs_%s_%s_designmode_results.txt' % (plan, observatory), 'w') as f:
+    with open('rs_%s_%s_designmode_results_sdssdb_0_4_9.txt' % (plan, observatory), 'w') as f:
         header = ['fieldid',
                   'exp',
                   'cadence',
@@ -220,17 +220,31 @@ if __name__ == '__main__':
                 # do not query skies, they have no mag
                 if 'sky' not in field_assign_1['category'][i] and field_assign_2['assigned'][i] == 1:
                     mag_query = (targetdb.Magnitude.select()
-                                                   .join(targetdb.CartonToTarget)
-                                                   .join(targetdb.Target)
-                                                   .where((targetdb.Target.catalogid == field_assign_1['catalogid'][i]) &
-                                                          (targetdb.CartonToTarget.carton_pk == carton_pks[i])))
-                    mags[i][0] = mag_query[0].g
-                    mags[i][1] = mag_query[0].r
-                    mags[i][2] = mag_query[0].i
-                    mags[i][3] = mag_query[0].bp
-                    mags[i][4] = None  # mag_query[0].gaia_g
-                    mags[i][5] = mag_query[0].rp
-                    mags[i][6] = mag_query[0].h
+                                                   .where((targetdb.Magnitude.carton_to_target == field_assign_1['carton_to_target_pk'][i])))
+                    if mag_query[0].optical_prov is None:
+                        mags[i][0] = mag_query[0].g
+                        mags[i][1] = mag_query[0].r
+                        mags[i][2] = mag_query[0].i
+                        mags[i][3] = mag_query[0].bp
+                        mags[i][4] = mag_query[0].gaia_g
+                        mags[i][5] = mag_query[0].rp
+                        mags[i][6] = mag_query[0].h
+                    elif 'psf' in mag_query[0].optical_prov:
+                        mags[i][0] = mag_query[0].g
+                        mags[i][1] = mag_query[0].r
+                        mags[i][2] = mag_query[0].i
+                        mags[i][3] = mag_query[0].bp
+                        mags[i][4] = mag_query[0].gaia_g
+                        mags[i][5] = mag_query[0].rp
+                        mags[i][6] = mag_query[0].h
+                    else:
+                        mags[i][0] = None
+                        mags[i][1] = None
+                        mags[i][2] = None
+                        mags[i][3] = None
+                        mags[i][4] = None
+                        mags[i][5] = None
+                        mags[i][6] = None
 
             nd = len(field_assign_2['robotID'].shape)
             if nd == 1:
@@ -345,7 +359,7 @@ if __name__ == '__main__':
                     else:
                         line[12] = check_tot / design_tot
                     line[13] = int(des_check.stds_fov('APOGEE'))
-                stds_mags_check = des_check.mag_limits(des_check.stds_mags['BOSS'],
+                stds_mags_check = des_check.mag_limits(des_check.bright_limit_targets['BOSS'],
                                                        'BOSS',
                                                        'science')
                 check_tot = len(stds_mags_check[0][stds_mags_check[0]])
@@ -360,7 +374,7 @@ if __name__ == '__main__':
                 if line[3] == 'Dark RM':
                     line[15] = 1.
                 else:
-                    stds_mags_check = des_check.mag_limits(des_check.stds_mags['APOGEE'],
+                    stds_mags_check = des_check.mag_limits(des_check.bright_limit_targets['APOGEE'],
                                                            'APOGEE',
                                                            'science')
                     check_tot = len(stds_mags_check[0][stds_mags_check[0]])

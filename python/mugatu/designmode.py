@@ -346,8 +346,8 @@ class DesignModeCheck(object):
             dists = dd[:, 1]
         # this assumes percentile is on 0 to 100 scale
         perc_dist = np.percentile(dists,
-                                  self.min_stds_fovmetric[instrument][1])
-        if perc_dist < self.min_stds_fovmetric[instrument][2]:
+                                  self.min_skies_fovmetric[instrument][1])
+        if perc_dist < self.min_skies_fovmetric[instrument][2]:
             return True
         else:
             return False
@@ -391,7 +391,7 @@ class DesignModeCheck(object):
                                           self.carton_classes['science'])) &
                                  (self.design['obsWavelength'] == instrument)]
 
-        # if no skies, dont do check
+        # if no stds, dont do check
         if len(x_std) == 0:
             return False
         # if no science in band, doesnt matter?
@@ -402,16 +402,16 @@ class DesignModeCheck(object):
         tree = cKDTree(np.column_stack((x_std, y_std)))
         # get distances for nearest neighbors
         dd, ii = tree.query(np.column_stack((x_sci, y_sci)),
-                            k=self.min_skies_fovmetric[instrument][0])
+                            k=self.min_stds_fovmetric[instrument][0])
         # second column is the nth neighbor distance if k>1
-        if self.min_skies_fovmetric[instrument][0] == 1:
+        if self.min_stds_fovmetric[instrument][0] == 1:
             dists = dd
         else:
             dists = dd[:, 1]
         # this assumes percentile is on 0 to 100 scale
         perc_dist = np.percentile(dists,
-                                  self.min_skies_fovmetric[instrument][1])
-        if perc_dist < self.min_skies_fovmetric[instrument][2]:
+                                  self.min_stds_fovmetric[instrument][1])
+        if perc_dist < self.min_stds_fovmetric[instrument][2]:
             return True
         else:
             return False

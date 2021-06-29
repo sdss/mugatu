@@ -21,6 +21,7 @@ def test_warn_manual():
 
     des.build_design_manual()
     des.validate_design()
+    print('design validated')
 
 
 if __name__ == "__main__":

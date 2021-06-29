@@ -173,12 +173,12 @@ class FPSDesign(object):
             self.rg = RobotGridLCO()
         # this is in Conor's test, I'm not quite sure what it does
         # but without paths wont generate
-        # for k in self.rg.robotDict.keys():
-            # self.rg.homeRobot(k)
-        for rID in self.rg.robotDict:
-            robot = self.rg.getRobot(rID)
-            robot.setXYUniform()
-            robot.setDestinationAlphaBeta(0, 180)
+        for k in self.rg.robotDict.keys():
+            self.rg.homeRobot(k)
+        # for rID in self.rg.robotDict:
+            # robot = self.rg.getRobot(rID)
+            # robot.setXYUniform()
+            # robot.setDestinationAlphaBeta(0, 180)
         self.targets_unassigned = []
         self.targets_collided = []
 
@@ -428,8 +428,9 @@ class FPSDesign(object):
         self.valid_design['x'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['y'] = np.zeros(500, dtype=float) - 9999.99
 
-        for i in self.rg.robotDict:
-            self.valid_design['catalogID'][i] = (self.rg.robotDict[i]
+        # enumerate because robotDict 1-500, not 0-4999
+        for i, rid in enumerate(self.rg.robotDict):
+            self.valid_design['catalogID'][i] = (self.rg.robotDict[rid]
                                                  .assignedTargetID)
             if self.valid_design['catalogID'][i] != -1:
                 self.valid_design['fiberID'][i] = i
@@ -469,6 +470,9 @@ class FPSDesign(object):
         for robotID in self.rg.robotDict:
             if(self.rg.robotDict[robotID].isAssigned() == False):
                 self.rg.decollideRobot(robotID)
+                # need to still set alpha/beta
+                robot = self.rg.getRobot(robotID)
+                robot.setDestinationAlphaBeta(0, 180)
 
         # de-collide the grid if collisions exist
         # and check for targets removed

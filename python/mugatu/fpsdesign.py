@@ -8,7 +8,7 @@ import numpy as np
 import warnings
 
 import kaiju
-import kaiju.robotGrid
+from kaiju.robotGrid import RobotGridAPO, RobotGridLCO
 # import coordio
 from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget, Carton
 import fitsio
@@ -167,14 +167,18 @@ class FPSDesign(object):
         # set dummy value for collision for now
         # this may want to be a input, not sure the standard here
         # initialize robotGrid
-        self.rg = kaiju.robotGrid.RobotGridFilledHex()
+        if self.observatory == 'APO':
+            self.rg = RobotGridAPO()
+        else:
+            self.rg = RobotGridLCO()
         # this is in Conor's test, I'm not quite sure what it does
         # but without paths wont generate
-        for k in self.rg.robotDict.keys():
-            self.rg.homeRobot(k)
-        # for rID in self.rg.robotDict:
-            # robot = self.rg.getRobot(rID)
-            # robot.setXYUniform()
+        # for k in self.rg.robotDict.keys():
+            # self.rg.homeRobot(k)
+        for rID in self.rg.robotDict:
+            robot = self.rg.getRobot(rID)
+            robot.setXYUniform()
+            robot.setDestinationAlphaBeta(0, 180)
         self.targets_unassigned = []
         self.targets_collided = []
 
@@ -327,6 +331,9 @@ class FPSDesign(object):
             self.design['catalogID'] = man_des['catalogID']
             self.design['fiberID'] = man_des['fiberID']
             self.design['obsWavelength'] = man_des['obsWavelength']
+            # remove spaces from formatting if exist
+            for i in range(len(self.design['obsWavelength'])):
+                self.design['obsWavelength'][i] = self.design['obsWavelength'][i].strip()
             self.design['priority'] = man_des['priority']
             self.design['carton_pk'] = man_des['carton_pk']
             self.design['ra'] = man_des['ra']
@@ -376,13 +383,13 @@ class FPSDesign(object):
                                       x=self.design['x'][i],
                                       y=self.design['y'][i],
                                       priority=self.design['priority'][i],
-                                      fiberType=kaiju.BossFiber)
+                                      fiberType=kaiju.cKaiju.BossFiber)
                 else:
                     self.rg.addTarget(targetID=self.design['catalogID'][i],
                                       x=self.design['x'][i],
                                       y=self.design['y'][i],
                                       priority=self.design['priority'][i],
-                                      fiberType=kaiju.ApogeeFiber)
+                                      fiberType=kaiju.cKaiju.ApogeeFiber)
         for i in range(len(self.design['x'])):
             if self.design['fiberID'][i] != -1:
                 try:

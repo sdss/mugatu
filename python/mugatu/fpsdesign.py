@@ -393,7 +393,7 @@ class FPSDesign(object):
         for i in range(len(self.design['x'])):
             if self.design['fiberID'][i] != -1:
                 try:
-                    self.rg.assignRobot2Target(self.design['fiberID'][i],
+                    self.rg.assignRobot2Target(self.design['fiberID'][i] + 1,
                                                self.design['catalogID'][i])
                 except RuntimeError:
                     # this catches the fact that robot cant be

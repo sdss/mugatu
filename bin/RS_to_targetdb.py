@@ -14,6 +14,8 @@ import fitsio
 from sdssdb.peewee.sdss5db import targetdb
 import sdss_access.path
 from mugatu.designs_to_targetdb import make_design_field_targetdb, make_design_assignments_targetdb
+from mugatu.fpsdesign import FPSDesign
+from mugatu.exceptions import MugatuError
 
 sdss_path = sdss_access.path.Path(release='sdss5')
 
@@ -174,15 +176,43 @@ if __name__ == '__main__':
             n_exp = 1
 
         for i in range(n_exp):
-            # add design for ith exposure to targetdb
-            make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
-                                             plan=ver_inst,
-                                             fieldid=fieldid_inst,
-                                             exposure=i,
-                                             catalogID=design_inst['catalogid'],
-                                             fiberID=design['robotID'][:, i],
-                                             obsWavelength=design_inst['fiberType'],
-                                             carton=design_inst['carton'],
-                                             instr_pks=instr_pks,
-                                             cart_pks=cart_pks,
-                                             fiber_pks=fiber_pks)
+            # validate design with mugatu
+            ev_design = eval("design['robotID'][:, i] != -1")
+            mug_design = FPSDesign(design_pk=-1,
+                                   obsTime=-1,
+                                   racen=head['RACEN'],,
+                                   deccen=head['DECCEN'],
+                                   position_angle=head['PA'],
+                                   observatory=observatory,
+                                   mode_pk=None,
+                                   catalogids=design_inst['catalogid'][ev_design],
+                                   ra=design_inst['ra'][ev_design],
+                                   dec=design_inst['dec'][ev_design],
+                                   fiberID=design['robotID'][:, i][ev_design],
+                                   obsWavelength=design_inst['fiberType'][ev_design],
+                                   priority=design_inst['priority'][ev_design],
+                                   carton_pk=None,
+                                   design_file=None,
+                                   manual_design=True)
+            # build design
+            mug_design.build_design_manual()
+            # validate design with Kaiju
+            try:
+                mug_design.validate_design()
+                valid = True
+            except MugatuError:
+                # if validation fails, somehow note this
+                valid = False
+            # add design for ith exposure to targetdb if valid
+            if valid:
+                make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
+                                                 plan=ver_inst,
+                                                 fieldid=fieldid_inst,
+                                                 exposure=i,
+                                                 catalogID=design_inst['catalogid'],
+                                                 fiberID=design['robotID'][:, i],
+                                                 obsWavelength=design_inst['fiberType'],
+                                                 carton=design_inst['carton'],
+                                                 instr_pks=instr_pks,
+                                                 cart_pks=cart_pks,
+                                                 fiber_pks=fiber_pks)

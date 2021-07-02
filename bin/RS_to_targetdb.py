@@ -63,6 +63,9 @@ if __name__ == '__main__':
 
     # get the targetdb version pk for each carton from config file
     targetdb_ver = {}
+    # also get carton pks here
+    cart_pks = {}
+    cartonDB = targetdb.Carton()
     with open(config_file, 'r') as f:
         read = False
         for x in f:
@@ -77,7 +80,12 @@ if __name__ == '__main__':
                 # skip commented lines
                 if x[0] != '#':
                     cart_line = x.split(' = ')
+                    # set targetdb ver for carton
                     targetdb_ver[cart_line[0]] = targetdb_ver_pk[cart_line[1]]
+                    # get the carton pk for this version
+                    cart_pks[cart] = (cartonDB.select(cartonDB.pk)
+                                              .where((cartonDB.carton == cart_line[0]) &
+                                                     (cartonDB.version_pk == targetdb_ver[cart_line[0]]))[0].pk)
             # start reading lines if reach cartons
             if x == '[Cartons]' or x == '[CartonsExtra]':
                 read = True
@@ -109,7 +117,6 @@ if __name__ == '__main__':
     # targetDB = targetdb.Target()
     # carton_to_targetDB = targetdb.CartonToTarget()
     # positionerDB = targetdb.Positioner()
-    cartonDB = targetdb.Carton()
     fieldDB = targetdb.Field()
     positionerDB = targetdb.Positioner()
 
@@ -165,15 +172,6 @@ if __name__ == '__main__':
         except IndexError:
             # some fields only have 1 design which is encoded as 1-D array apparently
             n_exp = 1
-
-        # create the carton pk dict
-        cart_pks = {}
-        for cart in np.unique(design_inst['carton']):
-            # skip calibration from now
-            if cart != 'CALIBRATION':
-                cart_pks[cart] = (cartonDB.select(cartonDB.pk)
-                                          .where((cartonDB.carton == cart) &
-                                                 (cartonDB.version_pk == targetdb_ver[cart]))[0].pk)
 
         for i in range(n_exp):
             # add design for ith exposure to targetdb

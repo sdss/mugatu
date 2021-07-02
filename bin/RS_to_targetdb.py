@@ -209,10 +209,11 @@ if __name__ == '__main__':
                                                  plan=ver_inst,
                                                  fieldid=fieldid_inst,
                                                  exposure=i,
-                                                 catalogID=design_inst['catalogid'],
+                                                 design_id=design_inst['carton_to_target_pk'],
                                                  fiberID=design['robotID'][:, i],
                                                  obsWavelength=design_inst['fiberType'],
                                                  carton=design_inst['carton'],
                                                  instr_pks=instr_pks,
                                                  cart_pks=cart_pks,
-                                                 fiber_pks=fiber_pks)
+                                                 fiber_pks=fiber_pks,
+                                                 idtype='carton_to_target')

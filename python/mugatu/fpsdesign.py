@@ -10,7 +10,7 @@ import warnings
 import kaiju
 import kaiju.robotGrid
 # import coordio
-from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget
+from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget, Carton
 import fitsio
 from mugatu.exceptions import MugatuError, MugatuWarning
 from coordio.utils import radec2wokxy, wokxy2radec
@@ -501,8 +501,7 @@ class FPSDesign(object):
 
         return
 
-    def design_to_targetdb(self, cadence, fieldid, targetdb_ver,
-                           exposure):
+    def design_to_targetdb(self, cadence, fieldid, exposure):
         """
         Write a validated esign to targetdb
 
@@ -514,9 +513,6 @@ class FPSDesign(object):
 
         fieldid: int
             fieldid for the field.
-
-        targetdb_ver: int
-            pk for the targetdb version of this design.
 
         exposure: int
             The exposure of this set of designs, 0th indexed.
@@ -543,8 +539,10 @@ class FPSDesign(object):
 
         # create dictonary for unique carton pks
         cart_pks = {}
+        targetdb_ver = {}
         for pk in np.unique(self.valid_design['carton_pk'][self.valid_design['catalogID'] != -1]):
             cart_pks[pk] = pk
+            targetdb_ver[pk] = Carton.get(pk).version_pk
 
         # add the design to targetdb
         make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
@@ -557,7 +555,8 @@ class FPSDesign(object):
                                          carton=self.valid_design['carton_pk'][self.valid_design['catalogID'] != -1],
                                          instr_pks=None,
                                          cart_pks=cart_pks,
-                                         fiber_pks=None)
+                                         fiber_pks=None,
+                                         idtype='catalogID')
         return
 
     def design_to_opsdb(self, design):

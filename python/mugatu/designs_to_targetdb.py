@@ -86,9 +86,9 @@ def make_design_field_targetdb(cadence, fieldid, plan,
 
 
 def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
-                                     catalogID, fiberID, obsWavelength,
+                                     design_ids, fiberID, obsWavelength,
                                      carton, instr_pks=None, cart_pks=None,
-                                     fiber_pks=None):
+                                     fiber_pks=None, idtype='catalogID'):
     """
     Add assignments for a design to targetdb.
 
@@ -133,7 +133,14 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
 
     fiber_pks: dict
         Optional dictonary with the fiber pks
+
+    idtype: str
+        Defines the id type used in defining the design_ids.
+        Must be 'catalogID' or 'carton_to_target'.
     """
+    # make sure idtype is catalogID or carton_to_target
+    if idtype != 'catalogID' or idtype != 'carton_to_target':
+        raise MugatuError(message='idtype must be catalogID or carton_to_target')
 
     # grab the targetdb tables
     carton_to_targetDB = targetdb.CartonToTarget()
@@ -203,12 +210,15 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
             row_dict['instrument'] = instr_pks[inst_assign]
             row_dict['positioner'] = this_pos_DB
             cart_pk = cart_pks[carton[j]]
-            row_dict['carton_to_target'] = (targetdb.CartonToTarget.select(
-                targetdb.CartonToTarget.pk)
-                .join(targetdb.Target,
-                      on=(targetdb.CartonToTarget.target_pk == targetdb.Target.pk))
-                .where((targetdb.Target.catalogid == catalogID[j]) &
-                       (targetdb.CartonToTarget.carton_pk == cart_pk))[0].pk)
+            if idtype == 'catalogID':
+                row_dict['carton_to_target_pk'] = (targetdb.CartonToTarget.select(
+                    targetdb.CartonToTarget.pk)
+                    .join(targetdb.Target,
+                          on=(targetdb.CartonToTarget.target_pk == targetdb.Target.pk))
+                    .where((targetdb.Target.catalogid == design_ids[j]) &
+                           (targetdb.CartonToTarget.carton_pk == cart_pk))[0].pk)
+            if idtype == 'carton_to_target':
+                row_dict['carton_to_target_pk'] = design_ids[j]
 
             rows.append(row_dict)
 

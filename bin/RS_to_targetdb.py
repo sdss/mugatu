@@ -32,24 +32,55 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--observatory', dest='observatory',
                         type=str, help='apo or lco',
                         choices=['apo', 'lco'], required=True)
-    parser.add_argument('-v', '--targetdb_ver', dest='targetdb_ver',
-                        type=str, help='target_selection version_pk',
-                        required=True)
 
     args = parser.parse_args()
     plan = args.plan
     observatory = args.observatory
-    targetdb_ver = args.targetdb_ver
 
     # COMMENT OUT FOR TEST
     # file with cadences for each field
     allocate_file = sdss_path.full('rsAllocation', plan=plan,
                                    observatory=observatory)
 
+    # get config file path
+    # dont think is sdss_path
+    stop = 0
+    for i in range(len(allocate_file)):
+        if allocate_file[i] == '/':
+            stop = i + 1
+    config_file = allocate_file[:stop] + 'robostrategy-' + plan + '.cfg'
+
     # connect to targetdb
     targetdb.database.connect_from_parameters(user='sdss',
                                               host='operations.sdss.utah.edu',
                                               port=5432)
+
+    # get targetdb version pk by plan
+    targetdb_ver_pk = {}
+    ver = targetdb.Version.select()
+    for v in ver:
+        targetdb_ver_pk[v.plan] = v.pk
+
+    # get the targetdb version pk for each carton from config file
+    targetdb_ver = {}
+    with open(config_file, 'r') as f:
+        read = False
+        for x in f:
+            # remove \n from line
+            if len(x) > 0:
+                x = x[:-1]
+            # stop reading at blank line
+            if x == '':
+                read = False
+            # read if previously reached cartons line
+            if read:
+                # skip commented lines
+                if x[0] != '#':
+                    cart_line = x.split(' = ')
+                    targetdb_ver[cart_line[0]] = targetdb_ver_pk[cart_line[1]]
+            # start reading lines if reach cartons
+            if x == '[Cartons]' or x == '[CartonsExtra]':
+                read = True
 
     # add new robostratgey version to targetDB if it doesnt exist
     try:
@@ -142,7 +173,7 @@ if __name__ == '__main__':
             if cart != 'CALIBRATION':
                 cart_pks[cart] = (cartonDB.select(cartonDB.pk)
                                           .where((cartonDB.carton == cart) &
-                                                 (cartonDB.version_pk == targetdb_ver))[0].pk)
+                                                 (cartonDB.version_pk == targetdb_ver[cart]))[0].pk)
 
         for i in range(n_exp):
             # add design for ith exposure to targetdb

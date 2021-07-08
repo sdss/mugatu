@@ -135,25 +135,25 @@ class FPSDesign(object):
         else:
             design_field_db = (
                 Design.select(Design.pk,
-                              Design.mode_pk,
+                              # Design.mode_pk,
                               Field.racen,
                               Field.deccen,
                               Field.position_angle,
                               Observatory.label)
                       .join(Field,
-                            on=(Design.field_pk == Field.pk))
+                            on=(Design.field == Field.pk))
                       .join(Observatory,
-                            on=(Field.observatory_pk == Observatory.pk))
+                            on=(Field.observatory == Observatory.pk))
                       .where(Design.pk == self.design_pk))
 
             self.racen = design_field_db[0].field.racen
             self.deccen = design_field_db[0].field.deccen
             self.position_angle = design_field_db[0].field.position_angle
             self.observatory = design_field_db[0].field.observatory.label
-            self.mode_pk = design_field_db[0].mode_pk
+            # no mode right now in targetdb
+            # self.mode_pk = design_field_db[0].mode_pk
+
         # should these be catalogids or carton_to_target?
-        # either way, I think I need to specify carton info
-        # for checking modes here
         self.catalogids = catalogids
         self.ra = ra
         self.dec = dec

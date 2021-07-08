@@ -241,7 +241,7 @@ class FPSDesign(object):
             # index should match length of arrays
             pos_id = design_targ_db[i].positioner.id
             self.design['catalogID'][pos_id] = (design_targ_db[i]
-                                                .cartontotarget
+                                                .carton_to_target
                                                 .target.catalogid.catalogid)
             self.design['fiberID'][pos_id] = pos_id
             # design['wokHoleID'][i] = design_targ_db[i]
@@ -250,14 +250,14 @@ class FPSDesign(object):
             # catch targets with no assigned priority
             try:
                 self.design['priority'][pos_id] = (design_targ_db[i]
-                                                   .cartontotarget.priority)
+                                                   .carton_to_target.priority)
             except AttributeError:
                 self.design['priority'][pos_id] = -1
             self.design['carton_pk'][pos_id] = (design_targ_db[i]
-                                                .cartontotarget.carton.pk)
-            self.design['ra'][pos_id] = (design_targ_db[i].cartontotarget
+                                                .carton_to_target.carton.pk)
+            self.design['ra'][pos_id] = (design_targ_db[i].carton_to_target
                                                           .target.ra)
-            self.design['dec'][pos_id] = (design_targ_db[i].cartontotarget
+            self.design['dec'][pos_id] = (design_targ_db[i].carton_to_target
                                                            .target.dec)
 
         # here convert ra/dec to x/y based on field/time of observation

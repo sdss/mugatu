@@ -43,25 +43,25 @@ def make_design_field_targetdb(cadence, fieldid, plan,
     """
 
     # get the field cadence pk
-    if isinstance(cadence, targetdb.Cadence):
-        dbCadence = cadence.pk
-    else:
+    if isinstance(cadence, str):
         cadenceDB = targetdb.Cadence()
         dbCadence = cadenceDB.get(label=cadence).pk
+    else:
+        dbCadence = cadence.pk
 
     # get the observatory pk
-    if isinstance(observatory, targetdb.Observatory):
-        obspk = observatory.pk
-    else:
+    if isinstance(observatory, str):
         obsDB = targetdb.Observatory()
         obspk = obsDB.get(label=observatory.upper()).pk
+    else:
+        obspk = observatory.pk
 
     # get the version pk based on the plan
-    if isinstance(plan, targetdb.Version):
-        verpk = plan.pk
-    else:
+    if isinstance(plan, str):
         versionDB = targetdb.Version()
         verpk = versionDB.get(plan=plan).pk
+    else:
+        verpk = plan.pk
 
     # check if field exists
     field_test = (targetdb.Field
@@ -147,11 +147,11 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
     positionerDB = targetdb.Positioner()
 
    # get the version pk based on the plan
-    if isinstance(plan, targetdb.Version):
-        verpk = plan.pk
-    else:
+    if isinstance(plan, str):
         versionDB = targetdb.Version()
         verpk = versionDB.get(plan=plan).pk
+    else:
+        verpk = plan.pk
 
     # get the instrument pks
     if instr_pks is None:
@@ -170,15 +170,15 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
                                                         (targetdb.Carton.version_pk == targetdb_ver[cart]))[0].pk)
 
     # get the fieldpk
-    if isinstance(fieldid, targetdb.Field):
-        fieldpk = fieldid[0].pk
-    else:
+    if isinstance(fieldid, int):
         fieldDB = targetdb.Field()
         field = (targetdb.Field.select()
                                .join(targetdb.Version)
                                .where((targetdb.Field.field_id == fieldid) &
                                       (targetdb.Version.plan == plan)))
         fieldpk = field[0].pk
+    else:
+        fieldpk = fieldid[0].pk
 
     designDB = targetdb.Design.create(field=fieldpk,
                                       exposure=exposure)

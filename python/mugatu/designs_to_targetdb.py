@@ -139,7 +139,7 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
         Must be 'catalogID' or 'carton_to_target'.
     """
     # make sure idtype is catalogID or carton_to_target
-    if idtype != 'catalogID' or idtype != 'carton_to_target':
+    if idtype != 'catalogID' and idtype != 'carton_to_target':
         raise MugatuError(message='idtype must be catalogID or carton_to_target')
 
     # grab the targetdb tables

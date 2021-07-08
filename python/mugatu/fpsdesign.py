@@ -152,6 +152,7 @@ class FPSDesign(object):
             self.observatory = design_field_db[0].field.observatory.label
             # no mode right now in targetdb
             # self.mode_pk = design_field_db[0].mode_pk
+            self.mode_pk = None
 
         # should these be catalogids or carton_to_target?
         self.catalogids = catalogids

@@ -9,12 +9,11 @@ import argparse
 import os
 import numpy as np
 
-import fitsio
+from astropy.io import fits
 
 from sdssdb.peewee.sdss5db import targetdb
 import sdss_access.path
 from mugatu.designs_to_targetdb import make_design_field_targetdb, make_design_assignments_targetdb
-from mugatu.fpsdesign import FPSDesign
 from mugatu.exceptions import MugatuError
 
 sdss_path = sdss_access.path.Path(release='sdss5')
@@ -85,28 +84,32 @@ if __name__ == '__main__':
                     # set targetdb ver for carton
                     targetdb_ver[cart_line[0]] = targetdb_ver_pk[cart_line[1]]
                     # get the carton pk for this version
-                    cart_pks[cart] = (cartonDB.select(cartonDB.pk)
-                                              .where((cartonDB.carton == cart_line[0]) &
-                                                     (cartonDB.version_pk == targetdb_ver[cart_line[0]]))[0].pk)
+                    try:
+                        cart_pks[cart_line[0]] = (targetdb.Carton.select()
+                                                                 .where((targetdb.Carton.carton == cart_line[0]) &
+                                                                        (targetdb.Carton.version_pk == targetdb_ver[cart_line[0]]))[0].pk)
+                    # skip if not carton in targetdb version specified
+                    # this is what RS does
+                    except IndexError:
+                        pass
             # start reading lines if reach cartons
             if x == '[Cartons]' or x == '[CartonsExtra]':
                 read = True
 
     # add new robostratgey version to targetDB if it doesnt exist
     try:
-        versionDB = targetdb.Version()
-        verpk = versionDB.get(plan=plan).pk
+        verpk = targetdb.Version.get(plan=plan).pk
     except:
-        versionDB = targetdb.Version.create(plan=plan,
+        targetdb.Version = targetdb.Version.create(plan=plan,
                                             target_selection=False,
                                             robostrategy=True,
                                             tag="test")  # add test flag for now
 
-        versionDB.save()
+        targetdb.Version.save()
 
     # COMMENT OUT FOR TEST
     # data describing field (besides PA) stored here
-    rsAllocation1 = fitsio.read(allocate_file, ext=1)
+    rsAllocation1 = fits.open(allocate_file)[1].data
     # PAs are stored here
     # rsAllocation3 = fitsio.read(allocate_file, ext=3)
 
@@ -118,14 +121,14 @@ if __name__ == '__main__':
     # cadenceDB = targetdb.Cadence()
     # targetDB = targetdb.Target()
     # carton_to_targetDB = targetdb.CartonToTarget()
-    # positionerDB = targetdb.Positioner()
-    fieldDB = targetdb.Field()
-    positionerDB = targetdb.Positioner()
+    # targetdb.Positioner = targetdb.Positioner()
+    # targetdb.Field = targetdb.Field()
+    # targetdb.Positioner = targetdb.Positioner()
 
     # create dict of fiber pks
     fiber_pks = {}
     for fp in range(500):
-        fiber_pks[fp] = positionerDB.get(id=fp).pk
+        fiber_pks[fp] = targetdb.Positioner.get(id=fp).pk
 
     # get the instrument pks
     instr_pks = {}
@@ -137,8 +140,8 @@ if __name__ == '__main__':
     obs_inst = obsDB.get(label=observatory.upper())
 
     # get plan pk
-    versionDB = targetdb.Version()
-    ver_inst = versionDB.get(plan=plan)
+    # targetdb.Version = targetdb.Version()
+    ver_inst = targetdb.Version.get(plan=plan)
 
     for fieldid in fieldids:
         # now grab the assignment file for this field
@@ -148,11 +151,11 @@ if __name__ == '__main__':
                                              fieldid=fieldid)
 
         # get header with field info
-        head = fitsio.read_header(field_assigned_file)
+        head = fits.open(field_assigned_file)[0].header
         # association between catalogid and instrument
-        design_inst = fitsio.read(field_assigned_file, ext=1)
+        design_inst = fits.open(field_assigned_file)[1].data
         # catalogid assignment for each fiber
-        design = fitsio.read(field_assigned_file, ext=2)
+        design = fits.open(field_assigned_file)[2].data
 
         # use mugatu function to create field in targetdb
         make_design_field_targetdb(cadence=head['FCADENCE'],
@@ -163,10 +166,10 @@ if __name__ == '__main__':
                                    position_angle=head['PA'],
                                    observatory=obs_inst)
 
-        fieldid_inst = (fieldDB.select()
-                               .join(versionDB)
-                               .where((fieldDB.field_id=fieldid) &
-                                      (versionDB.plan=plan)))
+        fieldid_inst = (targetdb.Field.select()
+                                      .join(targetdb.Version)
+                                      .where((targetdb.Field.field_id==fieldid) &
+                                             (targetdb.Version.plan==plan)))
 
         # get number of exposures
         try:
@@ -176,44 +179,21 @@ if __name__ == '__main__':
             n_exp = 1
 
         for i in range(n_exp):
-            # validate design with mugatu
-            ev_design = eval("design['robotID'][:, i] != -1")
-            mug_design = FPSDesign(design_pk=-1,
-                                   obsTime=-1,
-                                   racen=head['RACEN'],,
-                                   deccen=head['DECCEN'],
-                                   position_angle=head['PA'],
-                                   observatory=observatory,
-                                   mode_pk=None,
-                                   catalogids=design_inst['catalogid'][ev_design],
-                                   ra=design_inst['ra'][ev_design],
-                                   dec=design_inst['dec'][ev_design],
-                                   fiberID=design['robotID'][:, i][ev_design],
-                                   obsWavelength=design_inst['fiberType'][ev_design],
-                                   priority=design_inst['priority'][ev_design],
-                                   carton_pk=None,
-                                   design_file=None,
-                                   manual_design=True)
-            # build design
-            mug_design.build_design_manual()
-            # validate design with Kaiju
-            try:
-                mug_design.validate_design()
-                valid = True
-            except MugatuError:
-                # if validation fails, somehow note this
-                valid = False
-            # add design for ith exposure to targetdb if valid
-            if valid:
-                make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
-                                                 plan=ver_inst,
-                                                 fieldid=fieldid_inst,
-                                                 exposure=i,
-                                                 design_id=design_inst['carton_to_target_pk'],
-                                                 fiberID=design['robotID'][:, i],
-                                                 obsWavelength=design_inst['fiberType'],
-                                                 carton=design_inst['carton'],
-                                                 instr_pks=instr_pks,
-                                                 cart_pks=cart_pks,
-                                                 fiber_pks=fiber_pks,
-                                                 idtype='carton_to_target')
+            # index correctly based on n_exp
+            if n_exp == 1:
+                roboIDs = design['robotID']
+            else:
+                roboIDs = design['robotID'][:, i]
+            # write exposure to targetdb
+            make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
+                                             plan=ver_inst,
+                                             fieldid=fieldid_inst,
+                                             exposure=i,
+                                             design_ids=design_inst['carton_to_target_pk'],
+                                             fiberID=roboIDs,
+                                             obsWavelength=design_inst['fiberType'],
+                                             carton=design_inst['carton'],
+                                             instr_pks=instr_pks,
+                                             cart_pks=cart_pks,
+                                             fiber_pks=fiber_pks,
+                                             idtype='carton_to_target')

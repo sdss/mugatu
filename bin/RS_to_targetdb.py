@@ -11,7 +11,7 @@ import numpy as np
 
 from astropy.io import fits
 
-from sdssdb.peewee.sdss5db import targetdb
+import sdssdb.peewee.sdss5db.sandbox as targetdb
 import sdss_access.path
 from mugatu.designs_to_targetdb import make_design_field_targetdb, make_design_assignments_targetdb
 from mugatu.exceptions import MugatuError

@@ -10,7 +10,7 @@ from scipy.spatial import cKDTree
 
 from mugatu.exceptions import MugatuError, MugatuWarning
 # from sdssdb.peewee.sdss5db.targetdb import DesignMode
-from sdssdb.peewee.sdss5db.targetdb import Carton, Category, Magnitude, CartonToTarget, Target
+from sdssdb.peewee.sdss5db.sandbox import Carton, Category, Magnitude, CartonToTarget, Target
 from sdssdb.peewee.sdss5db import catalogdb
 
 

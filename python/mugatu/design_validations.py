@@ -8,7 +8,7 @@ import numpy as np
 import warnings
 from scipy.spatial import cKDTree
 
-from sdssdb.peewee.sdss5db.targetdb import Carton, CartonToTarget, Magnitude, Mode, Assignment, Instrument, Positioner
+from sdssdb.peewee.sdss5db.sandbox import Carton, CartonToTarget, Magnitude, Mode, Assignment, Instrument, Positioner
 
 from mugatu.exceptions import MugatuError, MugatuWarning
 

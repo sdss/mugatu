@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 
-from sdssdb.peewee.sdss5db import targetdb
+import sdssdb.peewee.sdss5db.sandbox as targetdb
 from mugatu.exceptions import MugatuError, MugatuWarning
 
 

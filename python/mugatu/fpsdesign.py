@@ -10,7 +10,7 @@ import warnings
 import kaiju
 import kaiju.robotGrid
 # import coordio
-from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget, Carton
+from sdssdb.peewee.sdss5db.sandbox import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget, Carton
 import fitsio
 from mugatu.exceptions import MugatuError, MugatuWarning
 from coordio.utils import radec2wokxy, wokxy2radec

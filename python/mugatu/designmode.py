@@ -9,9 +9,16 @@ import warnings
 from scipy.spatial import cKDTree
 
 from mugatu.exceptions import MugatuError, MugatuWarning
-# from sdssdb.peewee.sdss5db.targetdb import DesignMode
 from sdssdb.peewee.sdss5db.targetdb import Carton, Category, Magnitude, CartonToTarget, Target
+from sdssdb.peewee.sdss5db.targetdb import DesignMode as DesignModeDB
 from sdssdb.peewee.sdss5db import catalogdb
+
+try:
+    from sdssdb.peewee.sdss5db import database
+    database.set_profile('operations')
+    _database = True
+except:
+    _database = False
 
 
 def ang_sep(ra1, dec1, ra2, dec2):
@@ -46,7 +53,165 @@ def ang_sep(ra1, dec1, ra2, dec2):
     return sep
 
 
-class DesignModeCheck(object):
+class DesignMode(object):
+    """Class to store parameters for a design mode
+
+    Parameters
+    ----------
+
+    label : str
+        label for design mode
+
+    Attributes
+    ----------
+
+    n_stds_min: dict
+        Dictonary with the minimum number of standards for a design
+        for each instrument ('APOGEE' and 'BOSS').
+
+    min_stds_fovmetric: dict
+        Dictonary wih the FOV metric for the standards in a design
+        for each instrument ('APOGEE' and 'BOSS').
+        The FOV metric is described by three parameters, the
+        nth neighbor to get distances to, the percentle distance
+        to calculate and the distace to compare against for validation
+        (in mm).
+
+    stds_mags: dict
+        Dictonary for the min/max magnitude for the standards in a
+        design for each instrument ('APOGEE' and 'BOSS'). Indexes
+        correspond to magntidues: [g, r, i, bp, gaia_g, rp, h].
+
+    bright_limit_targets: dict
+        Dictonary for the min/max magnitude for the science targets
+        in adesign for each instrument ('APOGEE' and 'BOSS'). Indexes
+        correspond to magntidues: [g, r, i, bp, gaia_g, rp, h].
+
+    sky_neighbors_targets: dict
+        Dictonary for the parameters used to check distance between
+        skies and all possible sources in field for each instrument
+        ('APOGEE' and 'BOSS'). Distances to targets (r, in arcseconds)
+        must be r > R_0 * (lim - mags) ** beta, where mags is G band
+        for BOSS and H band for APOGEE. Indexes correspond to:
+        [R_0, beta, lim]
+
+    trace_diff_targets: dict
+        Dictonary for the maximum magnitude difference allowed between
+        fibers next to each ther on the chip for each instrument
+        ('APOGEE' and 'BOSS'). Here the magntidue difference is checked
+        in the G band for BOSS and H band for APOGEE.
+"""
+    def __init__(self, label=None):
+        if(label is not None):
+            self.fromdb(label=label)
+        return
+
+    def fromdb(self, label=None):
+        """Read in parameters for design mode from db
+
+        Parameters
+        ----------
+        
+        label : str
+            name of design mode
+"""
+        if(_database is False):
+            print("No database, cannot read.")
+            return
+
+        self.desmode_label = label
+
+        desmode = DesignModeDB.select().where(DesignModeDB.label == self.desmode_label)[0]
+
+        self.n_skies_min = {}
+        self.n_skies_min['BOSS'] = desmode.boss_skies_min
+        self.n_skies_min['APOGEE'] = desmode.apogee_skies_min
+        
+        self.min_skies_fovmetric = {}
+        self.min_skies_fovmetric['BOSS'] = desmode.boss_skies_fov
+        self.min_skies_fovmetric['APOGEE'] = desmode.apogee_skies_fov
+        
+        self.n_stds_min = {}
+        self.n_stds_min['BOSS'] = desmode.boss_stds_min
+        self.n_stds_min['APOGEE'] = desmode.apogee_stds_min
+        
+        self.min_stds_fovmetric = {}
+        self.min_stds_fovmetric['BOSS'] = desmode.boss_stds_fov
+        self.min_stds_fovmetric['APOGEE'] = desmode.apogee_stds_fov
+        
+        self.stds_mags = {}
+        self.stds_mags['BOSS'] = np.zeros((len(desmode.boss_stds_mags_min), 2), dtype=np.float64)
+        self.stds_mags['BOSS'][:, 0] = desmode.boss_stds_mags_min
+        self.stds_mags['BOSS'][:, 1] = desmode.boss_stds_mags_max
+        self.stds_mags['APOGEE'] = np.zeros((len(desmode.apogee_stds_mags_min), 2), dtype=np.float64)
+        self.stds_mags['APOGEE'][:, 0] = desmode.apogee_stds_mags_min
+        self.stds_mags['APOGEE'][:, 1] = desmode.apogee_stds_mags_max
+        
+        self.bright_limit_targets = {}
+        self.bright_limit_targets['BOSS'] = np.zeros((len(desmode.boss_bright_limit_targets_min), 2), dtype=np.float64)
+        self.bright_limit_targets['BOSS'][:, 0] = desmode.boss_bright_limit_targets_min
+        self.bright_limit_targets['BOSS'][:, 1] = desmode.boss_bright_limit_targets_max
+        self.bright_limit_targets['APOGEE'] = np.zeros((len(desmode.apogee_bright_limit_targets_min), 2), dtype=np.float64)
+        self.bright_limit_targets['APOGEE'][:, 0] = desmode.apogee_bright_limit_targets_min
+        self.bright_limit_targets['APOGEE'][:, 1] = desmode.apogee_bright_limit_targets_max
+        
+        self.sky_neighbors_targets = {}
+        self.sky_neighbors_targets['BOSS'] = desmode.boss_sky_neighbors_targets
+        self.sky_neighbors_targets['APOGEE'] = desmode.apogee_sky_neighbors_targets
+        
+        self.trace_diff_targets = {}
+        self.trace_diff_targets['APOGEE'] = desmode.apogee_trace_diff_targets
+        return
+
+    def frommanual(self, label=None, desmode_manual=None):
+        """Read in parameters for design mode from dictionary input
+
+        Parameters
+        ----------
+        
+        label : str
+            name of design mode
+
+        desmode_manual : dict
+            Dictonary of DesignMode parameters to be used as manual
+            inputs to validate the design, rather than from targetdb.
+"""
+        self.desmode_label = label
+
+        self.n_skies_min = {}
+        self.n_skies_min['BOSS'] = desmode_manual['boss_skies_min']
+        self.n_skies_min['APOGEE'] = desmode_manual['apogee_skies_min']
+        
+        self.min_skies_fovmetric = {}
+        self.min_skies_fovmetric['BOSS'] = desmode_manual['boss_skies_fov']
+        self.min_skies_fovmetric['APOGEE'] = desmode_manual['apogee_skies_fov']
+        
+        self.n_stds_min = {}
+        self.n_stds_min['BOSS'] = desmode_manual['boss_stds_min']
+        self.n_stds_min['APOGEE'] = desmode_manual['apogee_stds_min']
+        
+        self.min_stds_fovmetric = {}
+        self.min_stds_fovmetric['BOSS'] = desmode_manual['boss_stds_fov']
+        self.min_stds_fovmetric['APOGEE'] = desmode_manual['apogee_stds_fov']
+    
+        self.stds_mags = {}
+        self.stds_mags['BOSS'] = desmode_manual['boss_stds_mags']
+        self.stds_mags['APOGEE'] = desmode_manual['apogee_stds_mags']
+        
+        self.bright_limit_targets = {}
+        self.bright_limit_targets['BOSS'] = desmode_manual['boss_bright_limit_targets']
+        self.bright_limit_targets['APOGEE'] = desmode_manual['apogee_bright_limit_targets']
+
+        self.sky_neighbors_targets = {}
+        self.sky_neighbors_targets['BOSS'] = desmode_manual['boss_sky_neighbors_targets']
+        self.sky_neighbors_targets['APOGEE'] = desmode_manual['apogee_sky_neighbors_targets']
+
+        self.trace_diff_targets = {}
+        self.trace_diff_targets['APOGEE'] = desmode_manual['apogee_trace_diff_targets']
+        return
+        
+        
+class DesignModeCheck(DesignMode):
     """
     Parameters
     ----------
@@ -129,71 +294,10 @@ class DesignModeCheck(object):
 
         # grab the design mode params
         if desmode_manual is None:
-            # uncomment once in database
-            # desmode = DesignMode.get(DesignMode.label == desmode_label)
-            # NOTE: Null in arrays will be -999, so add check here for this
-            desmode = desmode_manual
-            self.n_skies_min = {}
-            self.n_skies_min['BOSS'] = desmode.boss_skies_min
-            self.n_skies_min['APOGEE'] = desmode.apogee_skies_min
-
-            self.min_skies_fovmetric = {}
-            self.min_skies_fovmetric['BOSS'] = desmode.boss_skies_fov
-            self.min_skies_fovmetric['APOGEE'] = desmode.apogee_skies_fov
-
-            self.n_stds_min = {}
-            self.n_stds_min['BOSS'] = desmode.boss_stds_min
-            self.n_stds_min['APOGEE'] = desmode.apogee_stds_min
-
-            self.min_stds_fovmetric = {}
-            self.min_stds_fovmetric['BOSS'] = desmode.boss_stds_fov
-            self.min_stds_fovmetric['APOGEE'] = desmode.apogee_stds_fov
-
-            self.stds_mags = {}
-            self.stds_mags['BOSS'] = desmode.boss_stds_mags
-            self.stds_mags['APOGEE'] = desmode.apogee_stds_mags
-
-            self.bright_limit_targets = {}
-            self.bright_limit_targets['BOSS'] = desmode.boss_bright_limit_targets
-            self.bright_limit_targets['APOGEE'] = desmode.apogee_bright_limit_targets
-
-            self.sky_neighbors_targets = {}
-            self.sky_neighbors_targets['BOSS'] = desmode.boss_sky_neighbors_targets
-            self.sky_neighbors_targets['APOGEE'] = desmode.apogee_sky_neighbors_targets
-
-            self.trace_diff_targets = {}
-            self.trace_diff_targets['APOGEE'] = desmode.apogee_trace_diff_targets
+            self.fromdb(label=self.desmode_label)
         else:
-            self.n_skies_min = {}
-            self.n_skies_min['BOSS'] = desmode_manual['boss_skies_min']
-            self.n_skies_min['APOGEE'] = desmode_manual['apogee_skies_min']
-
-            self.min_skies_fovmetric = {}
-            self.min_skies_fovmetric['BOSS'] = desmode_manual['boss_skies_fov']
-            self.min_skies_fovmetric['APOGEE'] = desmode_manual['apogee_skies_fov']
-
-            self.n_stds_min = {}
-            self.n_stds_min['BOSS'] = desmode_manual['boss_stds_min']
-            self.n_stds_min['APOGEE'] = desmode_manual['apogee_stds_min']
-
-            self.min_stds_fovmetric = {}
-            self.min_stds_fovmetric['BOSS'] = desmode_manual['boss_stds_fov']
-            self.min_stds_fovmetric['APOGEE'] = desmode_manual['apogee_stds_fov']
-
-            self.stds_mags = {}
-            self.stds_mags['BOSS'] = desmode_manual['boss_stds_mags']
-            self.stds_mags['APOGEE'] = desmode_manual['apogee_stds_mags']
-
-            self.bright_limit_targets = {}
-            self.bright_limit_targets['BOSS'] = desmode_manual['boss_bright_limit_targets']
-            self.bright_limit_targets['APOGEE'] = desmode_manual['apogee_bright_limit_targets']
-
-            self.sky_neighbors_targets = {}
-            self.sky_neighbors_targets['BOSS'] = desmode_manual['boss_sky_neighbors_targets']
-            self.sky_neighbors_targets['APOGEE'] = desmode_manual['apogee_sky_neighbors_targets']
-
-            self.trace_diff_targets = {}
-            self.trace_diff_targets['APOGEE'] = desmode_manual['apogee_trace_diff_targets']
+            self.frommanual(label=self.desmode_label,
+                            desmode_manual=desmode_manual)
 
         # classify cartons as skies, standards or science
         self.carton_classes = {}

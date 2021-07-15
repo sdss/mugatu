@@ -81,13 +81,18 @@ if __name__ == '__main__':
                 # skip commented lines
                 if x[0] != '#':
                     cart_line = x.split(' = ')
+                    # mike formats cartons as 30A in output files
+                    if len(cart_line[0]) > 30:
+                        cart_key = cart_line[0][:30]
+                    else:
+                        cart_key = cart_line[0]
                     # set targetdb ver for carton
-                    targetdb_ver[cart_line[0]] = targetdb_ver_pk[cart_line[1]]
+                    targetdb_ver[cart_key] = targetdb_ver_pk[cart_line[1]]
                     # get the carton pk for this version
                     try:
-                        cart_pks[cart_line[0]] = (targetdb.Carton.select()
-                                                                 .where((targetdb.Carton.carton == cart_line[0]) &
-                                                                        (targetdb.Carton.version_pk == targetdb_ver[cart_line[0]]))[0].pk)
+                        cart_pks[cart_key] = (targetdb.Carton.select()
+                                                             .where((targetdb.Carton.carton == cart_line[0]) &
+                                                                    (targetdb.Carton.version_pk == targetdb_ver[cart_key]))[0].pk)
                     # skip if not carton in targetdb version specified
                     # this is what RS does
                     except IndexError:

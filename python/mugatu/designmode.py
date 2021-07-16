@@ -163,6 +163,47 @@ class DesignMode(object):
         self.trace_diff_targets['APOGEE'] = desmode.apogee_trace_diff_targets
         return
 
+    def todict(self):
+        """Returns a dictionary form of the object
+"""
+        attrs = ['n_skies_min', 'min_skies_fovmetric', 'n_stds_min',
+                 'min_stds_fovmetric', 'stds_mags', 'bright_limit_targets',
+                 'sky_neighbors_targets', 'trace_diff_targets']
+
+        dmd = dict()
+        for attr in attrs:
+            dmda = getattr(self, attr)
+            dmd[attr] = dict()
+            for key in dmda:
+                if(type(dmda[key]) == np.ndarray):
+                    dmd[attr][key] = dmda[key].tolist()
+                else:
+                    dmd[attr][key] = dmda[key]
+
+        return(dmd)
+
+    def fromdict(self, designmode_dict=None):
+        """Builds from a dictionary form of the object
+
+        Parameters
+        ----------
+        
+        designmode_dict : dict
+            dictionary form of DesignMode object created by todict()
+"""
+        attrs = ['n_skies_min', 'min_skies_fovmetric', 'n_stds_min',
+                 'min_stds_fovmetric', 'stds_mags', 'bright_limit_targets',
+                 'sky_neighbors_targets', 'trace_diff_targets']
+
+        for param in attrs:
+            setattr(self, param, dict())
+            for instrument in designmode_dict[param]:
+                if(type(designmode_dict[param][instrument]) == list):
+                    getattr(self, param)[instrument] = np.array(designmode_dict[param][instrument])
+                else:
+                    getattr(self, param)[instrument] = designmode_dict[param][instrument]
+        return
+
     def frommanual(self, label=None, desmode_manual=None):
         """Read in parameters for design mode from dictionary input
 

@@ -211,14 +211,14 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
             row_dict['positioner'] = this_pos_DB
             cart_pk = cart_pks[carton[j]]
             if idtype == 'catalogID':
-                row_dict['carton_to_target_pk'] = (targetdb.CartonToTarget.select(
+                row_dict['carton_to_target'] = (targetdb.CartonToTarget.select(
                     targetdb.CartonToTarget.pk)
                     .join(targetdb.Target,
                           on=(targetdb.CartonToTarget.target_pk == targetdb.Target.pk))
                     .where((targetdb.Target.catalogid == design_ids[j]) &
                            (targetdb.CartonToTarget.carton_pk == cart_pk))[0].pk)
             if idtype == 'carton_to_target':
-                row_dict['carton_to_target_pk'] = design_ids[j]
+                row_dict['carton_to_target'] = design_ids[j]
 
             rows.append(row_dict)
 

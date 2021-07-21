@@ -6,6 +6,8 @@
 
 import numpy as np
 import warnings
+import fitsio
+import collections
 from scipy.spatial import cKDTree
 
 from mugatu.exceptions import MugatuError, MugatuWarning
@@ -51,6 +53,48 @@ def ang_sep(ra1, dec1, ra2, dec2):
     sep = (180 / np.pi) * np.arcos(np.sin(dec1) * np.sin(dec2) +
                                    np.cos(dec1) * np.cos(dec2) * np.cos(ra1 - ra2))
     return sep
+
+
+def allDesignModes(filename=None, ext=1):
+    """Function to return a dictionary with all design modes
+
+    Parameters
+    ----------
+    
+    filename : str
+        FITS file name to read array from (default None)
+
+    ext : int or str
+        FITS file extension to read array from (default 1)
+
+    Comments
+    --------
+
+    Returns an OrderedDict
+    
+    If filename is not provided, it reads from that file name
+    and the given extension. If not, it reads from the database.
+
+    If neither the filename is given nor the db is available, it
+    returns None.
+"""
+    if(filename is not None):
+        dmas = fitsio.read(filename)
+        dmd = collections.OrderedDict()
+        for dma in dmas:
+            dmd[dma['label']] = DesignMode()
+            dmd[dma['label']].fromarray(dma)
+        return(dmd)
+            
+    if(_database | (filename is not None)):
+        desmodes = DesignModeDB.select()
+        dmd = collections.OrderedDict()
+        for desmode in desmodes:
+            dmd[desmode.label] = DesignMode(label=desmode.label)
+        return(dmd)
+
+    print("No file name input or db access.")
+    return(None)
 
 
 class DesignMode(object):
@@ -163,6 +207,56 @@ class DesignMode(object):
         self.trace_diff_targets['APOGEE'] = desmode.apogee_trace_diff_targets
         return
 
+    def toarray(self):
+        """Returns an ndarray form of the object
+"""
+        attrnames = ['n_skies_min', 'min_skies_fovmetric', 'n_stds_min',
+                     'min_stds_fovmetric', 'stds_mags',
+                     'bright_limit_targets', 'sky_neighbors_targets',
+                     'trace_diff_targets']
+
+        dtype = [('label', 'U30')]
+        for attrname in attrnames:
+            attr = getattr(self, attrname)
+            for instrument in attr:
+                name = instrument.lower() + '_' + attrname
+                if(type(attr[instrument]) == np.ndarray):
+                    dtype.append((name, np.float64,
+                                  attr[instrument].shape))
+                elif(type(attr[instrument]) == list):
+                    dtype.append((name, np.float64,
+                                  len(attr[instrument])))
+                else:
+                    dtype.append((name, np.float64))
+        
+        arr = np.zeros(1, dtype=dtype)
+        arr['label'] = self.desmode_label
+        for attrname in attrnames:
+            attr = getattr(self, attrname)
+            for instrument in attr:
+                name = instrument.lower() + '_' + attrname
+                arr[name] = attr[instrument]
+
+        return(arr[0])
+
+    def fromarray(self, arr=None):
+        """Reads an ndarray form of the object created by toarray()
+"""
+        attrnames = ['n_skies_min', 'min_skies_fovmetric', 'n_stds_min',
+                     'min_stds_fovmetric', 'stds_mags',
+                     'bright_limit_targets', 'sky_neighbors_targets',
+                     'trace_diff_targets']
+
+        self.desmode_label = arr['label']
+        for attrname in attrnames:
+            setattr(self, attrname, dict())
+            for instrument in ['BOSS', 'APOGEE']:
+                name = instrument.lower() + '_' + attrname
+                if(name in arr.dtype.names):
+                    getattr(self, attrname)[instrument] = arr[name]
+        
+        return
+
     def todict(self):
         """Returns a dictionary form of the object
 """
@@ -171,6 +265,7 @@ class DesignMode(object):
                  'sky_neighbors_targets', 'trace_diff_targets']
 
         dmd = dict()
+        dmd['label'] = self.desmode_label
         for attr in attrs:
             dmda = getattr(self, attr)
             dmd[attr] = dict()
@@ -195,6 +290,7 @@ class DesignMode(object):
                  'min_stds_fovmetric', 'stds_mags', 'bright_limit_targets',
                  'sky_neighbors_targets', 'trace_diff_targets']
 
+        self.desmod_label = designmode_dict['label']
         for param in attrs:
             setattr(self, param, dict())
             for instrument in designmode_dict[param]:

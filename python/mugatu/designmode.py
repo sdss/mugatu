@@ -390,11 +390,11 @@ def check_assign_mag_limit(mag_metric_min,
         # set True, no mag is not a fail
         targ_check = True
     # check when greater than and less than
-    elif mag_metric_min is not None and mag_metric_max is not None:
+    elif mag_metric_min != -999. and mag_metric_max != -999.:
         if (mag_metric_min < assign_mag < mag_metric_max):
             targ_check = True
     # check when just greater than
-    elif mag_metric_min is not None:
+    elif mag_metric_min != -999.:
         if assign_mag > mag_metric_min:
             targ_check = True
     # check when less than

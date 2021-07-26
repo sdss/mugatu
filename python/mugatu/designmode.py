@@ -348,6 +348,62 @@ class DesignMode(object):
         return
         
         
+def check_assign_mag_limit(mag_metric_min,
+                           mag_metric_max,
+                           assign_mag):
+    """
+    Checks the if magnitude of one assignment agrees with
+    design mode for some instrument and carton class
+
+    Parameters
+    ----------
+    mag_metric_min: float
+        The minimum magitude for the specific DesignMode.
+
+    mag_metric_min: float
+        The maximum magitude for the specific DesignMode.
+
+    assign_mag: float
+        The magntiude of the assignment being checkaged against
+        the DesignMode.
+
+    Returns
+    -------
+    targ_check: boolean
+        True of the assignment magntiude passed the DesignMode
+        for the magnitude, False if not.
+
+    complete_check: str
+        'COMPLETE' if assign_mag is value, 'INCOMPLETE' if Null.
+    """
+
+    # set default values
+    complete_check = 'COMPLETE'
+    targ_check = False
+
+    # do checks
+    # define Null cases for targetdb.magnitude table
+    cases = [-999, -9999, 999,
+             0.0, np.nan, 99.9, None]
+    if assign_mag in cases:
+        complete_check = 'INCOMPLETE'
+        # set True, no mag is not a fail
+        targ_check = True
+    # check when greater than and less than
+    elif mag_metric_min is not None and mag_metric_max is not None:
+        if (mag_metric_min < assign_mag < mag_metric_max):
+            targ_check = True
+    # check when just greater than
+    elif mag_metric_min is not None:
+        if assign_mag > mag_metric_min:
+            targ_check = True
+    # check when less than
+    else:
+        if assign_mag < mag_metric_max:
+            targ_check = True
+    return targ_check, complete_check
+
+
 class DesignModeCheck(DesignMode):
     """
     Parameters
@@ -715,22 +771,11 @@ class DesignModeCheck(DesignMode):
                 # check in each band that has check defined
                 targ_check = np.zeros(len(check_inds), dtype=bool)
                 for j, ind in enumerate(check_inds):
-                    if self.mags[i][ind] is None:
-                        complete_check[i] = 'INCOMPLETE'
-                        # set True, no mag is not a fail
-                        targ_check[j] = True
-                    # check when greater than and less than
-                    elif mag_metric[ind][0] is not None and mag_metric[ind][1] is not None:
-                        if (mag_metric[ind][0] < self.mags[i][ind] < mag_metric[ind][1]):
-                            targ_check[j] = True
-                    # check when just greater than
-                    elif mag_metric[ind][0] is not None:
-                        if self.mags[i][ind] > mag_metric[ind][0]:
-                            targ_check[j] = True
-                    # check when less than
-                    else:
-                        if self.mags[i][ind] < mag_metric[ind][1]:
-                            targ_check[j] = True
+                    # check the magntiude for this assignment
+                    targ_check[j], complete_check[i] = check_assign_mag_limit(
+                                                            mag_metric[ind][0],
+                                                            mag_metric[ind][1],
+                                                            self.mags[i][ind])
                 # if all True, then passes
                 if np.all(targ_check):
                     mag_checks[i] = True

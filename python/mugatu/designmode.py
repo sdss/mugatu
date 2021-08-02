@@ -79,7 +79,7 @@ def allDesignModes(filename=None, ext=1):
     returns None.
 """
     if(filename is not None):
-        dmas = fitsio.read(filename)
+        dmas = fitsio.read(filename, ext=ext)
         dmd = collections.OrderedDict()
         for dma in dmas:
             dmd[dma['label']] = DesignMode()

@@ -51,6 +51,7 @@ class ObsTime(object):
     It uses SDSS's coordio for the astronomy calculation.
     This is taken from Robostrategy (not in current branch, so moved here)
     """
+
     def __init__(self, observatory='apo', year=2021):
         self.observatory = observatory
         self.year = year

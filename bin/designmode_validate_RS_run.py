@@ -142,37 +142,10 @@ if __name__ == '__main__':
 
     fieldids = rsField[1].data["fieldid"]
 
-    designmodes = pd.read_csv('DesignMode_values.txt', sep=';')
-
-    # setup dict
-    desmode_manuals = {}
-    for ind in range(len(designmodes)):
-        desmode_manual = {}
-        desmode_manual['boss_skies_min'] = designmodes.loc[ind,'BOSS_skies_min']
-        desmode_manual['apogee_skies_min'] = designmodes.loc[ind,'APOGEE_skies_min']
-        desmode_manual['boss_skies_fov'] = arrayify(designmodes.loc[ind,'BOSS_skies_FOV'])
-        desmode_manual['apogee_skies_fov'] = arrayify(designmodes.loc[ind,'APOGEE_skies_FOV'])
-        desmode_manual['boss_stds_min'] = designmodes.loc[ind,'BOSS_stds_min']
-        desmode_manual['apogee_stds_min'] = designmodes.loc[ind,'APOGEE_stds_min']
-        desmode_manual['boss_stds_fov'] = arrayify(designmodes.loc[ind,'BOSS_stds_FOV'])
-        desmode_manual['apogee_stds_fov'] = arrayify(designmodes.loc[ind,'APOGEE_stds_FOV'])
-        desmode_manual['boss_stds_mags'] = np.column_stack((arrayify(designmodes.loc[ind,'BOSS_stds_mags_min']),
-                                                            arrayify(designmodes.loc[ind,'BOSS_stds_mags_max'])))
-        desmode_manual['apogee_stds_mags'] = np.column_stack((arrayify(designmodes.loc[ind,'APOGEE_stds_mags_min']),
-                                                              arrayify(designmodes.loc[ind,'APOGEE_stds_mags_max'])))
-        desmode_manual['boss_bright_limit_targets'] = np.column_stack((arrayify(designmodes.loc[ind,'BOSS_bright_limit_targets_min']),
-                                                                       arrayify(designmodes.loc[ind,'BOSS_bright_limit_targets_max'])))
-        desmode_manual['apogee_bright_limit_targets'] = np.column_stack((arrayify(designmodes.loc[ind,'APOGEE_bright_limit_targets_min']),
-                                                                         arrayify(designmodes.loc[ind,'APOGEE_bright_limit_targets_max'])))
-        desmode_manual['boss_sky_neighbors_targets'] = np.array([5, 5, 5])
-        desmode_manual['apogee_sky_neighbors_targets'] = np.array([5, 5, 5])
-        desmode_manual['apogee_trace_diff_targets'] = None
-        desmode_manuals[designmodes.loc[ind,'pk']] = desmode_manual
-
     start = time.time()
     bad = 0
 
-    with open('rs_%s_%s_designmode_results_sdssdb_0_4_9.txt' % (plan, observatory), 'w') as f:
+    with open('rs_%s_%s_designmode_results.txt' % (plan, observatory), 'w') as f:
         header = ['fieldid',
                   'exp',
                   'cadence',
@@ -215,38 +188,6 @@ if __name__ == '__main__':
                                     )
                     carton_pks[field_assign_1['carton'] == cart] = c.carton.pk
 
-            # grab all magntiudes now
-            mags = np.zeros((len(field_assign_1['catalogid']), 7)) - 9999.99
-            for i in range(len(field_assign_1['catalogid'])):
-                # do not query skies, they have no mag
-                if 'sky' not in field_assign_1['category'][i] and field_assign_2['assigned'][i] == 1:
-                    mag_query = (targetdb.Magnitude.select()
-                                                   .where((targetdb.Magnitude.carton_to_target == field_assign_1['carton_to_target_pk'][i])))
-                    if mag_query[0].optical_prov is None:
-                        mags[i][0] = mag_query[0].g
-                        mags[i][1] = mag_query[0].r
-                        mags[i][2] = mag_query[0].i
-                        mags[i][3] = mag_query[0].bp
-                        mags[i][4] = mag_query[0].gaia_g
-                        mags[i][5] = mag_query[0].rp
-                        mags[i][6] = mag_query[0].h
-                    elif 'psf' in mag_query[0].optical_prov:
-                        mags[i][0] = mag_query[0].g
-                        mags[i][1] = mag_query[0].r
-                        mags[i][2] = mag_query[0].i
-                        mags[i][3] = mag_query[0].bp
-                        mags[i][4] = mag_query[0].gaia_g
-                        mags[i][5] = mag_query[0].rp
-                        mags[i][6] = mag_query[0].h
-                    else:
-                        mags[i][0] = None
-                        mags[i][1] = None
-                        mags[i][2] = None
-                        mags[i][3] = None
-                        mags[i][4] = None
-                        mags[i][5] = None
-                        mags[i][6] = None
-
             nd = len(field_assign_2['robotID'].shape)
             if nd == 1:
                 ndim = 1
@@ -279,16 +220,7 @@ if __name__ == '__main__':
                 line[0] = fieldid
                 line[1] = i
                 line[2] = head['FCADENCE']
-                if 'bright' in head['FCADENCE']:
-                    line[3] = 'Bright Time'
-                elif head['FCADENCE'] == 'dark_174x8' or head['FCADENCE'] == 'dark_100x8':
-                    line[3] = 'Dark RM'
-                elif head['FCADENCE'] == 'dark_10x4' or head['FCADENCE'] == 'dark_2x4':
-                    line[3] = 'Dark Monitoring'
-                elif head['FCADENCE'] == 'dark_2x2' or head['FCADENCE'] == 'dark_4x1':
-                    line[3] = 'Dark Faint'
-                else:
-                    line[3] = 'Dark Plane'
+                line[3] = head['DESMODE'].split(' ')[i]
 
                 exp_ev = eval("roboid != -1")
 
@@ -314,14 +246,13 @@ if __name__ == '__main__':
 
                 des_check = DesignModeCheck(FPSDesign=des,
                                             desmode_label=line[3],
-                                            desmode_manual=desmode_manuals[line[3]],
-                                            mags=mags[exp_ev])
+                                            mags=field_assign_1['magnitude'][exp_ev])
 
                 # try:
                 # do checks
                 line[4] = int(des_check.skies_min('BOSS'))
                 line[5] = int(des_check.skies_fov('BOSS'))
-                if line[3] == 'Dark RM':
+                if line[3] == 'dark_rm':
                     line[6] = int(True)
                     line[7] = int(True)
                 else:
@@ -341,7 +272,7 @@ if __name__ == '__main__':
                 else:
                     line[9] = check_tot / design_tot
                 line[10] = int(des_check.stds_fov('BOSS'))
-                if line[3] == 'Dark RM':
+                if line[3] == 'dark_rm':
                     line[11] = int(True)
                     line[12] = 1.
                     line[13] = int(True)
@@ -372,7 +303,7 @@ if __name__ == '__main__':
                     line[14] = -1
                 else:
                     line[14] = check_tot / design_tot
-                if line[3] == 'Dark RM':
+                if line[3] == 'dark_rm':
                     line[15] = 1.
                 else:
                     stds_mags_check = des_check.mag_limits(des_check.bright_limit_targets['APOGEE'],
@@ -387,20 +318,6 @@ if __name__ == '__main__':
                         line[15] = -1
                     else:
                         line[15] = check_tot / design_tot
-                # except:
-                #     line[4] = -1
-                #     line[5] = -1
-                #     line[6] = -1
-                #     line[7] = -1
-                #     line[8] = -1
-                #     line[9] = -1
-                #     line[10] = -1
-                #     line[11] = -1
-                #     line[12] = -1
-                #     line[13] = -1
-                #     line[14] = -1
-                #     line[15] = -1
-                #     bad += 1
 
                 f.write('\t'.join([str(x) for x in line]) + '\n')
 

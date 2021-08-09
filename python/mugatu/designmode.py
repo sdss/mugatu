@@ -412,7 +412,8 @@ class DesignModeCheck(DesignMode):
         mugatu.fpsdesign.FPSDesign object with a built design.
 
     desmode_label: str
-        The DesignMode label from targetdb.
+        The DesignMode label from targetdb. Options for label are:
+        bright_time, dark_plane, dark_monit, dark_rm and dark_faint.
 
     desmode_manual: dict
         Dictonary of DesignMode parameters to be used as manual

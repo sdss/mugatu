@@ -385,7 +385,7 @@ def check_assign_mag_limit(mag_metric_min,
     # define Null cases for targetdb.magnitude table
     cases = [-999, -9999, 999,
              0.0, np.nan, 99.9, None]
-    if assign_mag in cases:
+    if assign_mag in cases or np.isnan(assign_mag):
         complete_check = 'INCOMPLETE'
         # set True, no mag is not a fail
         targ_check = True

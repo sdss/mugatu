@@ -761,7 +761,7 @@ class DesignModeCheck(DesignMode):
         # check which limits are defined for mode
         check_inds = []
         for i in range(mag_metric.shape[0]):
-            if mag_metric[i][0] is not None or mag_metric[i][1] is not None:
+            if mag_metric[i][0] != -999. or mag_metric[i][1] != -999.:
                 check_inds.append(i)
 
         # run checks

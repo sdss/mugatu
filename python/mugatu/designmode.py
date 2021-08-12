@@ -532,7 +532,7 @@ class DesignModeCheck(DesignMode):
         else:
             self.mags = mags
 
-    def skies_min(self, instrument):
+    def skies_min(self, instrument, return_metric=False):
         """
         Checks if design has the required number of skies
         for some instrument. Returns True if number skies is
@@ -544,22 +544,36 @@ class DesignModeCheck(DesignMode):
             Instrument to check number of sky fibers.
             Must be 'BOSS' or 'APOGEE'.
 
+        return_metric: boolean
+            If True, will return the number of skies
+            in the design.
+
         Returns
         -------
         : boolean
             True if number skies is
             greater than the minimum and False if not.
+
+        n_skies: int
+            Number of skies in design, only returned if
+            return_metric=True.
         """
         n_skies = len(self.design['catalogID'][(self.design['catalogID'] != -1) &
                                                      (np.isin(self.design['carton_pk'],
                                                               self.carton_classes['sky'])) &
                                                      (self.design['obsWavelength'] == instrument)])
-        if n_skies >= self.n_skies_min[instrument]:
-            return True
+        if return_metric:
+            if n_skies >= self.n_skies_min[instrument]:
+                return True, n_skies
+            else:
+                return False, n_skies
         else:
-            return False
+            if n_skies >= self.n_skies_min[instrument]:
+                return True
+            else:
+                return False
 
-    def stds_min(self, instrument):
+    def stds_min(self, instrument, return_metric=False):
         """
         Checks if design has the required number of standards
         for some instrument. Returns True if number standards is
@@ -571,22 +585,36 @@ class DesignModeCheck(DesignMode):
             Instrument to check number of standard fibers.
             Must be 'BOSS' or 'APOGEE'.
 
+        return_metric: boolean
+            If True, will return the number of standards
+            in the design.
+
         Returns
         -------
         : boolean
             True if number standards is
             greater than the minimum and False if not.
+
+        n_stds: int
+            Number of standards in design, only returned if
+            return_metric=True.
         """
         n_stds = len(self.design['catalogID'][(self.design['catalogID'] != -1) &
                                                     (np.isin(self.design['carton_pk'],
                                                              self.carton_classes['std'])) &
                                                     (self.design['obsWavelength'] == instrument)])
-        if n_stds >= self.n_stds_min[instrument]:
-            return True
+        if return_metric:
+            if n_stds >= self.n_stds_min[instrument]:
+                return True, n_stds
+            else:
+                return False, n_stds
         else:
-            return False
+            if n_stds >= self.n_stds_min[instrument]:
+                return True
+            else:
+                return False
 
-    def skies_fov(self, instrument):
+    def skies_fov(self, instrument, return_metric=False):
         """
         Checks if design meets the FOV metric for the skies
         for some instrument. Returns True FOV metric met,
@@ -599,12 +627,21 @@ class DesignModeCheck(DesignMode):
             Instrument to FOV metric.
             Must be 'BOSS' or 'APOGEE'.
 
+        return_metric: boolean
+            If True, will return the FOV metric
+            for the design.
+
         Returns
         -------
         : boolean
             True FOV metric met,
             False if not. Also, if no science targets in design
             returns True, while no skies returns False.
+
+        perc_dist: float
+            Percentile distance between science assignments and
+            skies (FOV metric) for the design. Only returned if
+            return_metric=True.
         """
         # get x,y of the skies
         x_sky = self.design['x'][(self.design['catalogID'] != -1) &
@@ -645,12 +682,18 @@ class DesignModeCheck(DesignMode):
         # this assumes percentile is on 0 to 100 scale
         perc_dist = np.percentile(dists,
                                   self.min_skies_fovmetric[instrument][1])
-        if perc_dist < self.min_skies_fovmetric[instrument][2]:
-            return True
+        if return_metric:
+            if perc_dist < self.min_skies_fovmetric[instrument][2]:
+                return True, perc_dist
+            else:
+                return False, perc_dist
         else:
-            return False
+            if perc_dist < self.min_skies_fovmetric[instrument][2]:
+                return True
+            else:
+                return False
 
-    def stds_fov(self, instrument):
+    def stds_fov(self, instrument, return_metric=False):
         """
         Checks if design meets the FOV metric for the standards
         for some instrument. Returns True FOV metric met,
@@ -663,12 +706,21 @@ class DesignModeCheck(DesignMode):
             Instrument to FOV metric.
             Must be 'BOSS' or 'APOGEE'.
 
+        return_metric: boolean
+            If True, will return the FOV metric
+            for the design.
+
         Returns
         -------
         : boolean
             True FOV metric met,
             False if not. Also, if no science targets in design
             returns True, while no standards returns False.
+
+        perc_dist: float
+            Percentile distance between science assignments and
+            standards (FOV metric) for the design. Only returned if
+            return_metric=True.
         """
         # get x,y of the standards
         x_std = self.design['x'][(self.design['catalogID'] != -1) &
@@ -709,10 +761,16 @@ class DesignModeCheck(DesignMode):
         # this assumes percentile is on 0 to 100 scale
         perc_dist = np.percentile(dists,
                                   self.min_stds_fovmetric[instrument][1])
-        if perc_dist < self.min_stds_fovmetric[instrument][2]:
-            return True
+        if return_metric:
+            if perc_dist < self.min_stds_fovmetric[instrument][2]:
+                return True, perc_dist
+            else:
+                return False, perc_dist
         else:
-            return False
+            if perc_dist < self.min_stds_fovmetric[instrument][2]:
+                return True
+            else:
+                return False
 
     def mag_limits(self, mag_metric,
                    instrument, carton_class):

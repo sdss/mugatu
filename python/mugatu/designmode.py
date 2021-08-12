@@ -643,6 +643,9 @@ class DesignModeCheck(DesignMode):
             skies (FOV metric) for the design. Only returned if
             return_metric=True.
         """
+        # for now, return True (passing) if no FOV metric supplied
+        if np.all(self.min_skies_fovmetric[instrument] == -999.):
+            return True
         # get x,y of the skies
         x_sky = self.design['x'][(self.design['catalogID'] != -1) &
                                  (np.isin(self.design['carton_pk'],
@@ -722,6 +725,9 @@ class DesignModeCheck(DesignMode):
             standards (FOV metric) for the design. Only returned if
             return_metric=True.
         """
+        # for now, return True (passing) if no FOV metric supplied
+        if np.all(self.min_stds_fovmetric[instrument] == -999.):
+            return True
         # get x,y of the standards
         x_std = self.design['x'][(self.design['catalogID'] != -1) &
                                  (np.isin(self.design['carton_pk'],

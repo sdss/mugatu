@@ -6,6 +6,7 @@
 
 import numpy as np
 import warnings
+from astropy.io import fits
 
 import kaiju
 import kaiju.robotGrid
@@ -60,6 +61,15 @@ class FPSDesign(object):
         are provided, declinations will be pulled from
         targetdb.
 
+    pmra: np.array
+        Array of proper motions in the RA axis for the targets, in
+        milliarcsec/yr. Must be a true angle, i.e, it must include
+        the cos(dec) term. If no proper motion, set index to zero.
+
+    pmdec: np.array
+        Array of proper motions in the DEC axis for the targets, in
+        milliarcsec/yr. If no proper motion, set index to zero.
+
     fiberID: np.array
         Fiber assignement for each catalogid target in the
         manual design.
@@ -77,13 +87,17 @@ class FPSDesign(object):
         that correspond to catalogids.
 
     design_file: str
-        FITS file with a manual design. The file must have the
-        following columns: catalogID, fiberID, obsWavelength,
-        priority, carton_pk, ra, dec.
+        FITS file with a manual design. The file must be the same
+        format as the rsFieldAssignments file.
 
     manual_design: boolean
         Boolean if the design being validated is manual
         (manual_design=True) or in targetdb (manual_design=False)
+
+    exp: int
+        Exposure number for design in file. If exp=0, assumes
+        only 1 exposure in the design file. if exp>0, then will
+        choose exposure exp = 1 to N.
 
     Attributes
     ----------
@@ -118,9 +132,9 @@ class FPSDesign(object):
 
     def __init__(self, design_pk, obsTime, racen=None, deccen=None,
                  position_angle=None, observatory=None, mode_pk=None,
-                 catalogids=None, ra=None, dec=None, fiberID=None,
-                 obsWavelength=None, priority=None, carton_pk=None,
-                 design_file=None, manual_design=False):
+                 catalogids=None, ra=None, dec=None, pmra=None, pmdec=None,
+                 fiberID=None, obsWavelength=None, priority=None,
+                 carton_pk=None, design_file=None, manual_design=False, exp=0):
         self.design_pk = design_pk
         self.obsTime = obsTime
         self.design = {}
@@ -158,17 +172,25 @@ class FPSDesign(object):
         self.catalogids = catalogids
         self.ra = ra
         self.dec = dec
+        self.pmra = pmra
+        self.pmdec = pmdec
         self.fiberID = fiberID
         self.obsWavelength = obsWavelength
         self.priority = priority
         self.carton_pk = carton_pk
         self.design_file = design_file
         self.manual_design = manual_design
+        self.exp = exp
 
         # set dummy value for collision for now
         # this may want to be a input, not sure the standard here
         # initialize robotGrid
-        self.rg = kaiju.robotGrid.RobotGridFilledHex()
+        if self.observatory == 'APO':
+            self.rg = kaiju.robotGrid.RobotGridAPO(collisionBuffer=2.,
+                                                   stepSize=0.05)
+        else:
+            self.rg = kaiju.robotGrid.RobotGridLCO(collisionBuffer=2.,
+                                                   stepSize=0.05)
         # this is in Conor's test, I'm not quite sure what it does
         # but without paths wont generate
         for k in self.rg.robotDict.keys():
@@ -210,6 +232,8 @@ class FPSDesign(object):
         self.design['carton_pk'] = np.zeros(500, dtype=int) - 1
         self.design['ra'] = np.zeros(500, dtype=float) - 9999.99
         self.design['dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['pmra'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['pmdec'] = np.zeros(500, dtype=float) - 9999.99
         self.design['x'] = np.zeros(500, dtype=float) - 9999.99
         self.design['y'] = np.zeros(500, dtype=float) - 9999.99
 
@@ -259,13 +283,17 @@ class FPSDesign(object):
                                                           .target.ra)
             self.design['dec'][pos_id] = (design_targ_db[i].carton_to_target
                                                            .target.dec)
+            self.design['pmra'][pos_id] = (design_targ_db[i].carton_to_target
+                                                            .target.pmra)
+            self.design['pmdec'][pos_id] = (design_targ_db[i].carton_to_target
+                                                             .target.pmdec)
 
         # here convert ra/dec to x/y based on field/time of observation
         # I think I need to add inertial in here at some point, dont see this in targetdb though
         ev = eval("(self.design['ra'] != -9999.99)")
         self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra'][ev],
                                                                                                                         dec=self.design['dec'][ev],
-                                                                                                                        coordEpoch=np.array([2457174] * len(self.design['ra'][ev])),
+                                                                                                                        coordEpoch=2457205.9999942128,
                                                                                                                         waveName=np.array(list(map(lambda x:x.title(), self.design['obsWavelength'][ev]))),
                                                                                                                         raCen=self.racen,
                                                                                                                         decCen=self.deccen,
@@ -315,23 +343,46 @@ class FPSDesign(object):
                     targ_db = Target.get(catalogid=self.design['catalogID'][i])
                     self.design['ra'][i] = targ_db.ra
                     self.design['dec'][i] = targ_db.dec
+                    self.design['pmra'][i] = targ_db.pmra
+                    self.design['pmdec'][i] = targ_db.pmdec
             else:
                 self.design['ra'] = self.ra
                 self.design['dec'] = self.dec
+                self.design['pmra'] = self.pmra
+                self.design['pmdec'] = self.pmdec
 
             # here somehow assign these
             self.design['fiberID'] = self.fiberID
         else:
             # manual design from flat file
-            man_des = fitsio.read(self.design_file)
+            # get header with field info
+            head = fits.open(self.design_file)[0].header
+            # association between catalogid and instrument
+            design_inst = fits.open(self.design_file)[1].data
+            # catalogid assignment for each fiber
+            design = fits.open(self.design_file)[2].data
 
-            self.design['catalogID'] = man_des['catalogID']
-            self.design['fiberID'] = man_des['fiberID']
-            self.design['obsWavelength'] = man_des['obsWavelength']
-            self.design['priority'] = man_des['priority']
-            self.design['carton_pk'] = man_des['carton_pk']
-            self.design['ra'] = man_des['ra']
-            self.design['dec'] = man_des['dec']
+            # grab obs info
+            self.racen = head['RACEN']
+            self.deccen = head['DECCEN']
+            self.position_angle = head['PA']
+            self.observatory = head['obs'].strip().upper()
+
+            # grab assignment info
+            if self.exp == 0:
+                roboIDs = design['robotID']
+            else:
+                roboIDs = design['robotID'][:, self.exp - 1]
+            self.design['catalogID'] = design_inst['carton_to_target_pk'][roboIDs != -1]
+            self.design['ra'] = design_inst['ra'][roboIDs != -1]
+            self.design['dec'] = design_inst['dec'][roboIDs != -1]
+            self.design['pmra'] = design_inst['pmra'][roboIDs != -1]
+            self.design['pmdec'] = design_inst['pmdec'][roboIDs != -1]
+            self.design['fiberID'] = roboIDs[roboIDs != -1]
+            self.design['obsWavelength'] = design_inst['fiberType'][roboIDs != -1]
+            self.design['priority'] = design_inst['priority'][roboIDs != -1]
+            # need to change this
+            self.design['carton_pk'] = np.zeros(len(self.design['catalogID']), dtype=int)
 
         # make empty x,y arrays
         self.design['x'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99
@@ -341,7 +392,7 @@ class FPSDesign(object):
         ev = eval("(self.design['ra'] != -9999.99)")
         self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra'][ev],
                                                                                                                         dec=self.design['dec'][ev],
-                                                                                                                        coordEpoch=np.array([2457174] * len(self.design['ra'][ev])),  # this is roughly 2015.5, need to ask about this and change it
+                                                                                                                        coordEpoch=2457205.9999942128,  # this is roughly 2015.5, need to ask about this and change it
                                                                                                                         waveName=np.array(list(map(lambda x:x.title(), self.design['obsWavelength'][ev]))),
                                                                                                                         raCen=self.racen,
                                                                                                                         decCen=self.deccen,
@@ -377,15 +428,15 @@ class FPSDesign(object):
                                       x=self.design['x'][i],
                                       y=self.design['y'][i],
                                       priority=self.design['priority'][i],
-                                      fiberType=kaiju.BossFiber)
+                                      fiberType=kaiju.cKaiju.BossFiber)
                 else:
                     self.rg.addTarget(targetID=self.design['catalogID'][i],
                                       x=self.design['x'][i],
                                       y=self.design['y'][i],
                                       priority=self.design['priority'][i],
-                                      fiberType=kaiju.ApogeeFiber)
+                                      fiberType=kaiju.cKaiju.ApogeeFiber)
         for i in range(len(self.design['x'])):
-            if self.design['fiberID'][i] != -1:
+            if self.design['fiberID'][i] > 0:
                 try:
                     self.rg.assignRobot2Target(self.design['fiberID'][i],
                                                self.design['catalogID'][i])
@@ -422,11 +473,11 @@ class FPSDesign(object):
         self.valid_design['x'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['y'] = np.zeros(500, dtype=float) - 9999.99
 
-        for i in self.rg.robotDict:
-            self.valid_design['catalogID'][i] = (self.rg.robotDict[i]
+        for i, rid in enumerate(self.rg.robotDict):
+            self.valid_design['catalogID'][i] = (self.rg.robotDict[rid]
                                                  .assignedTargetID)
             if self.valid_design['catalogID'][i] != -1:
-                self.valid_design['fiberID'][i] = i
+                self.valid_design['fiberID'][i] = rid
                 # is below necessary? i dont know if decollide ever reassigns
                 # or just removes
                 cond = eval("self.design['catalogID'] == self.valid_design['catalogID'][i]")
@@ -463,6 +514,9 @@ class FPSDesign(object):
         for robotID in self.rg.robotDict:
             if(self.rg.robotDict[robotID].isAssigned() == False):
                 self.rg.decollideRobot(robotID)
+                # need to still set alpha/beta
+                # robot = self.rg.getRobot(robotID)
+                # robot.setDestinationAlphaBeta(0, 180)
 
         # de-collide the grid if collisions exist
         # and check for targets removed
@@ -486,9 +540,9 @@ class FPSDesign(object):
                         self.targets_collided.append(targ_remove)
 
         # generate paths
-        self.rg.pathGen()
-        if self.rg.didFail:
-            raise MugatuError(message='Kaiju pathGen failed')
+        # self.rg.pathGen()
+        # if self.rg.didFail:
+        #     raise MugatuError(message='Kaiju pathGen failed')
 
         # I imagine that the above step would manipulate the robogrid based on
         # collisions and deadlocks, so the below would take these Kaiju results

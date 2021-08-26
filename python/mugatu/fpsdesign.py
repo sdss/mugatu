@@ -99,6 +99,9 @@ class FPSDesign(object):
         only 1 exposure in the design file. if exp>0, then will
         choose exposure exp = 1 to N.
 
+    collisionBuffer: float
+        collisionBuffer parmameter for Kaiju RobotGrid.
+
     Attributes
     ----------
     design: dict
@@ -134,7 +137,8 @@ class FPSDesign(object):
                  position_angle=None, observatory=None, mode_pk=None,
                  catalogids=None, ra=None, dec=None, pmra=None, pmdec=None,
                  fiberID=None, obsWavelength=None, priority=None,
-                 carton_pk=None, design_file=None, manual_design=False, exp=0):
+                 carton_pk=None, design_file=None, manual_design=False, exp=0,
+                 collisionBuffer=2.):
         self.design_pk = design_pk
         self.obsTime = obsTime
         self.design = {}
@@ -181,15 +185,16 @@ class FPSDesign(object):
         self.design_file = design_file
         self.manual_design = manual_design
         self.exp = exp
+        self.collisionBuffer = collisionBuffer
 
         # set dummy value for collision for now
         # this may want to be a input, not sure the standard here
         # initialize robotGrid
         if self.observatory == 'APO':
-            self.rg = kaiju.robotGrid.RobotGridAPO(collisionBuffer=2.,
+            self.rg = kaiju.robotGrid.RobotGridAPO(collisionBuffer=self.collisionBuffer,
                                                    stepSize=0.05)
         else:
-            self.rg = kaiju.robotGrid.RobotGridLCO(collisionBuffer=2.,
+            self.rg = kaiju.robotGrid.RobotGridLCO(collisionBuffer=self.collisionBuffer,
                                                    stepSize=0.05)
         # this is in Conor's test, I'm not quite sure what it does
         # but without paths wont generate

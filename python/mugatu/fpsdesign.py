@@ -46,6 +46,10 @@ class FPSDesign(object):
     mode_pk: int
         The pk in targetdb for the observing mode for the design.
 
+    idtype: str
+        ID type used for catalogids in design. Must be 'catalogID'
+        or 'carton_to_target'.
+
     catalogids: np.array
         List of catalogids for a manual design in db.
 
@@ -135,10 +139,13 @@ class FPSDesign(object):
 
     def __init__(self, design_pk, obsTime, racen=None, deccen=None,
                  position_angle=None, observatory=None, mode_pk=None,
-                 catalogids=None, ra=None, dec=None, pmra=None, pmdec=None,
-                 fiberID=None, obsWavelength=None, priority=None,
-                 carton_pk=None, design_file=None, manual_design=False, exp=0,
+                 idtype='carton_to_target', catalogids=None, ra=None, dec=None,
+                 pmra=None, pmdec=None, fiberID=None, obsWavelength=None,
+                 priority=None, carton_pk=None, design_file=None,
+                 manual_design=False, exp=0,
                  collisionBuffer=2.):
+        if idtype != 'catalogID' and idtype != 'carton_to_target':
+            raise MugatuError(message='idtype must be catalogID or carton_to_target')
         self.design_pk = design_pk
         self.obsTime = obsTime
         self.design = {}
@@ -173,6 +180,7 @@ class FPSDesign(object):
             self.mode_pk = None
 
         # should these be catalogids or carton_to_target?
+        self.idtype = idtype
         self.catalogids = catalogids
         self.ra = ra
         self.dec = dec
@@ -378,7 +386,10 @@ class FPSDesign(object):
                 roboIDs = design['robotID']
             else:
                 roboIDs = design['robotID'][:, self.exp - 1]
-            self.design['catalogID'] = design_inst['carton_to_target_pk'][roboIDs != -1]
+            if self.idtype == 'catalogID':
+                self.design['catalogID'] = design_inst['catalogid'][roboIDs != -1]
+            else:
+                self.design['catalogID'] = design_inst['carton_to_target_pk'][roboIDs != -1]
             self.design['ra'] = design_inst['ra'][roboIDs != -1]
             self.design['dec'] = design_inst['dec'][roboIDs != -1]
             self.design['pmra'] = design_inst['pmra'][roboIDs != -1]
@@ -616,7 +627,7 @@ class FPSDesign(object):
                                          instr_pks=None,
                                          cart_pks=cart_pks,
                                          fiber_pks=None,
-                                         idtype='catalogID')
+                                         idtype=self.idtype)
         return
 
     def design_to_opsdb(self, design):

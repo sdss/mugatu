@@ -14,6 +14,7 @@ from mugatu.exceptions import MugatuError, MugatuWarning
 from sdssdb.peewee.sdss5db.targetdb import Carton, Category, Magnitude, CartonToTarget, Target
 from sdssdb.peewee.sdss5db.targetdb import DesignMode as DesignModeDB
 from sdssdb.peewee.sdss5db import catalogdb
+from coordio.utils import radec2wokxy, wokxy2radec
 
 try:
     from sdssdb.peewee.sdss5db import database
@@ -50,9 +51,59 @@ def ang_sep(ra1, dec1, ra2, dec2):
     dec1 = np.radians(dec1)
     ra2 = np.radians(ra2)
     dec2 = np.radians(dec2)
-    sep = (180 / np.pi) * np.arcos(np.sin(dec1) * np.sin(dec2) +
-                                   np.cos(dec1) * np.cos(dec2) * np.cos(ra1 - ra2))
+    sep = (180 / np.pi) * np.arccos(np.sin(dec1) * np.sin(dec2) +
+                                    np.cos(dec1) * np.cos(dec2) * np.cos(ra1 - ra2))
     return sep
+
+
+def sky_neigh_check(ra_assign, dec_assign,
+                    ra_bright, dec_bright, mag_bright,
+                    R_0, lim, beta):
+    """
+    Perform on sky neighbor check for a number of assignments
+
+    Parameters
+    ----------
+    ra_assign: np.array
+        RAs of the assignments to be checked
+
+    dec_assign: np.array
+        DECs of the assignments to be checked
+
+    ra_bright: np.array
+        RAs of the bright stars in the field
+
+    dec_bright: np.array
+        DECs of the bright stars in the field
+
+    mag_bright: np.array
+        Magntiudes of the bright stars in field.
+        Generally should be G or H magnitude.
+
+    R_0: float
+        Parameter of function R_0 * (lim - mags) ** beta,
+        where passing assignments have distance to all bright
+        stars > R_0 * (lim - mags) ** beta. Here mags is mag_bright.
+
+    lim: float
+        Parameter of function R_0 * (lim - mags) ** beta,
+        where passing assignments have distance to all bright
+        stars > R_0 * (lim - mags) ** beta. Here mags is mag_bright.
+
+    beta: float
+        Parameter of function R_0 * (lim - mags) ** beta,
+        where passing assignments have distance to all bright
+        stars > R_0 * (lim - mags) ** beta. Here mags is mag_bright.
+    """
+    sky_check = np.zeros(len(ra_assign), dtype=bool)
+    for i in range(len(ra_assign)):
+        dists = 3600 * ang_sep(ra_assign[i],
+                               dec_assign[i],
+                               ra_bright,
+                               dec_bright)
+        if np.all(dists > R_0 * (lim - mag_bright) ** beta):
+            sky_check[i] = True
+    return sky_check
 
 
 def allDesignModes(filename=None, ext=1):
@@ -346,8 +397,8 @@ class DesignMode(object):
         self.trace_diff_targets = {}
         self.trace_diff_targets['APOGEE'] = desmode_manual['apogee_trace_diff_targets']
         return
-        
-        
+
+
 def check_assign_mag_limit(mag_metric_min,
                            mag_metric_max,
                            assign_mag):
@@ -427,6 +478,28 @@ class DesignModeCheck(DesignMode):
 
     Attributes
     ----------
+    design: dict
+        FPSDesign dictonary.
+
+    racen: float
+        RA center of the field (degrees)
+
+    deccen: float
+        DEC center of the field (degrees)
+
+    position_angle: float
+        Position angle of the field E of N in degrees.
+
+    observatory: str
+        Observatory where observation is taking place, either
+        'LCO' or 'APO'.
+
+    obsTime: float
+        Julian date of the observation.
+
+    rg: kaiju.robotGrid
+        Kaiju robotGrid object for the design.
+
     n_skies_min: dict
         Dictonary with the minimum number of skies for a design
         for each instrument ('APOGEE' and 'BOSS').
@@ -483,7 +556,14 @@ class DesignModeCheck(DesignMode):
     def __init__(self, FPSDesign, desmode_label,
                  desmode_manual=None,
                  mags=None):
+        # grab needed info from FPSDesign object
         self.design = FPSDesign.design
+        self.racen = FPSDesign.racen
+        self.deccen = FPSDesign.deccen
+        self.position_angle = FPSDesign.position_angle
+        self.observatory = FPSDesign.observatory
+        self.obsTime = FPSDesign.obsTime
+        self.rg = FPSDesign.rg
         self.desmode_label = desmode_label
 
         # grab the design mode params
@@ -872,7 +952,27 @@ class DesignModeCheck(DesignMode):
             True if r > R_0 * (lim - mags) ** beta, False if not
             or assignment is not sky for specified instrument.
         """
-        sky_checks = np.zeros(len(self.design['catalogID']),
+        # get xPos and yPos from robotGrid
+        xrobo = np.zeros(500)
+        yrobo = np.zeros(500)
+        for i, robotID in enumerate(self.rg.robotDict):
+            if instrument == 'BOSS':
+                xrobo[i] = self.rg.robotDict[robotID].bossFiberPos[0]
+                yrobo[i] = self.rg.robotDict[robotID].bossFiberPos[1]
+            else:
+                xrobo[i] = self.rg.robotDict[robotID].apFiberPos[0]
+                yrobo[i] = self.rg.robotDict[robotID].apFiberPos[1]
+
+        ra_robo, dec_robo, fieldWarn = wokxy2radec(xWok=xrobo,
+                                                   yWok=yrobo,
+                                                   waveName=instrument.title(),
+                                                   raCen=self.racen,
+                                                   decCen=self.deccen,
+                                                   obsAngle=self.position_angle,
+                                                   obsSite=self.observatory,
+                                                   obsTime=self.obsTime)
+
+        sky_checks = np.zeros(500,
                               dtype=bool)
         # set the columns/catalog based on instrument
         if instrument == 'BOSS':
@@ -891,39 +991,27 @@ class DesignModeCheck(DesignMode):
         beta = self.sky_neighbors_targets[instrument][1]
         lim = self.sky_neighbors_targets[instrument][2]
 
-        # go through all skies
-        # grab magnitudes within 1' of skies
-        # NOTE (is 1' big enough to catch everything?)
-        for i in range(len(sky_checks)):
-            if (self.design['catalogID'][i] != -1 and
-                self.design['carton_pk'][i] in self.carton_classes['sky'] and
-                self.design['obsWavelength'][i] == instrument):
-                sky_neigh = (cat.select(ra_col,
-                                        dec_col,
-                                        mag_col,
-                                        catalogdb.Catalog.catalogid)
-                                .join(catalogdb.TIC_v8)
-                                .join(catalogdb.CatalogToTIC_v8)
-                                .join(catalogdb.Catalog)
-                                .join(catalogdb.Version)
-                                .where((cat.cone_search(self.design['ra'][i],
-                                                        self.design['dec'][i],
-                                                        1 / 60)) &
-                                       (catalogdb.Version.id == catalogdb_ver)))
-                # get result
-                ras, decs, mags, catalogids = map(list, zip(*list(sky_neigh.tuples())))
-                # remove the sky if in result
-                ev_sky = np.isin(catalogids, [self.design['catalogID'][i]])
-                ras = np.array(ras)[ev_sky]
-                decs = np.array(decs)[ev_sky]
-                mags = np.array(mags)[ev_sky]
+        # think its faster to grab all in field
+        # need option to use previous query here
+        sky_neigh = (cat.select(ra_col,
+                                dec_col,
+                                mag_col,
+                                catalogdb.Catalog.catalogid)
+                        .join(catalogdb.TIC_v8)
+                        .join(catalogdb.CatalogToTIC_v8)
+                        .join(catalogdb.Catalog)
+                        .join(catalogdb.Version)
+                        .where((cat.cone_search(self.design.racen,
+                                                self.design.deccen,
+                                                r)) &
+                               (catalogdb.Version.id == catalogdb_ver) &
+                               (mag_col < 16)))
+        ras, decs, mags, catalogids = map(list, zip(*list(sky_neigh.tuples())))
 
-                dists = 3600 * ang_sep(self.design['ra'][i],
-                                       self.design['dec'][i],
-                                       ras,
-                                       decs)
-                if np.all(dists > R_0 * (lim - mags) ** beta):
-                    sky_checks[i] = True
+        sky_checks = sky_neigh_check(ra_robo, dec_robo,
+                                     ras, decs, mags,
+                                     R_0, lim, beta)
+
         return sky_checks
 
     def design_mode_check_all(self, verbose=True):

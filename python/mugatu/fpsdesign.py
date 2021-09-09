@@ -90,6 +90,10 @@ class FPSDesign(object):
         The carton_pks (as in targetdb) for the targets
         that correspond to catalogids.
 
+    category: np.array
+        The category for each target. Can be 'science', 'sky_INSTRUMENT'
+        or 'standard_INSTRUMENT'
+
     design_file: str
         FITS file with a manual design. The file must be the same
         format as the rsFieldAssignments file.
@@ -141,7 +145,7 @@ class FPSDesign(object):
                  position_angle=None, observatory=None, mode_pk=None,
                  idtype='carton_to_target', catalogids=None, ra=None, dec=None,
                  pmra=None, pmdec=None, fiberID=None, obsWavelength=None,
-                 priority=None, carton_pk=None, design_file=None,
+                 priority=None, carton_pk=None, category=None, design_file=None,
                  manual_design=False, exp=0,
                  collisionBuffer=2.):
         if idtype != 'catalogID' and idtype != 'carton_to_target':
@@ -190,6 +194,7 @@ class FPSDesign(object):
         self.obsWavelength = obsWavelength
         self.priority = priority
         self.carton_pk = carton_pk
+        self.category = category
         self.design_file = design_file
         self.manual_design = manual_design
         self.exp = exp
@@ -243,6 +248,7 @@ class FPSDesign(object):
         self.design['obsWavelength'] = np.zeros(500, dtype='<U6')
         self.design['priority'] = np.zeros(500, dtype=int) - 1
         self.design['carton_pk'] = np.zeros(500, dtype=int) - 1
+        self.design['category'] = np.zeros(500, dtype='<U10')
         self.design['ra'] = np.zeros(500, dtype=float) - 9999.99
         self.design['dec'] = np.zeros(500, dtype=float) - 9999.99
         self.design['pmra'] = np.zeros(500, dtype=float) - 9999.99
@@ -350,6 +356,7 @@ class FPSDesign(object):
             self.design['obsWavelength'] = self.obsWavelength
             self.design['priority'] = self.priority
             self.design['carton_pk'] = self.carton_pk
+            self.design['category'] = self.category
 
             if self.ra is None:
                 for i in range(len(self.design['catalogID'])):
@@ -398,7 +405,8 @@ class FPSDesign(object):
             self.design['obsWavelength'] = design_inst['fiberType'][roboIDs != -1]
             self.design['priority'] = design_inst['priority'][roboIDs != -1]
             # need to change this
-            self.design['carton_pk'] = np.zeros(len(self.design['catalogID']), dtype=int)
+            self.design['carton_pk'] = np.arange(0, len(self.design['catalogID']), 1, dtype=int)
+            self.design['category'] = design_inst['category'][roboIDs != -1]
 
         # make empty x,y arrays
         self.design['x'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99
@@ -484,6 +492,7 @@ class FPSDesign(object):
         self.valid_design['obsWavelength'] = np.zeros(500, dtype='<U6')
         self.valid_design['priority'] = np.zeros(500, dtype=int) - 1
         self.valid_design['carton_pk'] = np.zeros(500, dtype=int) - 1
+        self.valid_design['category'] = np.zeros(500, dtype='<U10')
         self.valid_design['ra'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['dec'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['x'] = np.zeros(500, dtype=float) - 9999.99
@@ -501,6 +510,7 @@ class FPSDesign(object):
                 self.valid_design['obsWavelength'][i] = self.design['obsWavelength'][cond][0]
                 self.valid_design['priority'][i] = self.design['priority'][cond][0]
                 self.valid_design['carton_pk'][i] = self.design['carton_pk'][cond][0]
+                self.valid_design['category'][i] = self.design['category'][cond][0]
                 self.valid_design['ra'][i] = self.design['ra'][cond][0]
                 self.valid_design['dec'][i] = self.design['dec'][cond][0]
                 self.valid_design['x'][i] = self.design['x'][cond][0]

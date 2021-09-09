@@ -51,7 +51,8 @@ class FPSDesign(object):
         or 'carton_to_target'.
 
     catalogids: np.array
-        List of catalogids for a manual design in db.
+        List of ids for a manual design in db. Default from idtype
+        is carton_to_target.
 
     ra: np.array
         List of right ascensions that correspond to catalogids.

@@ -283,9 +283,14 @@ class FPSDesign(object):
             # assign to index that corresponds to fiber assignment
             # index should match length of arrays
             pos_id = design_targ_db[i].positioner.id
-            self.design['catalogID'][pos_id] = (design_targ_db[i]
-                                                .carton_to_target
-                                                .target.catalogid.catalogid)
+            if self.idtype == 'carton_to_target':
+                self.design['catalogID'][pos_id] = (design_targ_db[i]
+                                                    .carton_to_target
+                                                    .target.catalogid.catalogid)
+            else:
+                self.design['catalogID'][pos_id] = (design_targ_db[i]
+                                                    .carton_to_target
+                                                    .pk)
             self.design['fiberID'][pos_id] = pos_id
             # design['wokHoleID'][i] = design_targ_db[i]
             self.design['obsWavelength'][pos_id] = (design_targ_db[i]
@@ -298,6 +303,8 @@ class FPSDesign(object):
                 self.design['priority'][pos_id] = -1
             self.design['carton_pk'][pos_id] = (design_targ_db[i]
                                                 .carton_to_target.carton.pk)
+            self.design['category'][pos_id] = (design_targ_db[i]
+                                                .carton_to_target.carton.category.label)
             self.design['ra'][pos_id] = (design_targ_db[i].carton_to_target
                                                           .target.ra)
             self.design['dec'][pos_id] = (design_targ_db[i].carton_to_target

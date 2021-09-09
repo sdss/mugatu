@@ -578,16 +578,18 @@ class DesignModeCheck(DesignMode):
         self.carton_classes['science'] = []
         self.carton_classes['sky'] = []
         self.carton_classes['std'] = []
-        for pk in np.unique(self.design['carton_pk'][self.design['catalogID'] != -1]):
-            carton = Category.select().join(Carton).where(Carton.pk == pk)[0]
-            if 'sky' in carton.label:
-                self.carton_classes['sky'].append(pk)
-            elif 'standard' in carton.label:
-                self.carton_classes['std'].append(pk)
+        for cat in np.unique(self.design['category'][self.design['catalogID'] != -1]):
+            if 'sky' in cat:
+                self.carton_classes['sky'] += list(self.design['carton_pk'][(self.design['catalogID'] != -1) &
+                                                                            (self.design['category'] == cat)])
+            elif 'standard' in cat:
+                self.carton_classes['std'] += list(self.design['carton_pk'][(self.design['catalogID'] != -1) &
+                                                                            (self.design['category'] == cat)])
             # I think else makes sense here as there are science
             # and open fiber labels?
             else:
-                self.carton_classes['science'].append(pk)
+                self.carton_classes['science'] += list(self.design['carton_pk'][(self.design['catalogID'] != -1) &
+                                                                                (self.design['category'] == cat)])
 
         # collect magntiudes of design
         # here I am doing g,r,i,BP,G,RP,H
@@ -597,11 +599,16 @@ class DesignModeCheck(DesignMode):
                 if self.design['catalogID'][i] != -1:
                     # do not query skies, they have no mag
                     if self.design['carton_pk'][i] not in self.carton_classes['sky']:
-                        mag_query = (Magnitude.select()
-                                              .join(CartonToTarget)
-                                              .join(Target)
-                                              .where((Target.catalogid == self.design['catalogID'][i]) &
-                                                     (CartonToTarget.carton_pk == self.design['carton_pk'][i])))
+                        if FPSDesign.idtype == 'carton_to_target':
+                            mag_query = (Magnitude.select()
+                                                  .join(CartonToTarget)
+                                                  .where(CartonToTarget.pk == self.design['catalogID'][i]))
+                        else:
+                            mag_query = (Magnitude.select()
+                                                  .join(CartonToTarget)
+                                                  .join(Target)
+                                                  .where((Target.catalogid == self.design['catalogID'][i]) &
+                                                         (CartonToTarget.carton_pk == self.design['carton_pk'][i])))
                         self.mags[i][0] = mag_query[0].g
                         self.mags[i][1] = mag_query[0].r
                         self.mags[i][2] = mag_query[0].i
@@ -1003,7 +1010,7 @@ class DesignModeCheck(DesignMode):
                         .join(catalogdb.Version)
                         .where((cat.cone_search(self.design.racen,
                                                 self.design.deccen,
-                                                r)) &
+                                                1.5)) &
                                (catalogdb.Version.id == catalogdb_ver) &
                                (mag_col < 16)))
         ras, decs, mags, catalogids = map(list, zip(*list(sky_neigh.tuples())))

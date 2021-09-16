@@ -14,6 +14,7 @@ import sdss_access.path
 from mugatu.fpsdesign import FPSDesign
 import robostrategy.obstime as obstime
 import coordio.time
+from sdssdb.peewee.sdss5db import targetdb
 
 
 def test_warn_manual(file, exp, obsTime, observatory):
@@ -29,7 +30,7 @@ def test_warn_manual(file, exp, obsTime, observatory):
                     exp=exp)
 
     des.build_design_manual()
-    des.validate_design()
+    des.validate_design(designmode=True)
 
 
 if __name__ == "__main__":
@@ -63,6 +64,11 @@ if __name__ == "__main__":
 
     if loc == 'local':
         file = 'rsFieldAssignments-%s-%s-%d.fits' % (plan, observatory, fieldid)
+
+        # connect to targetdb
+        targetdb.database.connect_from_parameters(user='sdss_user',
+                                                  host='localhost',
+                                                  port=7502)
     else:
         file = sdss_path.full('rsFieldAssignments',
                               plan=plan,
@@ -70,6 +76,9 @@ if __name__ == "__main__":
                               fieldid=fieldid)
         if 'sas' in file:
             file = file[:32] + 'sdss50' + file[44:]
+        targetdb.database.connect_from_parameters(user='sdss_user',
+                                                  host='operations.sdss.utah.edu',
+                                                  port=5432)
 
     head = fits.open(file)[0].header
     racen = head['RACEN']

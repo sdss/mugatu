@@ -11,11 +11,12 @@ from astropy.io import fits
 import kaiju
 import kaiju.robotGrid
 # import coordio
-from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget, Carton
+from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget, Carton, DesignMode
 import fitsio
 from mugatu.exceptions import MugatuError, MugatuWarning
 from coordio.utils import radec2wokxy, wokxy2radec
 from mugatu.designs_to_targetdb import make_design_assignments_targetdb, make_design_field_targetdb
+from mugatu.designmode import DesignModeCheck
 
 
 class FPSDesign(object):
@@ -43,7 +44,7 @@ class FPSDesign(object):
         Observatory where observation is taking place, either
         'LCO' or 'APO'.
 
-    mode_pk: int
+    desmode_label: int
         The pk in targetdb for the observing mode for the design.
 
     idtype: str
@@ -140,10 +141,13 @@ class FPSDesign(object):
 
     positionAngle_coordio: float
         position angle of field center from coordio.utils.radec2wokxy.
+
+    design_errors: dict
+        dictonary with errors for design. Created and filled after validation.
     """
 
     def __init__(self, design_pk, obsTime, racen=None, deccen=None,
-                 position_angle=None, observatory=None, mode_pk=None,
+                 position_angle=None, observatory=None, desmode_label=None,
                  idtype='carton_to_target', catalogids=None, ra=None, dec=None,
                  pmra=None, pmdec=None, fiberID=None, obsWavelength=None,
                  priority=None, carton_pk=None, category=None, design_file=None,
@@ -161,11 +165,11 @@ class FPSDesign(object):
             self.deccen = deccen
             self.position_angle = position_angle
             self.observatory = observatory
-            self.mode_pk = mode_pk
+            self.desmode_label = desmode_label
         else:
             design_field_db = (
                 Design.select(Design.pk,
-                              # Design.mode_pk,
+                              Design.design_mode_pk,
                               Field.racen,
                               Field.deccen,
                               Field.position_angle,
@@ -180,9 +184,7 @@ class FPSDesign(object):
             self.deccen = design_field_db[0].field.deccen
             self.position_angle = design_field_db[0].field.position_angle
             self.observatory = design_field_db[0].field.observatory.label
-            # no mode right now in targetdb
-            # self.mode_pk = design_field_db[0].mode_pk
-            self.mode_pk = None
+            self.desmode_label = design_field_db[0].design_mode_pk
 
         # should these be catalogids or carton_to_target?
         self.idtype = idtype
@@ -242,7 +244,7 @@ class FPSDesign(object):
         # not using None or nan for no assignments
         # using -1 (for int) and -9999.99 (for float) for None assignment
         self.design['design_pk'] = self.design_pk
-        self.design['mode_pk'] = self.mode_pk
+        self.design['desmode_label'] = self.desmode_label
         self.design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
         self.design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
         # self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
@@ -356,7 +358,7 @@ class FPSDesign(object):
         # for manual design, dont make arrays since length
         # will be defined by user
         self.design['design_pk'] = self.design_pk
-        self.design['mode_pk'] = self.mode_pk
+        self.design['desmode_label'] = self.desmode_label
 
         if self.design_file is None:
             # manual design with targets in targetdb
@@ -385,6 +387,7 @@ class FPSDesign(object):
             # manual design from flat file
             # get header with field info
             head = fits.open(self.design_file)[0].header
+            desmode_labels = head['DESMODE'].split(' ')
             # association between catalogid and instrument
             design_inst = fits.open(self.design_file)[1].data
             # catalogid assignment for each fiber
@@ -395,6 +398,7 @@ class FPSDesign(object):
             self.deccen = head['DECCEN']
             self.position_angle = head['PA']
             self.observatory = head['obs'].strip().upper()
+            self.desmode_label = desmode_labels[self.exp - 1]
 
             # grab assignment info
             if self.exp == 0:
@@ -493,7 +497,7 @@ class FPSDesign(object):
         # not using None or nan for no assignments
         # using -1 (for int) and -9999.99 (for float) for None assignment
         self.valid_design['design_pk'] = self.design_pk
-        self.valid_design['mode_pk'] = self.mode_pk
+        self.valid_design['desmode_label'] = self.desmode_label
         self.valid_design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
         self.valid_design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
         # self.valid_design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
@@ -526,11 +530,17 @@ class FPSDesign(object):
 
         return
 
-    def validate_design(self):
+    def validate_design(self, designmode=True):
         """
         Validate design for deadlocks and collisions using Kaiju.
-        """
 
+        Parameters
+        ----------
+        designmode: bool
+            Check designmodes for the design.
+        """
+        # make dict to store design errors that may come up
+        self.design_errors = {}
         # build the design with all needed parameters if it has not been
         # built already (save time by doing this check)
         if not self.design_built:
@@ -541,6 +551,10 @@ class FPSDesign(object):
 
         # construct the Kaiju robotGrid
         self.design_to_RobotGrid()
+        if len(self.targets_unassigned) > 0:
+            self.design_errors['all_targets_assigned'] = False
+        else:
+            self.design_errors['all_targets_assigned'] = True
 
         # validate the design
 
@@ -555,6 +569,7 @@ class FPSDesign(object):
         # de-collide the grid if collisions exist
         # and check for targets removed
         if self.rg.getNCollisions() > 0:
+            self.design_errors['no_collisions'] = False
             self.rg.decollideGrid()
 
             # check if de-collision was successful
@@ -572,11 +587,77 @@ class FPSDesign(object):
                     targ_remove = self.design['catalogID'][fiber_idx[0]]
                     if targ_remove not in self.targets_unassigned:
                         self.targets_collided.append(targ_remove)
+        else:
+            self.design_errors['no_collisions'] = True
 
         # generate paths
         # self.rg.pathGen()
         # if self.rg.didFail:
         #     raise MugatuError(message='Kaiju pathGen failed')
+
+        if designmode:
+            mode = DesignModeCheck(FPSDesign=self,
+                                   desmode_label=self.desmode_label)
+            mode.design_mode_check_all(verbose=False)
+            self.design_errors['min_skies_boss'] = mode.n_skies_min_check['BOSS']
+            if self.design_errors['min_skies_boss'] is False:
+                flag = 'Design does not meet minimum BOSS skies for DesignMode'
+                warnings.warn(flag, MugatuWarning)
+            self.design_errors['min_skies_apogee'] = mode.n_skies_min_check['APOGEE']
+            if self.design_errors['min_skies_apogee'] is False:
+                flag = 'Design does not meet minimum APOGEE skies for DesignMode'
+                warnings.warn(flag, MugatuWarning)
+
+            self.design_errors['fov_skies_boss'] = mode.min_skies_fovmetric_check['BOSS']
+            if self.design_errors['fov_skies_boss'] is False:
+                flag = 'Design does not meet FOV criteria for BOSS skies for DesignMode'
+                warnings.warn(flag, MugatuWarning)
+            self.design_errors['fov_skies_apogee'] = mode.min_skies_fovmetric_check['APOGEE']
+            if self.design_errors['fov_skies_apogee'] is False:
+                flag = 'Design does not meet FOV criteria for APOGEE skies for DesignMode'
+                warnings.warn(flag, MugatuWarning)
+
+            self.design_errors['min_stds_boss'] = mode.n_stds_min_check['BOSS']
+            if self.design_errors['min_stds_boss'] is False:
+                flag = 'Design does not meet minimum BOSS standards for DesignMode'
+                warnings.warn(flag, MugatuWarning)
+            self.design_errors['min_stds_apogee'] = mode.n_stds_min_check['APOGEE']
+            if self.design_errors['min_stds_apogee'] is False:
+                flag = 'Design does not meet minimum APOGEE standards for DesignMode'
+                warnings.warn(flag, MugatuWarning)
+
+            self.design_errors['fov_stds_boss'] = mode.min_stds_fovmetric_check['BOSS']
+            if self.design_errors['fov_stds_boss'] is False:
+                flag = 'Design does not meet FOV criteria for BOSS standards for DesignMode'
+                warnings.warn(flag, MugatuWarning)
+            self.design_errors['fov_stds_apogee'] = mode.min_stds_fovmetric_check['APOGEE']
+            if self.design_errors['fov_stds_apogee'] is False:
+                flag = 'Design does not meet FOV criteria for APOGEE standards for DesignMode'
+                warnings.warn(flag, MugatuWarning)
+
+            self.design_errors['stds_mag_boss'] = np.all(mode.stds_mags_check['BOSS'][0][(self.design['catalogID'] != -1) &
+                                                                                         (self.design['category'] == 'standard_boss')])
+            if self.design_errors['stds_mag_boss'] is False:
+                flag = 'Design has BOSS standard assignments too bright for DesignMode'
+                warnings.warn(flag, MugatuWarning)
+            self.design_errors['stds_mag_apogee'] = np.all(mode.stds_mags_check['APOGEE'][0][(self.design['catalogID'] != -1) &
+                                                                                             (self.design['category'] == 'standard_apogee')])
+            if self.design_errors['stds_mag_apogee'] is False:
+                flag = 'Design has APOGEE standard assignments too bright for DesignMode'
+                warnings.warn(flag, MugatuWarning)
+
+            self.design_errors['sci_mag_boss'] = np.all(mode.bright_limit_targets_check['BOSS'][0][(self.design['catalogID'] != -1) &
+                                                                                                   (self.design['category'] == 'science') &
+                                                                                                   (self.design['obsWavelength'] == 'BOSS')])
+            if self.design_errors['sci_mag_boss'] is False:
+                flag = 'Design has BOSS science assignments too bright for DesignMode'
+                warnings.warn(flag, MugatuWarning)
+            self.design_errors['sci_mag_apogee'] = np.all(mode.bright_limit_targets_check['APOGEE'][0][(self.design['catalogID'] != -1) &
+                                                                                                       (self.design['category'] == 'science') &
+                                                                                                       (self.design['obsWavelength'] == 'APOGEE')])
+            if self.design_errors['sci_mag_apogee'] is False:
+                flag = 'Design has APOGEE science assignments too bright for DesignMode'
+                warnings.warn(flag, MugatuWarning)
 
         # I imagine that the above step would manipulate the robogrid based on
         # collisions and deadlocks, so the below would take these Kaiju results
@@ -638,6 +719,7 @@ class FPSDesign(object):
                                          plan='manual',
                                          fieldid=fieldid,
                                          exposure=exposure,
+                                         desmode_label=self.desmode_label,
                                          catalogID=self.valid_design['catalogID'][self.valid_design['catalogID'] != -1],
                                          fiberID=self.valid_design['fiberID'][self.valid_design['catalogID'] != -1],
                                          obsWavelength=self.valid_design['obsWavelength'][self.valid_design['catalogID'] != -1],

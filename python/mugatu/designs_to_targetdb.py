@@ -85,7 +85,8 @@ def make_design_field_targetdb(cadence, fieldid, plan,
         fieldDB.save()
 
 
-def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
+def make_design_assignments_targetdb(targetdb_ver, plan,
+                                     fieldid, exposure, desmode_label,
                                      design_ids, fiberID, obsWavelength,
                                      carton, instr_pks=None, cart_pks=None,
                                      fiber_pks=None, idtype='catalogID'):
@@ -108,6 +109,9 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
 
     exposure: int
         The exposure of this set of designs. 0th indexed
+
+    desmode_label: str
+        DesignMode labe for the design.
 
     catalogID: np.array
         Array of catalogids for the design of length N
@@ -181,7 +185,8 @@ def make_design_assignments_targetdb(targetdb_ver, plan, fieldid, exposure,
         fieldpk = fieldid[0].pk
 
     designDB = targetdb.Design.create(field=fieldpk,
-                                      exposure=exposure)
+                                      exposure=exposure,
+                                      design_mode_pk=desmode_label)
     # save row
     designDB.save()
 

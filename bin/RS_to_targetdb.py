@@ -161,6 +161,8 @@ if __name__ == '__main__':
         design_inst = fits.open(field_assigned_file)[1].data
         # catalogid assignment for each fiber
         design = fits.open(field_assigned_file)[2].data
+        # get list of designmodes
+        desmode_labels = head['DESMODE'].split(' ')
 
         # use mugatu function to create field in targetdb
         make_design_field_targetdb(cadence=head['FCADENCE'],
@@ -187,13 +189,16 @@ if __name__ == '__main__':
             # index correctly based on n_exp
             if n_exp == 1:
                 roboIDs = design['robotID']
+                desmode_label = desmode_labels[0]
             else:
                 roboIDs = design['robotID'][:, i]
+                desmode_label = desmode_labels[i]
             # write exposure to targetdb
             make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
                                              plan=ver_inst,
                                              fieldid=fieldid_inst,
                                              exposure=i,
+                                             desmode_label=desmode_label,
                                              design_ids=design_inst['carton_to_target_pk'],
                                              fiberID=roboIDs,
                                              obsWavelength=design_inst['fiberType'],

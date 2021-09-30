@@ -226,6 +226,59 @@ class FPSDesign(object):
 
         self.design_built = False
 
+    def _offset_radec(self, ra=None, dec=None, delta_ra=0., delta_dec=0.):
+        """Offsets ra and dec according to specified amount. From Mike's
+        robostrategy.Field object
+        
+        Parameters
+        ----------
+        ra : np.float64 or ndarray of np.float64
+        right ascension, deg
+        dec : np.float64 or ndarray of np.float64
+            declination, deg
+        delta_ra : np.float64 or ndarray of np.float64
+            right ascension direction offset, arcsec
+        delta_dec : np.float64 or ndarray of np.float64
+            declination direction offset, arcsec
+
+        Returns
+        -------
+        offset_ra : np.float64 or ndarray of np.float64
+            offset right ascension, deg
+        offset_dec : np.float64 or ndarray of np.float64
+            offset declination, deg
+
+        Notes
+        -----
+        Assumes that delta_ra, delta_dec are in proper coordinates; i.e.
+        an offset of delta_ra=1 arcsec represents the same angular separation 
+        on the sky at any declination.
+        Carefully offsets in the local directions of ra, dec based on
+        the local tangent plane (i.e. does not just scale delta_ra by
+        1/cos(dec))
+"""
+        deg2rad = np.pi / 180.
+        arcsec2rad = np.pi / 180. / 3600.
+        x = np.cos(dec * deg2rad) * np.cos(ra * deg2rad)
+        y = np.cos(dec * deg2rad) * np.sin(ra * deg2rad)
+        z = np.sin(dec * deg2rad)
+        ra_x = - np.sin(ra * deg2rad)
+        ra_y = np.cos(ra * deg2rad)
+        ra_z = 0.
+        dec_x = - np.sin(dec * deg2rad) * np.cos(ra * deg2rad)
+        dec_y = - np.sin(dec * deg2rad) * np.sin(ra * deg2rad)
+        dec_z = np.cos(dec * deg2rad)
+        xoff = x + (ra_x * delta_ra + dec_x * delta_dec) * arcsec2rad
+        yoff = y + (ra_y * delta_ra + dec_y * delta_dec) * arcsec2rad
+        zoff = z + (ra_z * delta_ra + dec_z * delta_dec) * arcsec2rad
+        offnorm = np.sqrt(xoff**2 + yoff**2 + zoff**2)
+        xoff = xoff / offnorm
+        yoff = yoff / offnorm
+        zoff = zoff / offnorm
+        decoff = np.arcsin(zoff) / deg2rad
+        raoff = ((np.arctan2(yoff, xoff) / deg2rad) + 360.) % 360.
+        return(raoff, decoff)
+
     def build_design_db(self):
         """
         Populate the design dictonary for design in targetdb.
@@ -254,6 +307,10 @@ class FPSDesign(object):
         self.design['category'] = np.zeros(500, dtype='<U10')
         self.design['ra'] = np.zeros(500, dtype=float) - 9999.99
         self.design['dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['delta_ra'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['delta_dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['ra_off'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['dec_off'] = np.zeros(500, dtype=float) - 9999.99
         self.design['pmra'] = np.zeros(500, dtype=float) - 9999.99
         self.design['pmdec'] = np.zeros(500, dtype=float) - 9999.99
         self.design['x'] = np.zeros(500, dtype=float) - 9999.99
@@ -312,6 +369,10 @@ class FPSDesign(object):
                                                           .target.ra)
             self.design['dec'][pos_id] = (design_targ_db[i].carton_to_target
                                                            .target.dec)
+            self.design['delta_ra'][pos_id] = (design_targ_db[i].carton_to_target
+                                                                .delta_ra)
+            self.design['delta_dec'][pos_id] = (design_targ_db[i].carton_to_target
+                                                                 .delta_dec)
             self.design['pmra'][pos_id] = (design_targ_db[i].carton_to_target
                                                             .target.pmra)
             self.design['pmdec'][pos_id] = (design_targ_db[i].carton_to_target
@@ -320,8 +381,12 @@ class FPSDesign(object):
         # here convert ra/dec to x/y based on field/time of observation
         # I think I need to add inertial in here at some point, dont see this in targetdb though
         ev = eval("(self.design['ra'] != -9999.99)")
-        self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra'][ev],
-                                                                                                                        dec=self.design['dec'][ev],
+        self.design['ra_off'][ev], self.design['dec_off'][ev] = self._offset_radec(ra=self.design['ra'][ev],
+                                                                                   dec=self.design['dec'][ev],
+                                                                                   delta_ra=self.design['delta_ra'][ev],
+                                                                                   delta_dec=self.design['delta_dec'][ev])
+        self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra_off'][ev],
+                                                                                                                        dec=self.design['dec_off'][ev],
                                                                                                                         coordEpoch=2457205.9999942128,
                                                                                                                         waveName=np.array(list(map(lambda x:x.title(), self.design['obsWavelength'][ev]))),
                                                                                                                         raCen=self.racen,
@@ -411,6 +476,8 @@ class FPSDesign(object):
                 self.design['catalogID'] = design_inst['carton_to_target_pk'][roboIDs != -1]
             self.design['ra'] = design_inst['ra'][roboIDs != -1]
             self.design['dec'] = design_inst['dec'][roboIDs != -1]
+            self.design['delta_ra'] = design_inst['delta_ra'][roboIDs != -1]
+            self.design['delta_dec'] = design_inst['delta_dec'][roboIDs != -1]
             self.design['pmra'] = design_inst['pmra'][roboIDs != -1]
             self.design['pmdec'] = design_inst['pmdec'][roboIDs != -1]
             self.design['fiberID'] = roboIDs[roboIDs != -1]
@@ -423,11 +490,17 @@ class FPSDesign(object):
         # make empty x,y arrays
         self.design['x'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99
         self.design['y'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99
+        self.design['ra_off'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99
+        self.design['dec_off'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99
 
         # here convert ra/dec to x/y based on field/time of observation
         ev = eval("(self.design['ra'] != -9999.99)")
-        self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra'][ev],
-                                                                                                                        dec=self.design['dec'][ev],
+        self.design['ra_off'][ev], self.design['dec_off'][ev] = self._offset_radec(ra=self.design['ra'][ev],
+                                                                                   dec=self.design['dec'][ev],
+                                                                                   delta_ra=self.design['delta_ra'][ev],
+                                                                                   delta_dec=self.design['delta_dec'][ev])
+        self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra_off'][ev],
+                                                                                                                        dec=self.design['dec_off'][ev],
                                                                                                                         coordEpoch=2457205.9999942128,  # this is roughly 2015.5, need to ask about this and change it
                                                                                                                         waveName=np.array(list(map(lambda x:x.title(), self.design['obsWavelength'][ev]))),
                                                                                                                         raCen=self.racen,
@@ -507,6 +580,10 @@ class FPSDesign(object):
         self.valid_design['category'] = np.zeros(500, dtype='<U10')
         self.valid_design['ra'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['delta_ra'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['delta_dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['ra_off'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['dec_off'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['x'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['y'] = np.zeros(500, dtype=float) - 9999.99
 
@@ -525,6 +602,10 @@ class FPSDesign(object):
                 self.valid_design['category'][i] = self.design['category'][cond][0]
                 self.valid_design['ra'][i] = self.design['ra'][cond][0]
                 self.valid_design['dec'][i] = self.design['dec'][cond][0]
+                self.valid_design['delta_ra'][i] = self.design['delta_ra'][cond][0]
+                self.valid_design['delta_dec'][i] = self.design['delta_dec'][cond][0]
+                self.valid_design['ra_off'][i] = self.design['ra_off'][cond][0]
+                self.valid_design['dec_off'][i] = self.design['dec_off'][cond][0]
                 self.valid_design['x'][i] = self.design['x'][cond][0]
                 self.valid_design['y'][i] = self.design['y'][cond][0]
 

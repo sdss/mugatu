@@ -455,6 +455,50 @@ def check_assign_mag_limit(mag_metric_min,
     return targ_check, complete_check
 
 
+def bright_neigh_exclusion_r(mag_bs, mag_limit_r, lunation):
+    """
+    returns the exclusion radius for a fiber around a bright star
+    in arcseconds for a given designmode. This is for the piecewise
+    appromixation used based on:
+    https://wiki.sdss.org/pages/viewpage.action?pageId=100173069
+
+    Parameters
+    ----------
+    mag_bs: float or np.array
+        The magniutde in the G band for the bright star(s)
+
+    mag_limit_r: float
+        Magnitude limit for the designmode in the r-SDSS band
+
+    lunation: str:
+        If the designmode is bright time ('bright') or dark
+        time ('dark')
+
+    Returns
+    -------
+    r_exclude: float or np.array
+        exclusion radius in arcseconds around bright star(s)
+    """
+    # linear portion in the wings
+    r_wings = (mag_limit_r - mag_bs - 8.2) / 0.05
+    # linear portion in transition area
+    r_trans = (mag_limit_r - mag_bs - 4.5) / 0.25
+    # core area
+    if lunation == 'bright':
+        r_core = 1.75 * (mag_limit_r - mag_bs) ** 0.6
+    else:
+        r_core = 1.5 * (mag_limit_r - mag_bs) ** 0.8
+    # exlusion radius is the max of each section
+    if isinstance(mag_bs, float):
+        r_exclude = max(r_wings, r_trans, r_core)
+    else:
+        r_exclude = np.max(np.column_stack((r_wings,
+                                            r_trans,
+                                            r_core)),
+                           axis=1)
+    return r_exclude
+
+
 class DesignModeCheck(DesignMode):
     """
     Parameters

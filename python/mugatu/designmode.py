@@ -56,56 +56,6 @@ def ang_sep(ra1, dec1, ra2, dec2):
     return sep
 
 
-def sky_neigh_check(ra_assign, dec_assign,
-                    ra_bright, dec_bright, mag_bright,
-                    R_0, lim, beta):
-    """
-    Perform on sky neighbor check for a number of assignments
-
-    Parameters
-    ----------
-    ra_assign: np.array
-        RAs of the assignments to be checked
-
-    dec_assign: np.array
-        DECs of the assignments to be checked
-
-    ra_bright: np.array
-        RAs of the bright stars in the field
-
-    dec_bright: np.array
-        DECs of the bright stars in the field
-
-    mag_bright: np.array
-        Magntiudes of the bright stars in field.
-        Generally should be G or H magnitude.
-
-    R_0: float
-        Parameter of function R_0 * (lim - mags) ** beta,
-        where passing assignments have distance to all bright
-        stars > R_0 * (lim - mags) ** beta. Here mags is mag_bright.
-
-    lim: float
-        Parameter of function R_0 * (lim - mags) ** beta,
-        where passing assignments have distance to all bright
-        stars > R_0 * (lim - mags) ** beta. Here mags is mag_bright.
-
-    beta: float
-        Parameter of function R_0 * (lim - mags) ** beta,
-        where passing assignments have distance to all bright
-        stars > R_0 * (lim - mags) ** beta. Here mags is mag_bright.
-    """
-    sky_check = np.zeros(len(ra_assign), dtype=bool)
-    for i in range(len(ra_assign)):
-        dists = 3600 * ang_sep(ra_assign[i],
-                               dec_assign[i],
-                               ra_bright,
-                               dec_bright)
-        if np.all(dists > R_0 * (lim - mag_bright) ** beta):
-            sky_check[i] = True
-    return sky_check
-
-
 def allDesignModes(filename=None, ext=1):
     """Function to return a dictionary with all design modes
 
@@ -490,12 +440,16 @@ def bright_neigh_exclusion_r(mag_bs, mag_limit_r, lunation):
         r_core = 1.5 * (mag_limit_r - mag_bs) ** 0.8
     # exlusion radius is the max of each section
     if isinstance(mag_bs, float):
-        r_exclude = max(r_wings, r_trans, r_core)
+        if mag_bs <= mag_limit_r:
+            r_exclude = max(r_wings, r_trans, r_core)
+        else:
+            r_exclude = 0.
     else:
         r_exclude = np.max(np.column_stack((r_wings,
                                             r_trans,
                                             r_core)),
                            axis=1)
+        r_exclude[mag_bs > mag_limit_r] = 0.
     return r_exclude
 
 
@@ -1031,16 +985,15 @@ class DesignModeCheck(DesignMode):
             ra_col = catalogdb.Gaia_DR2.ra
             dec_col = catalogdb.Gaia_DR2.dec
             mag_col = catalogdb.Gaia_DR2.phot_g_mean_mag
+            # grab r_sdss limit for boss
+            mag_lim = self.bright_limit_targets['BOSS'][1][0]
         else:
             cat = catalogdb.TwoMassPSC
             ra_col = catalogdb.TwoMassPSC.ra
             dec_col = catalogdb.TwoMassPSC.decl
             mag_col = catalogdb.TwoMassPSC.h_m
-
-        # grab the params for check
-        R_0 = self.sky_neighbors_targets[instrument][0]
-        beta = self.sky_neighbors_targets[instrument][1]
-        lim = self.sky_neighbors_targets[instrument][2]
+            # grab h 2mass mag for limit
+            mag_lim = self.bright_limit_targets['APOGEE'][6][0]
 
         # think its faster to grab all in field
         # need option to use previous query here
@@ -1056,12 +1009,18 @@ class DesignModeCheck(DesignMode):
                                                 self.design.deccen,
                                                 1.5)) &
                                (catalogdb.Version.id == catalogdb_ver) &
-                               (mag_col < 16)))
+                               (mag_col < mag_lim)))
         ras, decs, mags, catalogids = map(list, zip(*list(sky_neigh.tuples())))
 
-        sky_checks = sky_neigh_check(ra_robo, dec_robo,
-                                     ras, decs, mags,
-                                     R_0, lim, beta)
+        if instrument == 'BOSS':
+            if 'bright' in self.desmod_label:
+                r_exclude = bright_neigh_exclusion_r(mags,
+                                                     mag_lim,
+                                                     lunation='bright')
+            else:
+                r_exclude = bright_neigh_exclusion_r(mags,
+                                                     mag_lim,
+                                                     lunation='dark')
 
         return sky_checks
 

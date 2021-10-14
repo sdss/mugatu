@@ -591,31 +591,7 @@ class DesignModeCheck(DesignMode):
 
         # collect magntiudes of design
         # here I am doing g,r,i,BP,G,RP,H
-        if mags is None:
-            self.mags = np.zeros((len(self.design['catalogID']), 7)) - 9999.99
-            for i in range(len(self.design['catalogID'])):
-                if self.design['catalogID'][i] != -1:
-                    # do not query skies, they have no mag
-                    if self.design['carton_pk'][i] not in self.carton_classes['sky']:
-                        if FPSDesign.idtype == 'carton_to_target':
-                            mag_query = (Magnitude.select()
-                                                  .join(CartonToTarget)
-                                                  .where(CartonToTarget.pk == self.design['catalogID'][i]))
-                        else:
-                            mag_query = (Magnitude.select()
-                                                  .join(CartonToTarget)
-                                                  .join(Target)
-                                                  .where((Target.catalogid == self.design['catalogID'][i]) &
-                                                         (CartonToTarget.carton_pk == self.design['carton_pk'][i])))
-                        self.mags[i][0] = mag_query[0].g
-                        self.mags[i][1] = mag_query[0].r
-                        self.mags[i][2] = mag_query[0].i
-                        self.mags[i][3] = mag_query[0].bp
-                        self.mags[i][4] = mag_query[0].gaia_g
-                        self.mags[i][5] = mag_query[0].rp
-                        self.mags[i][6] = mag_query[0].h
-        else:
-            self.mags = mags
+        self.mags = self.design['magnitudes']
 
     def skies_min(self, instrument, return_metric=False):
         """

@@ -963,7 +963,12 @@ class DesignModeCheck(DesignMode):
         # run query for field if not supplied
         if instrument == 'BOSS':
              # grab r_sdss limit for boss
-            mag_lim = self.bright_limit_targets['BOSS'][1][0]
+            if 'bright' in self.desmode_label:
+                # no r_sdss for bright so do g band
+                # this is hacky and needs to be fixed!!!
+                mag_lim = self.bright_limit_targets['BOSS'][0][0]
+            else:
+                mag_lim = self.bright_limit_targets['BOSS'][1][0]
         else:
             # grab h 2mass mag for limit
             mag_lim = self.bright_limit_targets['APOGEE'][6][0]
@@ -973,11 +978,15 @@ class DesignModeCheck(DesignMode):
                     cat = catalogdb.Gaia_DR2
                     ra_col = catalogdb.Gaia_DR2.ra
                     dec_col = catalogdb.Gaia_DR2.dec
+                    ra_col_str = 'ra'
+                    dec_col_str = 'dec'
                     mag_col = catalogdb.Gaia_DR2.phot_g_mean_mag
                 else:
                     cat = catalogdb.TwoMassPSC
                     ra_col = catalogdb.TwoMassPSC.ra
                     dec_col = catalogdb.TwoMassPSC.decl
+                    ra_col_str = 'ra'
+                    dec_col_str = 'decl'
                     mag_col = catalogdb.TwoMassPSC.h_m
                 # run the query
                 db_query = (cat.select(ra_col,
@@ -988,9 +997,11 @@ class DesignModeCheck(DesignMode):
                                .join(catalogdb.CatalogToTIC_v8)
                                .join(catalogdb.Catalog)
                                .join(catalogdb.Version)
-                               .where((cat.cone_search(self.design.racen,
-                                                       self.design.deccen,
-                                                       1.5)) &
+                               .where((cat.cone_search(self.racen,
+                                                       self.deccen,
+                                                       1.5,
+                                                       ra_col=ra_col_str,
+                                                       dec_col=dec_col_str)) &
                                       (mag_col < mag_lim)))
             else:
                 if instrument == 'BOSS':
@@ -1007,33 +1018,35 @@ class DesignModeCheck(DesignMode):
                                                            targetdb.CartonToTarget.pk)
                                                    .join(targetdb.Target)
                                                    .switch(targetdb.CartonToTarget)
-                                                   .join(targetdb.Magntiude)
+                                                   .join(targetdb.Magnitude)
                                                    .switch(targetdb.CartonToTarget)
                                                    .join(targetdb.Carton)
-                                                   .where((targetdb.Target.cone_search(self.design.racen,
-                                                                                       self.design.deccen,
+                                                   .where((targetdb.Target.cone_search(self.racen,
+                                                                                       self.deccen,
                                                                                        1.5)) &
                                                           (targetdb.Carton.carton.in_(carts))))
 
-        ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
+        # only do check if any stars returned
+        if len(db_query) > 0:
+            ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
 
-        if 'bright' in self.desmod_label:
-            r_exclude = bright_neigh_exclusion_r(mags,
-                                                 mag_lim,
-                                                 lunation='bright')
-        else:
-            r_exclude = bright_neigh_exclusion_r(mags,
-                                                 mag_lim,
-                                                 lunation='dark')
+            if 'bright' in self.desmode_label:
+                r_exclude = bright_neigh_exclusion_r(mags,
+                                                     mag_lim,
+                                                     lunation='bright')
+            else:
+                r_exclude = bright_neigh_exclusion_r(mags,
+                                                     mag_lim,
+                                                     lunation='dark')
 
-        # check if fibers too close to bright neighbors
-        for i in range(len(r_exclude)):
-            # only do check if exclusion radius larger
-            # than fiber, i.e. 1"
-            if r_exclude[i] > 1.:
-                dist = ang_sep(ras[i], decs[i],
-                               ra_robo, dec_robo) * 3600.
-                neigh_checks[dist < r_exclude[i]] = False
+            # check if fibers too close to bright neighbors
+            for i in range(len(r_exclude)):
+                # only do check if exclusion radius larger
+                # than fiber, i.e. 1"
+                if r_exclude[i] > 1.:
+                    dist = ang_sep(ras[i], decs[i],
+                                   ra_robo, dec_robo) * 3600.
+                    neigh_checks[dist < r_exclude[i]] = False
 
         return neigh_checks
 

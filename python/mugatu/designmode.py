@@ -938,15 +938,23 @@ class DesignModeCheck(DesignMode):
             is robotID 1 to 500 robotID.
             True assignment valid (i.e. not near bright star),
             False if not valid.
+
+        hasFiber: np.array
+            Array of booleans equal to length of 500, where order
+            is robotID 1 to 500 robotID. True if robotID has intrument
+            on fiber, False if not. If False, do not consider result from
+            neigh_checks_des for this robotID
         """
         # get xPos and yPos from robotGrid
         xrobo = np.zeros(500)
         yrobo = np.zeros(500)
+        hasFiber = np.zeros(500, dtype=bool) + True
         for i, robotID in enumerate(self.rg.robotDict):
             if instrument == 'BOSS':
                 xrobo[i] = self.rg.robotDict[robotID].bossFiberPos[0]
                 yrobo[i] = self.rg.robotDict[robotID].bossFiberPos[1]
             else:
+                hasFiber[i] = self.rg.robotDict[robotID].hasApogee
                 xrobo[i] = self.rg.robotDict[robotID].apFiberPos[0]
                 yrobo[i] = self.rg.robotDict[robotID].apFiberPos[1]
 
@@ -1048,7 +1056,7 @@ class DesignModeCheck(DesignMode):
                                    ra_robo, dec_robo) * 3600.
                     neigh_checks[dist < r_exclude[i]] = False
 
-        return neigh_checks
+        return neigh_checks, hasFiber
 
     def design_mode_check_all(self, verbose=True):
         """

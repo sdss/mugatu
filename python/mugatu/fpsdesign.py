@@ -530,6 +530,7 @@ class FPSDesign(object):
             # need to change this
             self.design['carton_pk'] = np.arange(0, len(self.design['catalogID']), 1, dtype=int)
             self.design['category'] = design_inst['category'][roboIDs != -1]
+            self.design['magnitudes'] = design_inst['magnitude'][roboIDs != -1]
 
         # make empty x,y arrays
         self.design['x'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99

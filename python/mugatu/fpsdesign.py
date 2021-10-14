@@ -161,11 +161,20 @@ class FPSDesign(object):
         # either set field params or pull from db is design
         # is in targetdb
         if manual_design:
-            self.racen = racen
-            self.deccen = deccen
-            self.position_angle = position_angle
-            self.observatory = observatory
-            self.desmode_label = desmode_label
+            if design_file is None:
+                self.racen = racen
+                self.deccen = deccen
+                self.position_angle = position_angle
+                self.observatory = observatory
+                self.desmode_label = desmode_label
+            else:
+                head = fits.open(design_file)[0].header
+                desmode_labels = head['DESMODE'].split(' ')
+                self.racen = head['RACEN']
+                self.deccen = head['DECCEN']
+                self.position_angle = head['PA']
+                self.observatory = head['obs'].strip().upper()
+                self.desmode_label = desmode_labels[exp - 1]
         else:
             design_field_db = (
                 Design.select(Design.pk,

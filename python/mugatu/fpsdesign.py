@@ -11,7 +11,7 @@ from astropy.io import fits
 import kaiju
 import kaiju.robotGrid
 # import coordio
-from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget, Carton, DesignMode
+from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget, Carton, DesignMode, Magnitude, Category
 import fitsio
 from mugatu.exceptions import MugatuError, MugatuWarning
 from coordio.utils import radec2wokxy, wokxy2radec
@@ -76,6 +76,18 @@ class FPSDesign(object):
         Array of proper motions in the DEC axis for the targets, in
         milliarcsec/yr. If no proper motion, set index to zero.
 
+    delta_ra: np.array
+        List of offsets in right ascensions that correspond to catalogids.
+        If list not provided, but catalogids for a manual design
+        are provided, right ascensions will be pulled from
+        targetdb.
+
+    delta_dec: np.array
+        List of offsets in declinations that correspond to catalogids.
+        If list not provided, but catalogids for a manual design
+        are provided, declinations will be pulled from
+        targetdb.
+
     fiberID: np.array
         Fiber assignement for each catalogid target in the
         manual design.
@@ -95,6 +107,11 @@ class FPSDesign(object):
     category: np.array
         The category for each target. Can be 'science', 'sky_INSTRUMENT'
         or 'standard_INSTRUMENT'
+
+    magnitudes: np.array
+        Magnitudes of the targets. Should be of size (N, 7), where
+        columns correspond to g, r, i, bp, gaia_g, rp and h band
+        magnitudes.
 
     design_file: str
         FITS file with a manual design. The file must be the same
@@ -149,9 +166,10 @@ class FPSDesign(object):
     def __init__(self, design_pk, obsTime, racen=None, deccen=None,
                  position_angle=None, observatory=None, desmode_label=None,
                  idtype='carton_to_target', catalogids=None, ra=None, dec=None,
-                 pmra=None, pmdec=None, fiberID=None, obsWavelength=None,
-                 priority=None, carton_pk=None, category=None, design_file=None,
-                 manual_design=False, exp=0,
+                 pmra=None, pmdec=None, delta_ra=None, delta_dec=None,
+                 fiberID=None, obsWavelength=None,
+                 priority=None, carton_pk=None, category=None, magnitudes=None,
+                 design_file=None, manual_design=False, exp=0,
                  collisionBuffer=2.):
         if idtype != 'catalogID' and idtype != 'carton_to_target':
             raise MugatuError(message='idtype must be catalogID or carton_to_target')
@@ -202,11 +220,14 @@ class FPSDesign(object):
         self.dec = dec
         self.pmra = pmra
         self.pmdec = pmdec
+        self.delta_ra = delta_ra
+        self.delta_dec = delta_dec
         self.fiberID = fiberID
         self.obsWavelength = obsWavelength
         self.priority = priority
         self.carton_pk = carton_pk
         self.category = category
+        self.magnitudes = magnitudes
         self.design_file = design_file
         self.manual_design = manual_design
         self.exp = exp
@@ -324,68 +345,77 @@ class FPSDesign(object):
         self.design['pmdec'] = np.zeros(500, dtype=float) - 9999.99
         self.design['x'] = np.zeros(500, dtype=float) - 9999.99
         self.design['y'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['magnitudes'] = np.zeros((500, 7), dtype=float) - 9999.99
 
         # need to add wokHole to query when in db (not there now)
         # I need to test this when v05 is up, im unsure about Joins
         design_targ_db = (
             Assignment.select(Target.catalogid,
                               Positioner.id,
-                              Positioner.pk,
                               Instrument.label,
                               CartonToTarget.priority,
                               Target.ra,
                               Target.dec,
-                              CartonToTarget.carton)
-                      .join(Positioner,
-                            on=(Assignment.positioner_pk == Positioner.pk))
+                              CartonToTarget.carton,
+                              Carton.pk.alias('carton_pk'),
+                              CartonToTarget.pk,
+                              Magnitude.g,
+                              Magnitude.r,
+                              Magnitude.i,
+                              Magnitude.bp,
+                              Magnitude.gaia_g,
+                              Magnitude.rp,
+                              Magnitude.h,
+                              Target.delta_ra,
+                              Target.delta_dec,
+                              Target.pmra,
+                              Target.pmdec,
+                              Category.label.alias('cat_lab'))
+                      .join(Positioner)
                       .switch(Assignment)
-                      .join(Instrument,
-                            on=(Assignment.instrument_pk == Instrument.pk))
+                      .join(Instrument)
                       .switch(Assignment)
-                      .join(CartonToTarget,
-                            on=(Assignment.carton_to_target_pk == CartonToTarget.pk))
-                      .join(Target,
-                            on=(CartonToTarget.target_pk == Target.pk))
+                      .join(CartonToTarget)
+                      .join(Target)
+                      .switch(CartonToTarget)
+                      .join(Magnitude)
+                      .switch(CartonToTarget)
+                      .join(Carton)
+                      .join(Category)
                       .where(Assignment.design_pk == self.design_pk))
 
-        for i in range(len(design_targ_db)):
+        for d in design_targ_db.objects():
             # assign to index that corresponds to fiber assignment
             # index should match length of arrays
-            pos_id = design_targ_db[i].positioner.id
+            pos_id = d.id
             if self.idtype == 'carton_to_target':
-                self.design['catalogID'][pos_id] = (design_targ_db[i]
-                                                    .carton_to_target
-                                                    .target.catalogid.catalogid)
+                self.design['catalogID'][pos_id] = d.catalogid
             else:
-                self.design['catalogID'][pos_id] = (design_targ_db[i]
-                                                    .carton_to_target
-                                                    .pk)
+                self.design['catalogID'][pos_id] = d.pk
+
             self.design['fiberID'][pos_id] = pos_id
             # design['wokHoleID'][i] = design_targ_db[i]
-            self.design['obsWavelength'][pos_id] = (design_targ_db[i]
-                                                    .instrument.label)
+            self.design['obsWavelength'][pos_id] = d.label
             # catch targets with no assigned priority
             try:
-                self.design['priority'][pos_id] = (design_targ_db[i]
-                                                   .carton_to_target.priority)
+                self.design['priority'][pos_id] = d.priority
             except AttributeError:
                 self.design['priority'][pos_id] = -1
-            self.design['carton_pk'][pos_id] = (design_targ_db[i]
-                                                .carton_to_target.carton.pk)
-            self.design['category'][pos_id] = (design_targ_db[i]
-                                                .carton_to_target.carton.category.label)
-            self.design['ra'][pos_id] = (design_targ_db[i].carton_to_target
-                                                          .target.ra)
-            self.design['dec'][pos_id] = (design_targ_db[i].carton_to_target
-                                                           .target.dec)
-            self.design['delta_ra'][pos_id] = (design_targ_db[i].carton_to_target
-                                                                .delta_ra)
-            self.design['delta_dec'][pos_id] = (design_targ_db[i].carton_to_target
-                                                                 .delta_dec)
-            self.design['pmra'][pos_id] = (design_targ_db[i].carton_to_target
-                                                            .target.pmra)
-            self.design['pmdec'][pos_id] = (design_targ_db[i].carton_to_target
-                                                             .target.pmdec)
+            self.design['carton_pk'][pos_id] = d.carton_pk
+            self.design['category'][pos_id] = d.cat_lab
+            self.design['ra'][pos_id] = d.ra
+            self.design['dec'][pos_id] = d.dec
+            self.design['delta_ra'][pos_id] = d.delta_ra
+            self.design['delta_dec'][pos_id] = d.delta_dec
+            self.design['pmra'][pos_id] = d.pmra
+            self.design['pmdec'][pos_id] = d.pmdec
+            self.design['magnitudes'][pos_id][0] = d.g
+            self.design['magnitudes'][pos_id][1] = d.r
+            self.design['magnitudes'][pos_id][2] = d.i
+            self.design['magnitudes'][pos_id][3] = d.bp
+            self.design['magnitudes'][pos_id][4] = d.gaia_g
+            self.design['magnitudes'][pos_id][5] = d.rp
+            self.design['magnitudes'][pos_id][6] = d.h
 
         # here convert ra/dec to x/y based on field/time of observation
         # I think I need to add inertial in here at some point, dont see this in targetdb though
@@ -449,14 +479,19 @@ class FPSDesign(object):
                     self.design['dec'][i] = targ_db.dec
                     self.design['pmra'][i] = targ_db.pmra
                     self.design['pmdec'][i] = targ_db.pmdec
+                    self.design['delta_ra'][i] = targ_db.delta_ra
+                    self.design['delta_dec'][i] = targ_db.delta_dec
             else:
                 self.design['ra'] = self.ra
                 self.design['dec'] = self.dec
                 self.design['pmra'] = self.pmra
                 self.design['pmdec'] = self.pmdec
+                self.design['delta_ra'] = self.delta_ra
+                self.design['delta_dec'] = self.delta_dec
 
             # here somehow assign these
             self.design['fiberID'] = self.fiberID
+            self.design['magnitudes'] = self.magnitudes
         else:
             # manual design from flat file
             # get header with field info

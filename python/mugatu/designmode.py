@@ -14,6 +14,7 @@ from mugatu.exceptions import MugatuError, MugatuWarning
 from sdssdb.peewee.sdss5db.targetdb import Carton, Category, Magnitude, CartonToTarget, Target
 from sdssdb.peewee.sdss5db.targetdb import DesignMode as DesignModeDB
 from sdssdb.peewee.sdss5db import catalogdb
+from sdssdb.peewee.sdss5db import targetdb
 from coordio.utils import radec2wokxy, wokxy2radec
 
 try:
@@ -552,8 +553,7 @@ class DesignModeCheck(DesignMode):
     """
 
     def __init__(self, FPSDesign, desmode_label,
-                 desmode_manual=None,
-                 mags=None):
+                 desmode_manual=None):
         # grab needed info from FPSDesign object
         self.design = FPSDesign.design
         self.racen = FPSDesign.racen
@@ -933,12 +933,10 @@ class DesignModeCheck(DesignMode):
                 complete_check[i] = 'INCOMPLETE'
         return mag_checks, complete_check
 
-    def sky_neighbors(self, instrument, catalogdb_ver):
+    def bright_neighbors(self, instrument, check_type='designmode',
+                         db_query=None):
         """
-        Check if any skies are within some distance
-        from another source where distances to targets
-        (r, in arcseconds) must be r > R_0 * (lim - mags) ** beta,
-        where mags is G band for BOSS and H band for APOGEE.
+        Check if any fibers are placed near a bright star
 
         Parameters
         ----------
@@ -946,16 +944,24 @@ class DesignModeCheck(DesignMode):
             Instrument to check sky distances.
             Must be 'BOSS' or 'APOGEE'.
 
-        catalogdb_ver: int
-            catalogdb.Version.id to check for targets
-            in design field for check.
+        check_type: str
+            Either 'designmode' for checking bright
+            stars in catalogdb down to designmode magnitude
+            limit, or 'safety' for checking bright stars in
+            targetdb in bright star cartons.
+
+        db_query: peewee query
+            Optionally pass the pre-queried bright stars
+            from catalogdb or targetdb. Must include ra, dec,
+            magnitude and id.
 
         Returns
         -------
-        sky_checks: np.array
-            Array of booleans equal to length of self.design.
-            True if r > R_0 * (lim - mags) ** beta, False if not
-            or assignment is not sky for specified instrument.
+        neigh_checks_des: np.array
+            Array of booleans equal to length of 500, where order
+            is robotID 1 to 500 robotID.
+            True assignment valid (i.e. not near bright star),
+            False if not valid.
         """
         # get xPos and yPos from robotGrid
         xrobo = np.zeros(500)
@@ -977,52 +983,83 @@ class DesignModeCheck(DesignMode):
                                                    obsSite=self.observatory,
                                                    obsTime=self.obsTime)
 
-        sky_checks = np.zeros(500,
-                              dtype=bool)
-        # set the columns/catalog based on instrument
+        neigh_checks = np.zeros(500, dtype=bool) + True
+        # run query for field if not supplied
         if instrument == 'BOSS':
-            cat = catalogdb.Gaia_DR2
-            ra_col = catalogdb.Gaia_DR2.ra
-            dec_col = catalogdb.Gaia_DR2.dec
-            mag_col = catalogdb.Gaia_DR2.phot_g_mean_mag
-            # grab r_sdss limit for boss
+             # grab r_sdss limit for boss
             mag_lim = self.bright_limit_targets['BOSS'][1][0]
         else:
-            cat = catalogdb.TwoMassPSC
-            ra_col = catalogdb.TwoMassPSC.ra
-            dec_col = catalogdb.TwoMassPSC.decl
-            mag_col = catalogdb.TwoMassPSC.h_m
             # grab h 2mass mag for limit
             mag_lim = self.bright_limit_targets['APOGEE'][6][0]
-
-        # think its faster to grab all in field
-        # need option to use previous query here
-        sky_neigh = (cat.select(ra_col,
-                                dec_col,
-                                mag_col,
-                                catalogdb.Catalog.catalogid)
-                        .join(catalogdb.TIC_v8)
-                        .join(catalogdb.CatalogToTIC_v8)
-                        .join(catalogdb.Catalog)
-                        .join(catalogdb.Version)
-                        .where((cat.cone_search(self.design.racen,
-                                                self.design.deccen,
-                                                1.5)) &
-                               (catalogdb.Version.id == catalogdb_ver) &
-                               (mag_col < mag_lim)))
-        ras, decs, mags, catalogids = map(list, zip(*list(sky_neigh.tuples())))
-
-        if instrument == 'BOSS':
-            if 'bright' in self.desmod_label:
-                r_exclude = bright_neigh_exclusion_r(mags,
-                                                     mag_lim,
-                                                     lunation='bright')
+        if db_query is None:
+            if check_type == 'designmode':
+                if instrument == 'BOSS':
+                    cat = catalogdb.Gaia_DR2
+                    ra_col = catalogdb.Gaia_DR2.ra
+                    dec_col = catalogdb.Gaia_DR2.dec
+                    mag_col = catalogdb.Gaia_DR2.phot_g_mean_mag
+                else:
+                    cat = catalogdb.TwoMassPSC
+                    ra_col = catalogdb.TwoMassPSC.ra
+                    dec_col = catalogdb.TwoMassPSC.decl
+                    mag_col = catalogdb.TwoMassPSC.h_m
+                # run the query
+                db_query = (cat.select(ra_col,
+                                       dec_col,
+                                       mag_col,
+                                       catalogdb.Catalog.catalogid)
+                               .join(catalogdb.TIC_v8)
+                               .join(catalogdb.CatalogToTIC_v8)
+                               .join(catalogdb.Catalog)
+                               .join(catalogdb.Version)
+                               .where((cat.cone_search(self.design.racen,
+                                                       self.design.deccen,
+                                                       1.5)) &
+                                      (mag_col < mag_lim)))
             else:
-                r_exclude = bright_neigh_exclusion_r(mags,
-                                                     mag_lim,
-                                                     lunation='dark')
+                if instrument == 'BOSS':
+                    carts = ['ops_tycho2_brightneighbors',
+                             'ops_gaia_brightneighbors']
+                    mag_col = targetdb.Magnitude.gaia_g
+                else:
+                    carts = ['ops_2mass_psc_brightneighbors']
+                    mag_col = targetdb.Magnitude.h
+                # run the query
+                db_query = (targetdb.CartonToTarget.select(targetdb.Target.ra,
+                                                           targetdb.Target.dec,
+                                                           mag_col,
+                                                           targetdb.CartonToTarget.pk)
+                                                   .join(targetdb.Target)
+                                                   .switch(targetdb.CartonToTarget)
+                                                   .join(targetdb.Magntiude)
+                                                   .switch(targetdb.CartonToTarget)
+                                                   .join(targetdb.Carton)
+                                                   .where((targetdb.Target.cone_search(self.design.racen,
+                                                                                       self.design.deccen,
+                                                                                       1.5)) &
+                                                          (targetdb.Carton.carton.in_(carts))))
 
-        return sky_checks
+        ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
+
+        if 'bright' in self.desmod_label:
+            r_exclude = bright_neigh_exclusion_r(mags,
+                                                 mag_lim,
+                                                 lunation='bright')
+        else:
+            r_exclude = bright_neigh_exclusion_r(mags,
+                                                 mag_lim,
+                                                 lunation='dark')
+
+        # check if fibers too close to bright neighbors
+        for i in range(len(r_exclude)):
+            # only do check if exclusion radius larger
+            # than fiber, i.e. 1"
+            if r_exclude[i] > 1.:
+                dist = ang_sep(ras[i], decs[i],
+                               ra_robo, dec_robo) * 3600.
+                neigh_checks[dist < r_exclude[i]] = False
+
+        return neigh_checks
 
     def design_mode_check_all(self, verbose=True):
         """

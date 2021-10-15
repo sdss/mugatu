@@ -929,7 +929,8 @@ class DesignModeCheck(DesignMode):
         db_query: peewee query
             Optionally pass the pre-queried bright stars
             from catalogdb or targetdb. Must include ra, dec,
-            magnitude and id.
+            magnitude and id. Other option is to provide tuple
+            of (ra,dec,magntiude,id).
 
         Returns
         -------
@@ -1036,7 +1037,10 @@ class DesignModeCheck(DesignMode):
 
         # only do check if any stars returned
         if len(db_query) > 0:
-            ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
+            if isinstance(db_query, tuple):
+                ras, decs, mags, catalogids = db_query
+            else:
+                ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
 
             if 'bright' in self.desmode_label:
                 r_exclude = bright_neigh_exclusion_r(mags,

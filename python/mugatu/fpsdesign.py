@@ -13,7 +13,7 @@ import kaiju.robotGrid
 # import coordio
 from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget, Carton, DesignMode, Magnitude, Category
 import fitsio
-from mugatu.exceptions import MugatuError, MugatuWarning
+from mugatu.exceptions import MugatuError, MugatuWarning, MugatuDesignError, MugatuDesignWarning, MugatuDesignModeWarning
 from coordio.utils import radec2wokxy, wokxy2radec
 from mugatu.designs_to_targetdb import make_design_assignments_targetdb, make_design_field_targetdb
 from mugatu.designmode import DesignModeCheck
@@ -436,7 +436,7 @@ class FPSDesign(object):
 
         if np.any(fieldWarn):
             flag = 'Coordio xy coordinates converted should be eyed with suspicion.'
-            warnings.warn(flag, MugatuWarning)
+            warnings.warn(flag, MugatuDesignWarning)
 
         self.design_built = True
 
@@ -556,7 +556,7 @@ class FPSDesign(object):
 
         if np.any(fieldWarn):
             flag = 'Coordio xy coordinates converted should be eyed with suspicion.'
-            warnings.warn(flag, MugatuWarning)
+            warnings.warn(flag, MugatuDesignWarning)
 
         self.design_built = True
 
@@ -602,7 +602,7 @@ class FPSDesign(object):
 
         if is_unassigned:
             flag = 'Some targets could not be assigned to fiber'
-            warnings.warn(flag, MugatuWarning)
+            warnings.warn(flag, MugatuDesignWarning)
 
         return
 
@@ -700,10 +700,10 @@ class FPSDesign(object):
 
             # check if de-collision was successful
             if not self.rg.getNCollisions() == 0:
-                raise MugatuError(message='Kaiju decollideGrid failed')
+                raise MugatuDesignError(message='Kaiju decollideGrid failed')
 
             flag = 'Some targets removed from design due to collisions'
-            warnings.warn(flag, MugatuWarning)
+            warnings.warn(flag, MugatuDesignWarning)
 
             # grab all of the targets removed due to collisions
             for i in self.rg.robotDict:
@@ -728,62 +728,62 @@ class FPSDesign(object):
             self.design_errors['min_skies_boss'] = mode.n_skies_min_check['BOSS']
             if self.design_errors['min_skies_boss'] is False:
                 flag = 'Design does not meet minimum BOSS skies for DesignMode'
-                warnings.warn(flag, MugatuWarning)
+                warnings.warn(flag, MugatuDesignModeWarning)
             self.design_errors['min_skies_apogee'] = mode.n_skies_min_check['APOGEE']
             if self.design_errors['min_skies_apogee'] is False:
                 flag = 'Design does not meet minimum APOGEE skies for DesignMode'
-                warnings.warn(flag, MugatuWarning)
+                warnings.warn(flag, MugatuDesignModeWarning)
 
             self.design_errors['fov_skies_boss'] = mode.min_skies_fovmetric_check['BOSS']
             if self.design_errors['fov_skies_boss'] is False:
                 flag = 'Design does not meet FOV criteria for BOSS skies for DesignMode'
-                warnings.warn(flag, MugatuWarning)
+                warnings.warn(flag, MugatuDesignModeWarning)
             self.design_errors['fov_skies_apogee'] = mode.min_skies_fovmetric_check['APOGEE']
             if self.design_errors['fov_skies_apogee'] is False:
                 flag = 'Design does not meet FOV criteria for APOGEE skies for DesignMode'
-                warnings.warn(flag, MugatuWarning)
+                warnings.warn(flag, MugatuDesignModeWarning)
 
             self.design_errors['min_stds_boss'] = mode.n_stds_min_check['BOSS']
             if self.design_errors['min_stds_boss'] is False:
                 flag = 'Design does not meet minimum BOSS standards for DesignMode'
-                warnings.warn(flag, MugatuWarning)
+                warnings.warn(flag, MugatuDesignModeWarning)
             self.design_errors['min_stds_apogee'] = mode.n_stds_min_check['APOGEE']
             if self.design_errors['min_stds_apogee'] is False:
                 flag = 'Design does not meet minimum APOGEE standards for DesignMode'
-                warnings.warn(flag, MugatuWarning)
+                warnings.warn(flag, MugatuDesignModeWarning)
 
             self.design_errors['fov_stds_boss'] = mode.min_stds_fovmetric_check['BOSS']
             if self.design_errors['fov_stds_boss'] is False:
                 flag = 'Design does not meet FOV criteria for BOSS standards for DesignMode'
-                warnings.warn(flag, MugatuWarning)
+                warnings.warn(flag, MugatuDesignModeWarning)
             self.design_errors['fov_stds_apogee'] = mode.min_stds_fovmetric_check['APOGEE']
             if self.design_errors['fov_stds_apogee'] is False:
                 flag = 'Design does not meet FOV criteria for APOGEE standards for DesignMode'
-                warnings.warn(flag, MugatuWarning)
+                warnings.warn(flag, MugatuDesignModeWarning)
 
             self.design_errors['stds_mag_boss'] = np.all(mode.stds_mags_check['BOSS'][0][(self.design['catalogID'] != -1) &
                                                                                          (self.design['category'] == 'standard_boss')])
             if self.design_errors['stds_mag_boss'] is False:
                 flag = 'Design has BOSS standard assignments too bright for DesignMode'
-                warnings.warn(flag, MugatuWarning)
+                warnings.warn(flag, MugatuDesignModeWarning)
             self.design_errors['stds_mag_apogee'] = np.all(mode.stds_mags_check['APOGEE'][0][(self.design['catalogID'] != -1) &
                                                                                              (self.design['category'] == 'standard_apogee')])
             if self.design_errors['stds_mag_apogee'] is False:
                 flag = 'Design has APOGEE standard assignments too bright for DesignMode'
-                warnings.warn(flag, MugatuWarning)
+                warnings.warn(flag, MugatuDesignModeWarning)
 
             self.design_errors['sci_mag_boss'] = np.all(mode.bright_limit_targets_check['BOSS'][0][(self.design['catalogID'] != -1) &
                                                                                                    (self.design['category'] == 'science') &
                                                                                                    (self.design['obsWavelength'] == 'BOSS')])
             if self.design_errors['sci_mag_boss'] is False:
                 flag = 'Design has BOSS science assignments too bright for DesignMode'
-                warnings.warn(flag, MugatuWarning)
+                warnings.warn(flag, MugatuDesignModeWarning)
             self.design_errors['sci_mag_apogee'] = np.all(mode.bright_limit_targets_check['APOGEE'][0][(self.design['catalogID'] != -1) &
                                                                                                        (self.design['category'] == 'science') &
                                                                                                        (self.design['obsWavelength'] == 'APOGEE')])
             if self.design_errors['sci_mag_apogee'] is False:
                 flag = 'Design has APOGEE science assignments too bright for DesignMode'
-                warnings.warn(flag, MugatuWarning)
+                warnings.warn(flag, MugatuDesignModeWarning)
 
         # I imagine that the above step would manipulate the robogrid based on
         # collisions and deadlocks, so the below would take these Kaiju results

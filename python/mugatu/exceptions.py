@@ -33,6 +33,17 @@ class MugatuNotImplemented(MugatuError):
         super(MugatuNotImplemented, self).__init__(message)
 
 
+class MugatuDesignError(MugatuError):
+    """A custom exception when there is a critial error in a design."""
+
+    def __init__(self, message=None):
+
+        message = 'There is a critical error in the design.' \
+            if not message else message
+
+        super(MugatuDesignError, self).__init__(message)
+
+
 class MugatuAPIError(MugatuError):
     """A custom exception for API errors"""
 
@@ -65,6 +76,16 @@ class MugatuUserWarning(UserWarning, MugatuWarning):
 
 
 class MugatuSkippedTestWarning(MugatuUserWarning):
+    """A warning for when a test is skipped."""
+    pass
+
+
+class MugatuDesignWarning(MugatuUserWarning):
+    """A warning for when a test is skipped."""
+    pass
+
+
+class MugatuDesignModeWarning(MugatuUserWarning):
     """A warning for when a test is skipped."""
     pass
 

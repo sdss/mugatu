@@ -446,9 +446,9 @@ def bright_neigh_exclusion_r(mag_bs, mag_limit_r, lunation):
         else:
             r_exclude = 0.
     else:
-        r_exclude = np.max(np.column_stack((r_wings,
-                                            r_trans,
-                                            r_core)),
+        r_exclude = np.nanmax(np.column_stack((r_wings,
+                                               r_trans,
+                                               r_core)),
                            axis=1)
         r_exclude[mag_bs > mag_limit_r] = 0.
     return r_exclude
@@ -1126,6 +1126,12 @@ class DesignModeCheck(DesignMode):
                                                                     'APOGEE',
                                                                     'science')
 
+        self.bright_neighbor_check = {}
+        self.bright_neighbor_check['BOSS'] = self.bright_neighbors(instrument='BOSS',
+                                                                   check_type='designmode')
+        self.bright_neighbor_check['APOGEE'] = self.bright_neighbors(instrument='APOGEE',
+                                                                     check_type='designmode')
+
         if verbose:
             verbose_output = ''
             verbose_output += 'DesignMode Param                  | Pass Check?\n'
@@ -1166,5 +1172,13 @@ class DesignModeCheck(DesignMode):
                                                        self.carton_classes['science'])) &
                                               (self.design['obsWavelength'] == 'APOGEE')])
             verbose_output += 'Magnitude Limit Targets (APOGEE): | %d out of %d\n' % (check_tot, design_tot)
+
+            check_tot = len(self.bright_limit_targets_check['BOSS'][0][~self.bright_limit_targets_check['BOSS'][0] & self.bright_limit_targets_check['BOSS'][1]])
+            design_tot = len(self.bright_limit_targets_check['BOSS'][0][self.bright_limit_targets_check['BOSS'][1]])
+            verbose_output += 'Bright Neighbor Check (BOSS):     | %d out of %d\n' % (check_tot, design_tot)
+
+            check_tot = len(self.bright_limit_targets_check['APOGEE'][0][~self.bright_limit_targets_check['APOGEE'][0] & self.bright_limit_targets_check['APOGEE'][1]])
+            design_tot = len(self.bright_limit_targets_check['APOGEE'][0][self.bright_limit_targets_check['APOGEE'][1]])
+            verbose_output += 'Bright Neighbor Check (APOGEE):   | %d out of %d\n' % (check_tot, design_tot)
 
             print(verbose_output)

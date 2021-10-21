@@ -11,6 +11,7 @@ import robostrategy.obstime as obstime
 import coordio.time
 
 from sdssdb.peewee.sdss5db import targetdb
+from sdssdb.peewee.sdss5db import catalogdb
 
 targetdb.database.connect_from_parameters(user='sdss_user',
                                           host='localhost',
@@ -18,7 +19,7 @@ targetdb.database.connect_from_parameters(user='sdss_user',
 
 
 def designmode_manual(file, exp, obsTime, observatory,
-                      designmode_label, desmode_manual):
+                      designmode_label):
     """
     test designmode check of manual design
     """
@@ -31,11 +32,10 @@ def designmode_manual(file, exp, obsTime, observatory,
                     idtype='carton_to_target')
 
     des.build_design_manual()
-    des.validate_design()
+    des.validate_design(safety=False)
 
     mode = DesignModeCheck(FPSDesign=des,
-                           desmode_label=designmode_label,
-                           desmode_manual=desmode_manual)
+                           desmode_label=designmode_label)
 
     mode.design_mode_check_all()
 
@@ -71,6 +71,12 @@ if __name__ == "__main__":
 
     if loc == 'local':
         file = 'rsFieldAssignments-%s-%s-%d.fits' % (plan, observatory, fieldid)
+        targetdb.database.connect_from_parameters(user='sdss_user',
+                                                  host='localhost',
+                                                  port=7502)
+        catalogdb.database.connect_from_parameters(user='sdss_user',
+                                                  host='localhost',
+                                                  port=7502)
     else:
         file = sdss_path.full('rsFieldAssignments',
                               plan=plan,
@@ -78,6 +84,12 @@ if __name__ == "__main__":
                               fieldid=fieldid)
         if 'sas' in file:
             file = file[:32] + 'sdss50' + file[44:]
+        targetdb.database.connect_from_parameters(user='sdss_user',
+                                                  host='operations.sdss.utah.edu',
+                                                  port=5432)
+        catalogdb.database.connect_from_parameters(user='sdss_user',
+                                                  host='operations.sdss.utah.edu',
+                                                  port=5432)
 
     head = fits.open(file)[0].header
     racen = head['RACEN']
@@ -85,32 +97,6 @@ if __name__ == "__main__":
     ot = obstime.ObsTime(observatory=observatory.lower())
     obsTime = coordio.time.Time(ot.nominal(lst=racen)).jd
 
-    desmode_manual = {}
-    data = fits.open(file)[3].data
-    desmode_manual['boss_skies_min'] = data[data['label'] == designmode_label]['boss_n_skies_min'][0]
-    desmode_manual['apogee_skies_min'] = data[data['label'] == designmode_label]['apogee_n_skies_min'][0]
-
-    desmode_manual['boss_skies_fov'] = data[data['label'] == designmode_label]['boss_min_skies_fovmetric'][0]
-    desmode_manual['apogee_skies_fov'] = data[data['label'] == designmode_label]['apogee_min_skies_fovmetric'][0]
-
-    desmode_manual['boss_stds_min'] = data[data['label'] == designmode_label]['boss_n_stds_min'][0]
-    desmode_manual['apogee_stds_min'] = data[data['label'] == designmode_label]['apogee_n_stds_min'][0]
-
-    desmode_manual['boss_stds_fov'] = data[data['label'] == designmode_label]['boss_min_stds_fovmetric'][0]
-    desmode_manual['apogee_stds_fov'] = data[data['label'] == designmode_label]['apogee_min_stds_fovmetric'][0]
-
-    desmode_manual['boss_stds_mags'] = data[data['label'] == designmode_label]['boss_stds_mags'][0]
-    desmode_manual['apogee_stds_mags'] = data[data['label'] == designmode_label]['apogee_stds_mags'][0]
-
-    desmode_manual['boss_bright_limit_targets'] = data[data['label'] == designmode_label]['boss_bright_limit_targets'][0]
-    desmode_manual['apogee_bright_limit_targets'] = data[data['label'] == designmode_label]['apogee_bright_limit_targets'][0]
-
-    desmode_manual['boss_sky_neighbors_targets'] = data[data['label'] == designmode_label]['boss_sky_neighbors_targets'][0]
-    desmode_manual['apogee_sky_neighbors_targets'] = data[data['label'] == designmode_label]['apogee_sky_neighbors_targets'][0]
-
-    desmode_manual['apogee_trace_diff_targets'] = data[data['label'] == designmode_label]['apogee_trace_diff_targets'][0]
-
     designmode_manual(file=file, exp=exp, obsTime=obsTime,
                      observatory=observatory,
-                     designmode_label=designmode_label,
-                     desmode_manual=desmode_manual)
+                     designmode_label=designmode_label)

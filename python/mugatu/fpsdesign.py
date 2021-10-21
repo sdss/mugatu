@@ -656,7 +656,7 @@ class FPSDesign(object):
 
         return
 
-    def validate_design(self, designmode=True):
+    def validate_design(self, designmode=True, safety=True):
         """
         Validate design for deadlocks and collisions using Kaiju.
 
@@ -664,6 +664,10 @@ class FPSDesign(object):
         ----------
         designmode: bool
             Check designmodes for the design.
+
+        safety: bool
+            Check for bright neighbors using carton of brightest Gaia/2MASS
+            stars in targetdb.
         """
         # make dict to store design errors that may come up
         self.design_errors = {}
@@ -784,6 +788,33 @@ class FPSDesign(object):
             if self.design_errors['sci_mag_apogee'] is False:
                 flag = 'Design has APOGEE science assignments too bright for DesignMode'
                 warnings.warn(flag, MugatuDesignModeWarning)
+
+            self.design_errors['bright_neigh_boss'] = np.all(mode.bright_neighbor_check['BOSS'][0][mode.bright_neighbor_check['BOSS'][1]])
+            if self.design_errors['bright_neigh_boss'] == False:
+                flag = 'Design has BOSS fibers too near bright source for DesignMode'
+                warnings.warn(flag, MugatuDesignModeWarning)
+
+            self.design_errors['bright_neigh_apogee'] = np.all(mode.bright_neighbor_check['APOGEE'][0][mode.bright_neighbor_check['APOGEE'][1]])
+            if self.design_errors['bright_neigh_apogee'] == False:
+                flag = 'Design has APOGEE fibers too near bright source for DesignMode'
+                warnings.warn(flag, MugatuDesignModeWarning)
+
+        # do the safety check for design
+        if safety:
+            if 'mode' not in locals():
+                mode = DesignModeCheck(FPSDesign=self,
+                                       desmode_label=self.desmode_label)
+            bright_check_boss, hasFiber_boss = mode.bright_neighbors(instrument='BOSS',
+                                                                     check_type='safety')
+            bright_check_apogee, hasFiber_apogee = mode.bright_neighbors(instrument='APOGEE',
+                                                                         check_type='safety')
+            fids = np.arange(1, 501, 1, dtype=int)
+            if (len(bright_check_boss[~bright_check_boss & hasFiber_boss]) > 0 or 
+                len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]) > 0):
+                message = 'Bright Neighbor Safety Checked Failed,'
+                message += ' %d BOSS and %d APOGEE fibers near bright sources' % (len(bright_check_boss[~bright_check_boss & hasFiber_boss]),
+                                                                                  len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]))
+                raise MugatuDesignError(message=message)
 
         # I imagine that the above step would manipulate the robogrid based on
         # collisions and deadlocks, so the below would take these Kaiju results

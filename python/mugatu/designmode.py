@@ -1173,12 +1173,12 @@ class DesignModeCheck(DesignMode):
                                               (self.design['obsWavelength'] == 'APOGEE')])
             verbose_output += 'Magnitude Limit Targets (APOGEE): | %d out of %d\n' % (check_tot, design_tot)
 
-            check_tot = len(self.bright_limit_targets_check['BOSS'][0][~self.bright_limit_targets_check['BOSS'][0] & self.bright_limit_targets_check['BOSS'][1]])
-            design_tot = len(self.bright_limit_targets_check['BOSS'][0][self.bright_limit_targets_check['BOSS'][1]])
+            check_tot = len(self.bright_neighbor_check['BOSS'][0][~self.bright_neighbor_check['BOSS'][0] & self.bright_neighbor_check['BOSS'][1]])
+            design_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][1]])
             verbose_output += 'Bright Neighbor Check (BOSS):     | %d out of %d\n' % (check_tot, design_tot)
 
-            check_tot = len(self.bright_limit_targets_check['APOGEE'][0][~self.bright_limit_targets_check['APOGEE'][0] & self.bright_limit_targets_check['APOGEE'][1]])
-            design_tot = len(self.bright_limit_targets_check['APOGEE'][0][self.bright_limit_targets_check['APOGEE'][1]])
+            check_tot = len(self.bright_neighbor_check['APOGEE'][0][~self.bright_neighbor_check['APOGEE'][0] & self.bright_neighbor_check['APOGEE'][1]])
+            design_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][1]])
             verbose_output += 'Bright Neighbor Check (APOGEE):   | %d out of %d\n' % (check_tot, design_tot)
 
             print(verbose_output)

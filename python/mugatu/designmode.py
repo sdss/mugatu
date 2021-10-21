@@ -454,6 +454,93 @@ def bright_neigh_exclusion_r(mag_bs, mag_limit_r, lunation):
     return r_exclude
 
 
+def build_brigh_neigh_query(check_type, instrument, mag_lim,
+                            racen, deccen):
+    """
+    Builds the database query needed to run bright
+    neighbor check
+
+    Parameters
+    ----------
+    check_type: str
+        Either 'designmode' for full designmode check with
+        all stars down to mag_lim in catalogdb, or 'safety'
+        for safety check using bright stars in targetdb.
+
+    instrument: str
+        Fiber instrument being checked. Either 'BOSS' or
+        'APOGEE'.
+
+    mag_lim: float
+        Magnitude limit in the r_SDSS band for BOSS or
+        H band for APOGEE.
+
+    racen: float
+        Field center in right ascension.
+
+    deccen: float
+        Feild center in declination
+
+    Outputs
+    -------
+    db_query: peewee.query
+        Database query object.
+    """
+    if check_type == 'designmode':
+        if instrument == 'BOSS':
+            cat = catalogdb.Gaia_DR2
+            ra_col = catalogdb.Gaia_DR2.ra
+            dec_col = catalogdb.Gaia_DR2.dec
+            ra_col_str = 'ra'
+            dec_col_str = 'dec'
+            mag_col = catalogdb.Gaia_DR2.phot_g_mean_mag
+        else:
+            cat = catalogdb.TwoMassPSC
+            ra_col = catalogdb.TwoMassPSC.ra
+            dec_col = catalogdb.TwoMassPSC.decl
+            ra_col_str = 'ra'
+            dec_col_str = 'decl'
+            mag_col = catalogdb.TwoMassPSC.h_m
+        # run the query
+        db_query = (cat.select(ra_col,
+                               dec_col,
+                               mag_col,
+                               catalogdb.Catalog.catalogid)
+                       .join(catalogdb.TIC_v8)
+                       .join(catalogdb.CatalogToTIC_v8)
+                       .join(catalogdb.Catalog)
+                       .join(catalogdb.Version)
+                       .where((cat.cone_search(racen,
+                                               deccen,
+                                               1.5,
+                                               ra_col=ra_col_str,
+                                               dec_col=dec_col_str)) &
+                              (mag_col < mag_lim)))
+    else:
+        if instrument == 'BOSS':
+            carts = ['ops_tycho2_brightneighbors',
+                     'ops_gaia_brightneighbors']
+            mag_col = targetdb.Magnitude.gaia_g
+        else:
+            carts = ['ops_2mass_psc_brightneighbors']
+            mag_col = targetdb.Magnitude.h
+        # run the query
+        db_query = (targetdb.CartonToTarget.select(targetdb.Target.ra,
+                                                   targetdb.Target.dec,
+                                                   mag_col,
+                                                   targetdb.CartonToTarget.pk)
+                                           .join(targetdb.Target)
+                                           .switch(targetdb.CartonToTarget)
+                                           .join(targetdb.Magnitude)
+                                           .switch(targetdb.CartonToTarget)
+                                           .join(targetdb.Carton)
+                                           .where((targetdb.Target.cone_search(racen,
+                                                                               deccen,
+                                                                               1.5)) &
+                                                  (targetdb.Carton.carton.in_(carts))))
+    return db_query
+
+
 class DesignModeCheck(DesignMode):
     """
     Parameters
@@ -982,58 +1069,9 @@ class DesignModeCheck(DesignMode):
             # grab h 2mass mag for limit
             mag_lim = self.bright_limit_targets['APOGEE'][6][0]
         if db_query is None:
-            if check_type == 'designmode':
-                if instrument == 'BOSS':
-                    cat = catalogdb.Gaia_DR2
-                    ra_col = catalogdb.Gaia_DR2.ra
-                    dec_col = catalogdb.Gaia_DR2.dec
-                    ra_col_str = 'ra'
-                    dec_col_str = 'dec'
-                    mag_col = catalogdb.Gaia_DR2.phot_g_mean_mag
-                else:
-                    cat = catalogdb.TwoMassPSC
-                    ra_col = catalogdb.TwoMassPSC.ra
-                    dec_col = catalogdb.TwoMassPSC.decl
-                    ra_col_str = 'ra'
-                    dec_col_str = 'decl'
-                    mag_col = catalogdb.TwoMassPSC.h_m
-                # run the query
-                db_query = (cat.select(ra_col,
-                                       dec_col,
-                                       mag_col,
-                                       catalogdb.Catalog.catalogid)
-                               .join(catalogdb.TIC_v8)
-                               .join(catalogdb.CatalogToTIC_v8)
-                               .join(catalogdb.Catalog)
-                               .join(catalogdb.Version)
-                               .where((cat.cone_search(self.racen,
-                                                       self.deccen,
-                                                       1.5,
-                                                       ra_col=ra_col_str,
-                                                       dec_col=dec_col_str)) &
-                                      (mag_col < mag_lim)))
-            else:
-                if instrument == 'BOSS':
-                    carts = ['ops_tycho2_brightneighbors',
-                             'ops_gaia_brightneighbors']
-                    mag_col = targetdb.Magnitude.gaia_g
-                else:
-                    carts = ['ops_2mass_psc_brightneighbors']
-                    mag_col = targetdb.Magnitude.h
-                # run the query
-                db_query = (targetdb.CartonToTarget.select(targetdb.Target.ra,
-                                                           targetdb.Target.dec,
-                                                           mag_col,
-                                                           targetdb.CartonToTarget.pk)
-                                                   .join(targetdb.Target)
-                                                   .switch(targetdb.CartonToTarget)
-                                                   .join(targetdb.Magnitude)
-                                                   .switch(targetdb.CartonToTarget)
-                                                   .join(targetdb.Carton)
-                                                   .where((targetdb.Target.cone_search(self.racen,
-                                                                                       self.deccen,
-                                                                                       1.5)) &
-                                                          (targetdb.Carton.carton.in_(carts))))
+            db_query = build_brigh_neigh_query(check_type, instrument,
+                                               mag_lim, self.racen,
+                                               self.deccen)
 
         # only do check if any stars returned
         if len(db_query) > 0:

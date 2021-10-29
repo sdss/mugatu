@@ -12,13 +12,14 @@ packages = [
 python = "^3.7.1"
 numpy = "^1.19.5"
 fitsio = "^1.0.5"
-sdssdb = "^0.4.9"
+sdssdb = {git = "https://github.com/sdss/sdssdb", rev = "main"}
 sdss-access = "^1.1.1"
 sdss-kaiju = {git = "https://github.com/sdss/kaiju", rev = "1.0.0"}
 sdss-coordio = "1.0.0"
 scipy = "^1.6.0"
 jupyter = "^1.0.0"
 sdss-roboscheduler = {git = "https://github.com/sdss/roboscheduler.git", rev = "0.9.1"}
+ortools = "9.1.9490"
 
 [tool.poetry.dev-dependencies]
 

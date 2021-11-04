@@ -15,7 +15,7 @@ fitsio = "^1.0.5"
 sdssdb = "^0.4.11"
 sdss-access = "^1.1.1"
 sdss-kaiju = {git = "https://github.com/sdss/kaiju", rev = "1.0.0"}
-sdss-coordio = "1.0.0"
+sdss-coordio = "^1.1.1"
 scipy = "^1.6.0"
 jupyter = "^1.0.0"
 sdss-roboscheduler = {git = "https://github.com/sdss/roboscheduler.git", rev = "0.9.1"}

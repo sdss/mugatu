@@ -160,15 +160,15 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "configparser"
-version = "5.0.2"
+version = "5.1.0"
 description = "Updated configparser from Python 3.8 for Python 2.6+."
 category = "main"
 optional = false
 python-versions = ">=3.6"
 
 [package.extras]
-docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
-testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "pytest-enabler", "pytest-black (>=0.3.7)", "pytest-mypy"]
+docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)", "jaraco.tidelift (>=1.4)"]
+testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [[package]]
 name = "cycler"
@@ -292,6 +292,21 @@ perf = ["ipython"]
 testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "packaging", "pep517", "pyfakefs", "flufl.flake8", "pytest-perf (>=0.9.2)", "pytest-black (>=0.3.7)", "pytest-mypy", "importlib-resources (>=1.3)"]
 
 [[package]]
+name = "importlib-resources"
+version = "5.4.0"
+description = "Read resources from Python packages"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+zipp = {version = ">=3.1.0", markers = "python_version < \"3.10\""}
+
+[package.extras]
+docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
+testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "pytest-black (>=0.3.7)", "pytest-mypy"]
+
+[[package]]
 name = "invoke"
 version = "1.6.0"
 description = "Pythonic task execution"
@@ -301,7 +316,7 @@ python-versions = "*"
 
 [[package]]
 name = "ipykernel"
-version = "6.4.2"
+version = "6.5.0"
 description = "IPython Kernel for Jupyter"
 category = "main"
 optional = false
@@ -313,18 +328,17 @@ argcomplete = {version = ">=1.12.3", markers = "python_version < \"3.8.0\""}
 debugpy = ">=1.0.0,<2.0"
 importlib-metadata = {version = "<5", markers = "python_version < \"3.8.0\""}
 ipython = ">=7.23.1,<8.0"
-ipython-genutils = "*"
 jupyter-client = "<8.0"
 matplotlib-inline = ">=0.1.0,<0.2.0"
 tornado = ">=4.2,<7.0"
-traitlets = ">=4.1.0,<6.0"
+traitlets = ">=5.1.0,<6.0"
 
 [package.extras]
 test = ["pytest (!=5.3.4)", "pytest-cov", "flaky", "nose", "ipyparallel"]
 
 [[package]]
 name = "ipython"
-version = "7.28.0"
+version = "7.29.0"
 description = "IPython: Productive Interactive Computing"
 category = "main"
 optional = false
@@ -413,7 +427,7 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "jsonschema"
-version = "4.1.2"
+version = "4.2.0"
 description = "An implementation of JSON Schema validation for Python"
 category = "main"
 optional = false
@@ -422,6 +436,7 @@ python-versions = ">=3.7"
 [package.dependencies]
 attrs = ">=17.4.0"
 importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
+importlib-resources = {version = "*", markers = "python_version < \"3.9\""}
 pyrsistent = ">=0.14.0,<0.17.0 || >0.17.0,<0.17.1 || >0.17.1,<0.17.2 || >0.17.2"
 
 [package.extras]
@@ -797,7 +812,7 @@ twisted = ["twisted"]
 
 [[package]]
 name = "prompt-toolkit"
-version = "3.0.21"
+version = "3.0.22"
 description = "Library for building powerful interactive command lines in Python"
 category = "main"
 optional = false
@@ -901,7 +916,7 @@ scipy = "*"
 
 [[package]]
 name = "pyerfa"
-version = "2.0.0"
+version = "2.0.0.1"
 description = "Python bindings for ERFA"
 category = "main"
 optional = false
@@ -924,7 +939,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "pyparsing"
-version = "3.0.3"
+version = "3.0.4"
 description = "Python parsing module"
 category = "main"
 optional = false
@@ -1174,12 +1189,11 @@ docs = ["Sphinx (>=2.1.0)", "sphinx-bootstrap-theme (>=0.4.12)", "recommonmark (
 
 [[package]]
 name = "sdssdb"
-version = "0.4.12a0"
-description = ""
+version = "0.4.11"
+description = "SDSS product for database management"
 category = "main"
 optional = false
 python-versions = ">=3.6"
-develop = false
 
 [package.dependencies]
 numpy = ">=1.18.2"
@@ -1194,14 +1208,8 @@ sqlalchemy = ">=1.3.6"
 
 [package.extras]
 all = ["progressbar2 (>=3.46.1)", "pydot (>=1.4.1)", "astropy (>=4.0.0)", "pandas (>=1.0.0)", "inflect (>=4.1.0)"]
-dev = ["pytest (>=5.2)", "pytest-cov (>=2.4.0)", "pytest-sugar (>=0.8.0)", "ipython (>=7.13.0)", "ipdb (>=0.13.2)", "pytest-postgresql (>=2.2.1)", "factory_boy (>=2.12.0)", "pytest-factoryboy (>=2.0.3)", "astropy (>=4.0.0)"]
-docs = ["Sphinx (>=3.0.0,<4.0.0)", "sphinx_bootstrap_theme (>=0.4.12)"]
-
-[package.source]
-type = "git"
-url = "https://github.com/sdss/sdssdb"
-reference = "main"
-resolved_reference = "e0ab0fab2b8e9bf17b5d9aadc4ab540f444d0907"
+dev = ["pytest (>=5.2)", "pytest-cov (>=2.4.0)", "pytest-sugar (>=0.8.0)", "ipython (>=7.13.0)", "ipdb (>=0.13.2)", "pytest-postgresql (>=2.2.1)", "factory-boy (>=2.12.0)", "pytest-factoryboy (>=2.0.3)", "astropy (>=4.0.0)"]
+docs = ["Sphinx (>=3.0.0,<4.0.0)", "sphinx-bootstrap-theme (>=0.4.12)"]
 
 [[package]]
 name = "sdsstools"
@@ -1421,7 +1429,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.1"
-content-hash = "6f7f54aeb2105aca84947e3bd491745d4bf9c94aa3635a9002de16cef6f0a72f"
+content-hash = "542e0bfd6ecf12165092fe50d8b559c835fae3ae0108c7ddad5dbbcf129e24a9"
 
 [metadata.files]
 absl-py = [
@@ -1552,8 +1560,8 @@ colorama = [
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 configparser = [
-    {file = "configparser-5.0.2-py3-none-any.whl", hash = "sha256:af59f2cdd7efbdd5d111c1976ecd0b82db9066653362f0962d7bf1d3ab89a1fa"},
-    {file = "configparser-5.0.2.tar.gz", hash = "sha256:85d5de102cfe6d14a5172676f09d19c465ce63d6019cf0a4ef13385fc535e828"},
+    {file = "configparser-5.1.0-py3-none-any.whl", hash = "sha256:f99c2256b24c551de13cf9e42c7b5db96fb133f0ca4de5dcb1df1aaf89f48298"},
+    {file = "configparser-5.1.0.tar.gz", hash = "sha256:202b9679a809b703720afa2eacaad4c6c2d63196070e5d9edc953c0489dfd536"},
 ]
 cycler = [
     {file = "cycler-0.11.0-py3-none-any.whl", hash = "sha256:3a27e95f763a428a739d2add979fa7494c912a32c17c4c38c4d5f082cad165a3"},
@@ -1669,18 +1677,22 @@ importlib-metadata = [
     {file = "importlib_metadata-4.8.1-py3-none-any.whl", hash = "sha256:b618b6d2d5ffa2f16add5697cf57a46c76a56229b0ed1c438322e4e95645bd15"},
     {file = "importlib_metadata-4.8.1.tar.gz", hash = "sha256:f284b3e11256ad1e5d03ab86bb2ccd6f5339688ff17a4d797a0fe7df326f23b1"},
 ]
+importlib-resources = [
+    {file = "importlib_resources-5.4.0-py3-none-any.whl", hash = "sha256:33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45"},
+    {file = "importlib_resources-5.4.0.tar.gz", hash = "sha256:d756e2f85dd4de2ba89be0b21dba2a3bbec2e871a42a3a16719258a11f87506b"},
+]
 invoke = [
     {file = "invoke-1.6.0-py2-none-any.whl", hash = "sha256:e6c9917a1e3e73e7ea91fdf82d5f151ccfe85bf30cc65cdb892444c02dbb5f74"},
     {file = "invoke-1.6.0-py3-none-any.whl", hash = "sha256:769e90caeb1bd07d484821732f931f1ad8916a38e3f3e618644687fc09cb6317"},
     {file = "invoke-1.6.0.tar.gz", hash = "sha256:374d1e2ecf78981da94bfaf95366216aaec27c2d6a7b7d5818d92da55aa258d3"},
 ]
 ipykernel = [
-    {file = "ipykernel-6.4.2-py3-none-any.whl", hash = "sha256:5657a0ab3d9a9eba3eb78b261771d22158388f182e85668c536c1a9932b80e03"},
-    {file = "ipykernel-6.4.2.tar.gz", hash = "sha256:0140f78bfd60e47e387b6433b4bed0f228986420dc4d5fac0e251c9711e23e29"},
+    {file = "ipykernel-6.5.0-py3-none-any.whl", hash = "sha256:f43de132feea90f86d68c51013afe9694f9415f440053ec9909dd656c75b04b5"},
+    {file = "ipykernel-6.5.0.tar.gz", hash = "sha256:299795cca2c4aed7e233e3ad5360e1c73627fd0dcec11a9e75d5b2df43629353"},
 ]
 ipython = [
-    {file = "ipython-7.28.0-py3-none-any.whl", hash = "sha256:f16148f9163e1e526f1008d7c8d966d9c15600ca20d1a754287cf96d00ba6f1d"},
-    {file = "ipython-7.28.0.tar.gz", hash = "sha256:2097be5c814d1b974aea57673176a924c4c8c9583890e7a5f082f547b9975b11"},
+    {file = "ipython-7.29.0-py3-none-any.whl", hash = "sha256:a658beaf856ce46bc453366d5dc6b2ddc6c481efd3540cb28aa3943819caac9f"},
+    {file = "ipython-7.29.0.tar.gz", hash = "sha256:4f69d7423a5a1972f6347ff233e38bbf4df6a150ef20fbb00c635442ac3060aa"},
 ]
 ipython-genutils = [
     {file = "ipython_genutils-0.2.0-py2.py3-none-any.whl", hash = "sha256:72dd37233799e619666c9f639a9da83c34013a73e8bbc79a7a6348d93c61fab8"},
@@ -1699,8 +1711,8 @@ jinja2 = [
     {file = "Jinja2-3.0.2.tar.gz", hash = "sha256:827a0e32839ab1600d4eb1c4c33ec5a8edfbc5cb42dafa13b81f182f97784b45"},
 ]
 jsonschema = [
-    {file = "jsonschema-4.1.2-py3-none-any.whl", hash = "sha256:166870c8ab27bd712a8627e0598de4685bd8d199c4d7bd7cacc3d941ba0c6ca0"},
-    {file = "jsonschema-4.1.2.tar.gz", hash = "sha256:5c1a282ee6b74235057421fd0f766ac5f2972f77440927f6471c9e8493632fac"},
+    {file = "jsonschema-4.2.0-py3-none-any.whl", hash = "sha256:2b563117f3659a7f433dffe1371c88f52115b79133493f376f15724b9caa7efa"},
+    {file = "jsonschema-4.2.0.tar.gz", hash = "sha256:e2d3601321ac74d38214e2853300ae740cd07e53d919a15862b8c71f9d840574"},
 ]
 jupyter = [
     {file = "jupyter-1.0.0-py2.py3-none-any.whl", hash = "sha256:5b290f93b98ffbc21c0c7e749f054b3267782166d72fa5e3ed1ed4eaf34a2b78"},
@@ -2038,8 +2050,8 @@ prometheus-client = [
     {file = "prometheus_client-0.12.0.tar.gz", hash = "sha256:1b12ba48cee33b9b0b9de64a1047cbd3c5f2d0ab6ebcead7ddda613a750ec3c5"},
 ]
 prompt-toolkit = [
-    {file = "prompt_toolkit-3.0.21-py3-none-any.whl", hash = "sha256:62b3d3ea5a3ccee94dc1aac018279cf64866a76837156ebe159b981c42dd20a8"},
-    {file = "prompt_toolkit-3.0.21.tar.gz", hash = "sha256:27f13ff4e4850fe8f860b77414c7880f67c6158076a7b099062cc8570f1562e5"},
+    {file = "prompt_toolkit-3.0.22-py3-none-any.whl", hash = "sha256:48d85cdca8b6c4f16480c7ce03fd193666b62b0a21667ca56b4bb5ad679d1170"},
+    {file = "prompt_toolkit-3.0.22.tar.gz", hash = "sha256:449f333dd120bd01f5d296a8ce1452114ba3a71fae7288d2f0ae2c918764fa72"},
 ]
 protobuf = [
     {file = "protobuf-3.19.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:d80f80eb175bf5f1169139c2e0c5ada98b1c098e2b3c3736667f28cbbea39fc8"},
@@ -2156,36 +2168,43 @@ pydl = [
     {file = "pydl-0.7.0.tar.gz", hash = "sha256:8f35c97815b73e1da0cd67b56a051aa9768a88e46a1aad080d23c2a4cdc45b84"},
 ]
 pyerfa = [
-    {file = "pyerfa-2.0.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:36cd8a6e43130746e51743548b0f36a79fc7aa95566878cd99ba8084b6fcf59e"},
-    {file = "pyerfa-2.0.0-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:894ada2a29a5baa006982e694b33db384a27dbb8b9323bc4dc29ad1a2bd3303b"},
-    {file = "pyerfa-2.0.0-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:a9f8e5cbb1730a0533552fbe6f5f1ead5fe18735f9fba25a600f41e18cd7c0fa"},
-    {file = "pyerfa-2.0.0-cp37-cp37m-manylinux2010_i686.whl", hash = "sha256:77c44eebd86fc97c438e0960ffdd2ad93232186eb4fab3c94abfc06ae528ee08"},
-    {file = "pyerfa-2.0.0-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:6375b857a65188db3c440b30d13bc9d3573849ab766cad0041471ae0fdb2f9c9"},
-    {file = "pyerfa-2.0.0-cp37-cp37m-win32.whl", hash = "sha256:49c71388cc54f18bfd877be54e523184263cfe34a52d807c071236cafa119af9"},
-    {file = "pyerfa-2.0.0-cp37-cp37m-win_amd64.whl", hash = "sha256:4a160fb18d74a6e1a3588bbcda7da35170854a758539a8a3cfb97b833726e101"},
-    {file = "pyerfa-2.0.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:629c2e24bfcbc165ccf59373f86207a5f0ac672645782514ce0fb93439e63132"},
-    {file = "pyerfa-2.0.0-cp38-cp38-manylinux1_i686.whl", hash = "sha256:40fd3f50c56f93828aeea7af2cdae3e210dcd16b766fd36d9d28cbf8c78280d7"},
-    {file = "pyerfa-2.0.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:94fecd6d9ef0369cf5787184a292959629e4b1ed12a347ab2bd9bea61f3d194f"},
-    {file = "pyerfa-2.0.0-cp38-cp38-manylinux2010_i686.whl", hash = "sha256:15fb0d4e700d2c0775dd343b75db5318ee21dcfcae1c098ea7a82ead356163a1"},
-    {file = "pyerfa-2.0.0-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:155ab1102e6c380c41d06a10cdc06626ddab422033389e00aac1f77d7e7c7292"},
-    {file = "pyerfa-2.0.0-cp38-cp38-win32.whl", hash = "sha256:5e1ed2d0086878171e5156c6be4b24ac3c2a47274e8dbe8c2f69fefc7d4d60e7"},
-    {file = "pyerfa-2.0.0-cp38-cp38-win_amd64.whl", hash = "sha256:35685c6b515692a2ea03d8f29e3757d68ebc08906ed5ecdc9dfcbf22f6c39326"},
-    {file = "pyerfa-2.0.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:2e003a5541fa1064d4c1c154354ce9bb83a5b62325ba3137ed4fbb1852d66c21"},
-    {file = "pyerfa-2.0.0-cp39-cp39-manylinux1_i686.whl", hash = "sha256:e784a5071e069b074b175798cdfd1a5de825a8e2aa9d815af74be41acc7d145e"},
-    {file = "pyerfa-2.0.0-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:c3edc9a23702fcb104c551b2d0ebd553ae1a8fb7ae5047116020b41f309ef665"},
-    {file = "pyerfa-2.0.0-cp39-cp39-manylinux2010_i686.whl", hash = "sha256:74f0e73c1c7931ad5535a4fe81d81dbe7635fd8cf5dfe6fd687627aecfadf2af"},
-    {file = "pyerfa-2.0.0-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:6586ef651c15ee05e919499ccfc0dc2b2fae20412f521669f8eeb6d93f2532c8"},
-    {file = "pyerfa-2.0.0-cp39-cp39-win32.whl", hash = "sha256:05c0801ad7618f74e2b9dee522c5dee5738cac062fe22da589f05b3b9f264d06"},
-    {file = "pyerfa-2.0.0-cp39-cp39-win_amd64.whl", hash = "sha256:b3d18a4a4fb82df9954b0d92a9963a620889111bc5c6049e0bbecdc3169bdeb5"},
-    {file = "pyerfa-2.0.0.tar.gz", hash = "sha256:f904231e1a570f94440e06140799590895107f942847b52a753ce81c9609162d"},
+    {file = "pyerfa-2.0.0.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:278832de7803f2fb0ef4b14263200f98dfdb3eaa78dc63835d93796fd8fc42c6"},
+    {file = "pyerfa-2.0.0.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:629248cebc8626a52e80f69d4e2f30cc6e751f57803f5ba7ec99edd09785d181"},
+    {file = "pyerfa-2.0.0.1-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:3285d95dfe398a931a633da961f6f1c0b8690f2a3b1c510a4efe639f784cd9c7"},
+    {file = "pyerfa-2.0.0.1-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:177f50f0e8354f1a7115c2d4784668b365f1cc2f2c7d1e2f4ddf354160559b32"},
+    {file = "pyerfa-2.0.0.1-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:041939a7554a98b72885904ffddd8882567191bee62358727679448480174c31"},
+    {file = "pyerfa-2.0.0.1-cp310-cp310-win32.whl", hash = "sha256:f9e149bc3d423ae891f6587c1383fd471ae07744b88152e66b5e9f64a8bc9006"},
+    {file = "pyerfa-2.0.0.1-cp310-cp310-win_amd64.whl", hash = "sha256:f00dc4fc48a16eb39fd0121f2f06c03ee762b79a207cc5b0bc17d94191b51302"},
+    {file = "pyerfa-2.0.0.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:1ba3668e1e181a678ce788d23a4f8666aabd8518f77fdde5157ba4744bc73d4a"},
+    {file = "pyerfa-2.0.0.1-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b8f08f6e6d75a261bb92b707bea19eba2e46a8fcbfb499b789f3eb0d0352ea00"},
+    {file = "pyerfa-2.0.0.1-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:da89304d6b25ac056e470f44f85770b04c9674eced07a7f93b5eb0ce1edaabd9"},
+    {file = "pyerfa-2.0.0.1-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:36738ba75e7a69e0ea6a7e96a5d33a852816427e7e94e7089c188ef920b02669"},
+    {file = "pyerfa-2.0.0.1-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:5c077aed4ccd585c1fe2f96ada8edb66e9d27b4ae8ff13ea2783283b298ba0c6"},
+    {file = "pyerfa-2.0.0.1-cp37-cp37m-win32.whl", hash = "sha256:0833f8ebba9f84a19a04ee5ca5aa90be75729abfbb8328e7a6d89ed1b04e058c"},
+    {file = "pyerfa-2.0.0.1-cp37-cp37m-win_amd64.whl", hash = "sha256:e86c08c9c0b75e448818473c6d709e3887a439c05a1aa34042d26774251422b7"},
+    {file = "pyerfa-2.0.0.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:b935fa9d10dfd7206760859236640c835aa652609c0ae8a6584593324eb6f318"},
+    {file = "pyerfa-2.0.0.1-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:67711a748821c5d91f7a8907b9125094dfc3e5ab6a6b7ad8e207fd6afbe6b37f"},
+    {file = "pyerfa-2.0.0.1-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:d2c10838241aaf17279468dcc731cb2c09bfb7dd7b340c0f527fd70c7c9e53d1"},
+    {file = "pyerfa-2.0.0.1-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:37249e1e2b378d1f56e9379e4bb8f2cf87645c160a8a3e92166a1b7bb7ad7ea6"},
+    {file = "pyerfa-2.0.0.1-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:f76fb4b64a87da2af9d0b6b79cc25e1ecc5b4143b2b3c8c9f10b221748c5db4d"},
+    {file = "pyerfa-2.0.0.1-cp38-cp38-win32.whl", hash = "sha256:486e672c52bf58eab61140968660ac7fb3b756116b53c26c334ae95dadd943ee"},
+    {file = "pyerfa-2.0.0.1-cp38-cp38-win_amd64.whl", hash = "sha256:d603f1e8123f98a0593433aa6dad4ba03f0b0ceef4cb3e96f9a69aa7ab8d5c61"},
+    {file = "pyerfa-2.0.0.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:ef5590b2075c50395b958f102988e519e339d96509dfdca0360f26dde94c47e7"},
+    {file = "pyerfa-2.0.0.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c7ca8c98842f1ae10c1fbcea0e03a41ddc13456da88da2dc9b8335a8c414d7a3"},
+    {file = "pyerfa-2.0.0.1-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:d3e7dedce1d7e4e044f6f81d192b1f6b373c8ad6716aa8721ec6d3cf4d36f5f3"},
+    {file = "pyerfa-2.0.0.1-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:690116a6026ee84ce5fec794c9e21bdc8c0ac8345d6722323810181486745068"},
+    {file = "pyerfa-2.0.0.1-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:da5ee24eaf5e5f841f36885ea16461800b7bea11df5b657bcff85d7a7f51d2d8"},
+    {file = "pyerfa-2.0.0.1-cp39-cp39-win32.whl", hash = "sha256:7895b7e6f3bc36442d1969bf3bda5a4c3b661be7a5a468798369cbd5d81023d8"},
+    {file = "pyerfa-2.0.0.1-cp39-cp39-win_amd64.whl", hash = "sha256:63a83c35cea8c5d50d53c18089f1e625c0ffc59a7a5b8d44e0f1b3ec5288f183"},
+    {file = "pyerfa-2.0.0.1.tar.gz", hash = "sha256:2fd4637ffe2c1e6ede7482c13f583ba7c73119d78bef90175448ce506a0ede30"},
 ]
 pygments = [
     {file = "Pygments-2.10.0-py3-none-any.whl", hash = "sha256:b8e67fe6af78f492b3c4b3e2970c0624cbf08beb1e493b2c99b9fa1b67a20380"},
     {file = "Pygments-2.10.0.tar.gz", hash = "sha256:f398865f7eb6874156579fdf36bc840a03cab64d1cde9e93d68f46a425ec52c6"},
 ]
 pyparsing = [
-    {file = "pyparsing-3.0.3-py3-none-any.whl", hash = "sha256:f8d3fe9fc404576c5164f0f0c4e382c96b85265e023c409c43d48f65da9d60d0"},
-    {file = "pyparsing-3.0.3.tar.gz", hash = "sha256:9e3511118010f112a4b4b435ae50e1eaa610cda191acb9e421d60cf5fde83455"},
+    {file = "pyparsing-3.0.4-py3-none-any.whl", hash = "sha256:c0a7dfcd26825bd4453574c4e7ad04aa095975ce54d04f738fe3a8350fbd223a"},
+    {file = "pyparsing-3.0.4.tar.gz", hash = "sha256:e0df773d7fa2240322daae7805626dfc5f2d5effb34e1a7be2702c99cfb9f6b1"},
 ]
 pyrsistent = [
     {file = "pyrsistent-0.18.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:f4c8cabb46ff8e5d61f56a037974228e978f26bfefce4f61a4b1ac0ba7a2ab72"},
@@ -2372,7 +2391,10 @@ sdss-tree = [
     {file = "sdss-tree-3.1.0.tar.gz", hash = "sha256:801b7eb89643322fbacdc4cb392a3c199474af1ea204373058764e5f5c62fd4b"},
     {file = "sdss_tree-3.1.0-py2.py3-none-any.whl", hash = "sha256:1ca03840b0c83f49f6130ceef7a0e6ede0f5fd0401b63923e77ade3a3b6a8080"},
 ]
-sdssdb = []
+sdssdb = [
+    {file = "sdssdb-0.4.11-py3-none-any.whl", hash = "sha256:0fb6bd6d5728b5aebcc1957032809ab0ee4e5cfd66e7af06540210df56c1abb8"},
+    {file = "sdssdb-0.4.11.tar.gz", hash = "sha256:a10b211894537f07fa96ebb6a132d61ccc1f4a299ac80c44a55017f3eca94de5"},
+]
 sdsstools = [
     {file = "sdsstools-0.4.13-py3-none-any.whl", hash = "sha256:758ce248bf5794cfd62eacf053f2cda2e05d3aeb561919b9db5811d76d2aed59"},
     {file = "sdsstools-0.4.13.tar.gz", hash = "sha256:f7d2463017e71c4dcb9a6647192f8258f0242a1ae511d731b88f1fdd1ad33656"},

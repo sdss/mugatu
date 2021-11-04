@@ -606,6 +606,140 @@ class FPSDesign(object):
 
         return
 
+    def decollide_grid(self):
+        """
+        Check to see if any collisions in grid, and if so,
+        decollide grid and record assignments that were
+        removed
+        """
+        # decollide the unassigned robots
+        for robotID in self.rg.robotDict:
+            if(self.rg.robotDict[robotID].isAssigned() == False):
+                self.rg.decollideRobot(robotID)
+                # need to still set alpha/beta
+                # robot = self.rg.getRobot(robotID)
+                # robot.setDestinationAlphaBeta(0, 180)
+        if self.rg.getNCollisions() > 0:
+            self.design_errors['no_collisions'] = False
+            self.rg.decollideGrid()
+
+            # check if de-collision was successful
+            if not self.rg.getNCollisions() == 0:
+                raise MugatuDesignError(message='Kaiju decollideGrid failed')
+
+            flag = 'Some targets removed from design due to collisions'
+            warnings.warn(flag, MugatuDesignWarning)
+
+            # grab all of the targets removed due to collisions
+            for i in self.rg.robotDict:
+                fiber_idx = np.where(self.design['fiberID'] == i)[0]
+                if (self.rg.robotDict[i].assignedTargetID == -1
+                    and len(fiber_idx) > 0):
+                    targ_remove = self.design['catalogID'][fiber_idx[0]]
+                    if targ_remove not in self.targets_unassigned:
+                        self.targets_collided.append(targ_remove)
+        else:
+            self.design_errors['no_collisions'] = True
+        return
+
+    def designmode_validate(self):
+        """
+        Check all designmode parameters for a design
+        """
+        mode = DesignModeCheck(FPSDesign=self,
+                               desmode_label=self.desmode_label)
+        mode.design_mode_check_all(verbose=False)
+        self.design_errors['min_skies_boss'] = mode.n_skies_min_check['BOSS']
+        if self.design_errors['min_skies_boss'] is False:
+            flag = 'Design does not meet minimum BOSS skies for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+        self.design_errors['min_skies_apogee'] = mode.n_skies_min_check['APOGEE']
+        if self.design_errors['min_skies_apogee'] is False:
+            flag = 'Design does not meet minimum APOGEE skies for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+
+        self.design_errors['fov_skies_boss'] = mode.min_skies_fovmetric_check['BOSS']
+        if self.design_errors['fov_skies_boss'] is False:
+            flag = 'Design does not meet FOV criteria for BOSS skies for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+        self.design_errors['fov_skies_apogee'] = mode.min_skies_fovmetric_check['APOGEE']
+        if self.design_errors['fov_skies_apogee'] is False:
+            flag = 'Design does not meet FOV criteria for APOGEE skies for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+
+        self.design_errors['min_stds_boss'] = mode.n_stds_min_check['BOSS']
+        if self.design_errors['min_stds_boss'] is False:
+            flag = 'Design does not meet minimum BOSS standards for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+        self.design_errors['min_stds_apogee'] = mode.n_stds_min_check['APOGEE']
+        if self.design_errors['min_stds_apogee'] is False:
+            flag = 'Design does not meet minimum APOGEE standards for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+
+        self.design_errors['fov_stds_boss'] = mode.min_stds_fovmetric_check['BOSS']
+        if self.design_errors['fov_stds_boss'] is False:
+            flag = 'Design does not meet FOV criteria for BOSS standards for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+        self.design_errors['fov_stds_apogee'] = mode.min_stds_fovmetric_check['APOGEE']
+        if self.design_errors['fov_stds_apogee'] is False:
+            flag = 'Design does not meet FOV criteria for APOGEE standards for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+
+        self.design_errors['stds_mag_boss'] = np.all(mode.stds_mags_check['BOSS'][0][(self.design['catalogID'] != -1) &
+                                                                                     (self.design['category'] == 'standard_boss')])
+        if self.design_errors['stds_mag_boss'] is False:
+            flag = 'Design has BOSS standard assignments too bright for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+        self.design_errors['stds_mag_apogee'] = np.all(mode.stds_mags_check['APOGEE'][0][(self.design['catalogID'] != -1) &
+                                                                                         (self.design['category'] == 'standard_apogee')])
+        if self.design_errors['stds_mag_apogee'] is False:
+            flag = 'Design has APOGEE standard assignments too bright for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+
+        self.design_errors['sci_mag_boss'] = np.all(mode.bright_limit_targets_check['BOSS'][0][(self.design['catalogID'] != -1) &
+                                                                                               (self.design['category'] == 'science') &
+                                                                                               (self.design['obsWavelength'] == 'BOSS')])
+        if self.design_errors['sci_mag_boss'] is False:
+            flag = 'Design has BOSS science assignments too bright for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+        self.design_errors['sci_mag_apogee'] = np.all(mode.bright_limit_targets_check['APOGEE'][0][(self.design['catalogID'] != -1) &
+                                                                                                   (self.design['category'] == 'science') &
+                                                                                                   (self.design['obsWavelength'] == 'APOGEE')])
+        if self.design_errors['sci_mag_apogee'] is False:
+            flag = 'Design has APOGEE science assignments too bright for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+
+        self.design_errors['bright_neigh_boss'] = np.all(mode.bright_neighbor_check['BOSS'][0][mode.bright_neighbor_check['BOSS'][1]])
+        if self.design_errors['bright_neigh_boss'] == False:
+            flag = 'Design has BOSS fibers too near bright source for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+
+        self.design_errors['bright_neigh_apogee'] = np.all(mode.bright_neighbor_check['APOGEE'][0][mode.bright_neighbor_check['APOGEE'][1]])
+        if self.design_errors['bright_neigh_apogee'] == False:
+            flag = 'Design has APOGEE fibers too near bright source for DesignMode'
+            warnings.warn(flag, MugatuDesignModeWarning)
+        return
+
+    def bright_neigh_safety(self):
+        """
+        Perform safety version of bright neighbor check
+        on the design
+        """
+        mode = DesignModeCheck(FPSDesign=self,
+                               desmode_label=self.desmode_label)
+        bright_check_boss, hasFiber_boss = mode.bright_neighbors(instrument='BOSS',
+                                                                 check_type='safety')
+        bright_check_apogee, hasFiber_apogee = mode.bright_neighbors(instrument='APOGEE',
+                                                                     check_type='safety')
+        fids = np.arange(1, 501, 1, dtype=int)
+        if (len(bright_check_boss[~bright_check_boss & hasFiber_boss]) > 0 or 
+            len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]) > 0):
+            message = 'Bright Neighbor Safety Checked Failed,'
+            message += ' %d BOSS and %d APOGEE fibers near bright sources' % (len(bright_check_boss[~bright_check_boss & hasFiber_boss]),
+                                                                              len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]))
+            raise MugatuDesignError(message=message)
+        return
+
     def RobotGrid_to_valid_design(self):
         """
         Construct valid design from Kaiju Robotgrid
@@ -688,37 +822,9 @@ class FPSDesign(object):
 
         # validate the design
 
-        # decollide the unassigned robots
-        for robotID in self.rg.robotDict:
-            if(self.rg.robotDict[robotID].isAssigned() == False):
-                self.rg.decollideRobot(robotID)
-                # need to still set alpha/beta
-                # robot = self.rg.getRobot(robotID)
-                # robot.setDestinationAlphaBeta(0, 180)
-
         # de-collide the grid if collisions exist
         # and check for targets removed
-        if self.rg.getNCollisions() > 0:
-            self.design_errors['no_collisions'] = False
-            self.rg.decollideGrid()
-
-            # check if de-collision was successful
-            if not self.rg.getNCollisions() == 0:
-                raise MugatuDesignError(message='Kaiju decollideGrid failed')
-
-            flag = 'Some targets removed from design due to collisions'
-            warnings.warn(flag, MugatuDesignWarning)
-
-            # grab all of the targets removed due to collisions
-            for i in self.rg.robotDict:
-                fiber_idx = np.where(self.design['fiberID'] == i)[0]
-                if (self.rg.robotDict[i].assignedTargetID == -1
-                    and len(fiber_idx) > 0):
-                    targ_remove = self.design['catalogID'][fiber_idx[0]]
-                    if targ_remove not in self.targets_unassigned:
-                        self.targets_collided.append(targ_remove)
-        else:
-            self.design_errors['no_collisions'] = True
+        self.decollide_grid()
 
         # generate paths
         # self.rg.pathGen()
@@ -726,95 +832,11 @@ class FPSDesign(object):
         #     raise MugatuError(message='Kaiju pathGen failed')
 
         if designmode:
-            mode = DesignModeCheck(FPSDesign=self,
-                                   desmode_label=self.desmode_label)
-            mode.design_mode_check_all(verbose=False)
-            self.design_errors['min_skies_boss'] = mode.n_skies_min_check['BOSS']
-            if self.design_errors['min_skies_boss'] is False:
-                flag = 'Design does not meet minimum BOSS skies for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-            self.design_errors['min_skies_apogee'] = mode.n_skies_min_check['APOGEE']
-            if self.design_errors['min_skies_apogee'] is False:
-                flag = 'Design does not meet minimum APOGEE skies for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-
-            self.design_errors['fov_skies_boss'] = mode.min_skies_fovmetric_check['BOSS']
-            if self.design_errors['fov_skies_boss'] is False:
-                flag = 'Design does not meet FOV criteria for BOSS skies for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-            self.design_errors['fov_skies_apogee'] = mode.min_skies_fovmetric_check['APOGEE']
-            if self.design_errors['fov_skies_apogee'] is False:
-                flag = 'Design does not meet FOV criteria for APOGEE skies for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-
-            self.design_errors['min_stds_boss'] = mode.n_stds_min_check['BOSS']
-            if self.design_errors['min_stds_boss'] is False:
-                flag = 'Design does not meet minimum BOSS standards for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-            self.design_errors['min_stds_apogee'] = mode.n_stds_min_check['APOGEE']
-            if self.design_errors['min_stds_apogee'] is False:
-                flag = 'Design does not meet minimum APOGEE standards for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-
-            self.design_errors['fov_stds_boss'] = mode.min_stds_fovmetric_check['BOSS']
-            if self.design_errors['fov_stds_boss'] is False:
-                flag = 'Design does not meet FOV criteria for BOSS standards for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-            self.design_errors['fov_stds_apogee'] = mode.min_stds_fovmetric_check['APOGEE']
-            if self.design_errors['fov_stds_apogee'] is False:
-                flag = 'Design does not meet FOV criteria for APOGEE standards for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-
-            self.design_errors['stds_mag_boss'] = np.all(mode.stds_mags_check['BOSS'][0][(self.design['catalogID'] != -1) &
-                                                                                         (self.design['category'] == 'standard_boss')])
-            if self.design_errors['stds_mag_boss'] is False:
-                flag = 'Design has BOSS standard assignments too bright for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-            self.design_errors['stds_mag_apogee'] = np.all(mode.stds_mags_check['APOGEE'][0][(self.design['catalogID'] != -1) &
-                                                                                             (self.design['category'] == 'standard_apogee')])
-            if self.design_errors['stds_mag_apogee'] is False:
-                flag = 'Design has APOGEE standard assignments too bright for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-
-            self.design_errors['sci_mag_boss'] = np.all(mode.bright_limit_targets_check['BOSS'][0][(self.design['catalogID'] != -1) &
-                                                                                                   (self.design['category'] == 'science') &
-                                                                                                   (self.design['obsWavelength'] == 'BOSS')])
-            if self.design_errors['sci_mag_boss'] is False:
-                flag = 'Design has BOSS science assignments too bright for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-            self.design_errors['sci_mag_apogee'] = np.all(mode.bright_limit_targets_check['APOGEE'][0][(self.design['catalogID'] != -1) &
-                                                                                                       (self.design['category'] == 'science') &
-                                                                                                       (self.design['obsWavelength'] == 'APOGEE')])
-            if self.design_errors['sci_mag_apogee'] is False:
-                flag = 'Design has APOGEE science assignments too bright for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-
-            self.design_errors['bright_neigh_boss'] = np.all(mode.bright_neighbor_check['BOSS'][0][mode.bright_neighbor_check['BOSS'][1]])
-            if self.design_errors['bright_neigh_boss'] == False:
-                flag = 'Design has BOSS fibers too near bright source for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
-
-            self.design_errors['bright_neigh_apogee'] = np.all(mode.bright_neighbor_check['APOGEE'][0][mode.bright_neighbor_check['APOGEE'][1]])
-            if self.design_errors['bright_neigh_apogee'] == False:
-                flag = 'Design has APOGEE fibers too near bright source for DesignMode'
-                warnings.warn(flag, MugatuDesignModeWarning)
+            self.designmode_validate()
 
         # do the safety check for design
         if safety:
-            if 'mode' not in locals():
-                mode = DesignModeCheck(FPSDesign=self,
-                                       desmode_label=self.desmode_label)
-            bright_check_boss, hasFiber_boss = mode.bright_neighbors(instrument='BOSS',
-                                                                     check_type='safety')
-            bright_check_apogee, hasFiber_apogee = mode.bright_neighbors(instrument='APOGEE',
-                                                                         check_type='safety')
-            fids = np.arange(1, 501, 1, dtype=int)
-            if (len(bright_check_boss[~bright_check_boss & hasFiber_boss]) > 0 or 
-                len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]) > 0):
-                message = 'Bright Neighbor Safety Checked Failed,'
-                message += ' %d BOSS and %d APOGEE fibers near bright sources' % (len(bright_check_boss[~bright_check_boss & hasFiber_boss]),
-                                                                                  len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]))
-                raise MugatuDesignError(message=message)
+            self.bright_neigh_safety()
 
         # I imagine that the above step would manipulate the robogrid based on
         # collisions and deadlocks, so the below would take these Kaiju results

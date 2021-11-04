@@ -785,8 +785,8 @@ class FPSDesign(object):
                 self.valid_design['delta_dec'][i] = self.design['delta_dec'][cond][0]
                 self.valid_design['ra_off'][i] = self.design['ra_off'][cond][0]
                 self.valid_design['dec_off'][i] = self.design['dec_off'][cond][0]
-                self.valid_design['x'][i] = self.design['x'][cond][0]
-                self.valid_design['y'][i] = self.design['y'][cond][0]
+            self.valid_design['x'][i] = self.rg.robotDict[rid].xPos
+            self.valid_design['y'][i] = self.rg.robotDict[rid].yPos
 
         return
 

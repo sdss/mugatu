@@ -813,6 +813,9 @@ class DesignModeCheck(DesignMode):
                                           self.carton_classes['science'])) &
                                  (self.design['obsWavelength'] == instrument)]
 
+        # if no skies required, dont do check
+        if self.n_skies_min[instrument] == 0:
+            return True
         # if no skies, dont do check
         if len(x_sky) == 0:
             return False
@@ -895,6 +898,9 @@ class DesignModeCheck(DesignMode):
                                           self.carton_classes['science'])) &
                                  (self.design['obsWavelength'] == instrument)]
 
+        # if no stds required, dont do check
+        if self.n_stds_min[instrument] == 0:
+            return True
         # if no stds, dont do check
         if len(x_std) == 0:
             return False

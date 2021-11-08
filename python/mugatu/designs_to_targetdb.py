@@ -1,8 +1,15 @@
 import warnings
 import numpy as np
+from mugatu.exceptions import MugatuError, MugatuWarning
+
+try:
+    from sdssdb.peewee.sdss5db import database
+    database.set_profile('operations')
+    _database = True
+except:
+    _database = False
 
 from sdssdb.peewee.sdss5db import targetdb
-from mugatu.exceptions import MugatuError, MugatuWarning
 
 
 def make_design_field_targetdb(cadence, fieldid, plan,

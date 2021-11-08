@@ -11,10 +11,6 @@ import collections
 from scipy.spatial import cKDTree
 
 from mugatu.exceptions import MugatuError, MugatuWarning
-from sdssdb.peewee.sdss5db.targetdb import Carton, Category, Magnitude, CartonToTarget, Target
-from sdssdb.peewee.sdss5db.targetdb import DesignMode as DesignModeDB
-from sdssdb.peewee.sdss5db import catalogdb
-from sdssdb.peewee.sdss5db import targetdb
 from coordio.utils import radec2wokxy, wokxy2radec
 
 try:
@@ -23,6 +19,11 @@ try:
     _database = True
 except:
     _database = False
+
+from sdssdb.peewee.sdss5db.targetdb import Carton, Category, Magnitude, CartonToTarget, Target
+from sdssdb.peewee.sdss5db.targetdb import DesignMode as DesignModeDB
+from sdssdb.peewee.sdss5db import catalogdb
+from sdssdb.peewee.sdss5db import targetdb
 
 
 def ang_sep(ra1, dec1, ra2, dec2):

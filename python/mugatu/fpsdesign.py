@@ -12,12 +12,20 @@ from astropy.time import Time
 import kaiju
 import kaiju.robotGrid
 # import coordio
-from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget, Carton, DesignMode, Magnitude, Category
 import fitsio
 from mugatu.exceptions import MugatuError, MugatuWarning, MugatuDesignError, MugatuDesignWarning, MugatuDesignModeWarning
 from coordio.utils import radec2wokxy, wokxy2radec
 from mugatu.designs_to_targetdb import make_design_assignments_targetdb, make_design_field_targetdb
 from mugatu.designmode import DesignModeCheck
+
+try:
+    from sdssdb.peewee.sdss5db import database
+    database.set_profile('operations')
+    _database = True
+except:
+    _database = False
+
+from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget, Carton, DesignMode, Magnitude, Category
 
 
 class FPSDesign(object):

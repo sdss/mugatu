@@ -805,12 +805,16 @@ class DesignModeCheck(DesignMode):
                                  (self.design['obsWavelength'] == instrument)]
 
         x_sci = self.design['x'][(self.design['catalogID'] != -1) &
+                                 ((np.isin(self.design['carton_pk'],
+                                           self.carton_classes['science'])) |
                                  (np.isin(self.design['carton_pk'],
-                                          self.carton_classes['science'])) &
+                                           self.carton_classes['std']))) &
                                  (self.design['obsWavelength'] == instrument)]
         y_sci = self.design['y'][(self.design['catalogID'] != -1) &
+                                 ((np.isin(self.design['carton_pk'],
+                                           self.carton_classes['science'])) |
                                  (np.isin(self.design['carton_pk'],
-                                          self.carton_classes['science'])) &
+                                           self.carton_classes['std']))) &
                                  (self.design['obsWavelength'] == instrument)]
 
         # if no skies required, dont do check

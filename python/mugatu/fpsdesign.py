@@ -7,6 +7,7 @@
 import numpy as np
 import warnings
 from astropy.io import fits
+from astropy.time import Time
 
 import kaiju
 import kaiju.robotGrid
@@ -424,15 +425,23 @@ class FPSDesign(object):
                                                                                    dec=self.design['dec'][ev],
                                                                                    delta_ra=self.design['delta_ra'][ev],
                                                                                    delta_dec=self.design['delta_dec'][ev])
-        self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra_off'][ev],
-                                                                                                                        dec=self.design['dec_off'][ev],
-                                                                                                                        coordEpoch=2457205.9999942128,
-                                                                                                                        waveName=np.array(list(map(lambda x:x.title(), self.design['obsWavelength'][ev]))),
-                                                                                                                        raCen=self.racen,
-                                                                                                                        decCen=self.deccen,
-                                                                                                                        obsAngle=self.position_angle,
-                                                                                                                        obsSite=self.observatory,
-                                                                                                                        obsTime=self.obsTime)
+        with warnings.catch_warnings(record=True) as w:
+            self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra_off'][ev],
+                                                                                                                            dec=self.design['dec_off'][ev],
+                                                                                                                            coordEpoch=Time(2015.5, format='decimalyear').jd,
+                                                                                                                            waveName=np.array(list(map(lambda x:x.title(), self.design['obsWavelength'][ev]))),
+                                                                                                                            raCen=self.racen,
+                                                                                                                            decCen=self.deccen,
+                                                                                                                            obsAngle=self.position_angle,
+                                                                                                                            obsSite=self.observatory,
+                                                                                                                            obsTime=self.obsTime,
+                                                                                                                            pmra=self.design['pmra'],
+                                                                                                                            pmdec=self.design['pmdec'])
+            if len(w) > 0:
+                for wm in w:
+                    if 'iauPmsafe return' in wm.message.args[0]:
+                        flag = 'Coordio xy coordinates converted should be eyed with suspicion.'
+                        warnings.warn(flag, MugatuDesignWarning)
 
         if np.any(fieldWarn):
             flag = 'Coordio xy coordinates converted should be eyed with suspicion.'
@@ -544,15 +553,23 @@ class FPSDesign(object):
                                                                                    dec=self.design['dec'][ev],
                                                                                    delta_ra=self.design['delta_ra'][ev],
                                                                                    delta_dec=self.design['delta_dec'][ev])
-        self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra_off'][ev],
-                                                                                                                        dec=self.design['dec_off'][ev],
-                                                                                                                        coordEpoch=2457205.9999942128,  # this is roughly 2015.5, need to ask about this and change it
-                                                                                                                        waveName=np.array(list(map(lambda x:x.title(), self.design['obsWavelength'][ev]))),
-                                                                                                                        raCen=self.racen,
-                                                                                                                        decCen=self.deccen,
-                                                                                                                        obsAngle=self.position_angle,
-                                                                                                                        obsSite=self.observatory,
-                                                                                                                        obsTime=self.obsTime)
+        with warnings.catch_warnings(record=True) as w:
+            self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra_off'][ev],
+                                                                                                                            dec=self.design['dec_off'][ev],
+                                                                                                                            coordEpoch=Time(2015.5, format='decimalyear').jd,
+                                                                                                                            waveName=np.array(list(map(lambda x:x.title(), self.design['obsWavelength'][ev]))),
+                                                                                                                            raCen=self.racen,
+                                                                                                                            decCen=self.deccen,
+                                                                                                                            obsAngle=self.position_angle,
+                                                                                                                            obsSite=self.observatory,
+                                                                                                                            obsTime=self.obsTime,
+                                                                                                                            pmra=self.design['pmra'],
+                                                                                                                            pmdec=self.design['pmdec'])
+            if len(w) > 0:
+                for wm in w:
+                    if 'iauPmsafe return' in wm.message.args[0]:
+                        flag = 'Coordio xy coordinates converted should be eyed with suspicion.'
+                        warnings.warn(flag, MugatuDesignWarning)
 
         if np.any(fieldWarn):
             flag = 'Coordio xy coordinates converted should be eyed with suspicion.'

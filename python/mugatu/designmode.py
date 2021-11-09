@@ -814,15 +814,15 @@ class DesignModeCheck(DesignMode):
                                            self.carton_classes['sky'])) &
                                  (self.design['obsWavelength'] == instrument)]
 
+        # if no science in band, doesnt matter?
+        if len(x_sci) == 0:
+            return True
         # if no skies required, dont do check
         if self.n_skies_min[instrument] == 0:
             return True
         # if no skies, dont do check
         if len(x_sky) == 0:
             return False
-        # if no science in band, doesnt matter?
-        if len(x_sci) == 0:
-            return True
 
         # create KDE tree
         tree = cKDTree(np.column_stack((x_sky, y_sky)))
@@ -899,15 +899,15 @@ class DesignModeCheck(DesignMode):
                                            self.carton_classes['std'])) &
                                  (self.design['obsWavelength'] == instrument)]
 
+        # if no science in band, doesnt matter?
+        if len(x_sci) == 0:
+            return True
         # if no stds required, dont do check
         if self.n_stds_min[instrument] == 0:
             return True
         # if no stds, dont do check
         if len(x_std) == 0:
             return False
-        # if no science in band, doesnt matter?
-        if len(x_sci) == 0:
-            return True
 
         # create KDE tree
         tree = cKDTree(np.column_stack((x_std, y_std)))

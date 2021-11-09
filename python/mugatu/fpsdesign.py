@@ -11,11 +11,12 @@ from astropy.time import Time
 
 import kaiju
 import kaiju.robotGrid
-# import coordio
-import fitsio
-from mugatu.exceptions import MugatuError, MugatuWarning, MugatuDesignError, MugatuDesignWarning, MugatuDesignModeWarning
-from coordio.utils import radec2wokxy, wokxy2radec
-from mugatu.designs_to_targetdb import make_design_assignments_targetdb, make_design_field_targetdb
+from mugatu.exceptions import (MugatuError, MugatuWarning,
+                               MugatuDesignError, MugatuDesignWarning,
+                               MugatuDesignModeWarning)
+from coordio.utils import radec2wokxy
+from mugatu.designs_to_targetdb import (make_design_assignments_targetdb,
+                                        make_design_field_targetdb)
 from mugatu.designmode import DesignModeCheck
 
 try:
@@ -25,7 +26,10 @@ try:
 except:
     _database = False
 
-from sdssdb.peewee.sdss5db.targetdb import Design, Field, Observatory, Assignment, Instrument, Target, Positioner, CartonToTarget, Carton, DesignMode, Magnitude, Category
+from sdssdb.peewee.sdss5db.targetdb import (Design, Field, Observatory,
+                                            Assignment, Instrument, Target,
+                                            Positioner, CartonToTarget, Carton,
+                                            Magnitude, Category)
 
 
 class FPSDesign(object):
@@ -181,7 +185,8 @@ class FPSDesign(object):
                  design_file=None, manual_design=False, exp=0,
                  collisionBuffer=2.):
         if idtype != 'catalogID' and idtype != 'carton_to_target':
-            raise MugatuError(message='idtype must be catalogID or carton_to_target')
+            message = 'idtype must be catalogID or carton_to_target'
+            raise MugatuError(message=message)
         self.design_pk = design_pk
         self.obsTime = obsTime
         self.design = {}
@@ -246,11 +251,13 @@ class FPSDesign(object):
         # this may want to be a input, not sure the standard here
         # initialize robotGrid
         if self.observatory == 'APO':
-            self.rg = kaiju.robotGrid.RobotGridAPO(collisionBuffer=self.collisionBuffer,
-                                                   stepSize=0.05)
+            self.rg = kaiju.robotGrid.RobotGridAPO(
+                collisionBuffer=self.collisionBuffer,
+                stepSize=0.05)
         else:
-            self.rg = kaiju.robotGrid.RobotGridLCO(collisionBuffer=self.collisionBuffer,
-                                                   stepSize=0.05)
+            self.rg = kaiju.robotGrid.RobotGridLCO(
+                collisionBuffer=self.collisionBuffer,
+                stepSize=0.05)
         # this is in Conor's test, I'm not quite sure what it does
         # but without paths wont generate
         for k in self.rg.robotDict.keys():
@@ -268,7 +275,7 @@ class FPSDesign(object):
     def _offset_radec(self, ra=None, dec=None, delta_ra=0., delta_dec=0.):
         """Offsets ra and dec according to specified amount. From Mike's
         robostrategy.Field object
-        
+
         Parameters
         ----------
         ra : np.float64 or ndarray of np.float64
@@ -290,12 +297,12 @@ class FPSDesign(object):
         Notes
         -----
         Assumes that delta_ra, delta_dec are in proper coordinates; i.e.
-        an offset of delta_ra=1 arcsec represents the same angular separation 
+        an offset of delta_ra=1 arcsec represents the same angular separation
         on the sky at any declination.
         Carefully offsets in the local directions of ra, dec based on
         the local tangent plane (i.e. does not just scale delta_ra by
         1/cos(dec))
-"""
+        """
         deg2rad = np.pi / 180.
         arcsec2rad = np.pi / 180. / 3600.
         x = np.cos(dec * deg2rad) * np.cos(ra * deg2rad)
@@ -427,32 +434,43 @@ class FPSDesign(object):
             self.design['magnitudes'][pos_id][6] = d.h
 
         # here convert ra/dec to x/y based on field/time of observation
-        # I think I need to add inertial in here at some point, dont see this in targetdb though
+        # I think I need to add inertial in here at some point,
+        # dont see this in targetdb though
         ev = eval("(self.design['ra'] != -9999.99)")
-        self.design['ra_off'][ev], self.design['dec_off'][ev] = self._offset_radec(ra=self.design['ra'][ev],
-                                                                                   dec=self.design['dec'][ev],
-                                                                                   delta_ra=self.design['delta_ra'][ev],
-                                                                                   delta_dec=self.design['delta_dec'][ev])
+        res = self._offset_radec(ra=self.design['ra'][ev],
+                                 dec=self.design['dec'][ev],
+                                 delta_ra=self.design['delta_ra'][ev],
+                                 delta_dec=self.design['delta_dec'][ev])
+        self.design['ra_off'][ev], self.design['dec_off'][ev] = res
         with warnings.catch_warnings(record=True) as w:
-            self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra_off'][ev],
-                                                                                                                            dec=self.design['dec_off'][ev],
-                                                                                                                            coordEpoch=Time(2015.5, format='decimalyear').jd,
-                                                                                                                            waveName=np.array(list(map(lambda x:x.title(), self.design['obsWavelength'][ev]))),
-                                                                                                                            raCen=self.racen,
-                                                                                                                            decCen=self.deccen,
-                                                                                                                            obsAngle=self.position_angle,
-                                                                                                                            obsSite=self.observatory,
-                                                                                                                            obsTime=self.obsTime,
-                                                                                                                            pmra=self.design['pmra'],
-                                                                                                                            pmdec=self.design['pmdec'])
+            res = radec2wokxy(
+                ra=self.design['ra_off'][ev],
+                dec=self.design['dec_off'][ev],
+                coordEpoch=Time(2015.5, format='decimalyear').jd,
+                waveName=np.array(list(map(lambda x: x.title(),
+                                           self.design['obsWavelength'][ev]))),
+                raCen=self.racen,
+                decCen=self.deccen,
+                obsAngle=self.position_angle,
+                obsSite=self.observatory,
+                obsTime=self.obsTime,
+                pmra=self.design['pmra'],
+                pmdec=self.design['pmdec'])
+            self.design['x'][ev] = res[0]
+            self.design['x'][ev] = res[1]
+            fieldWarn = res[2]
+            self.hourAngle = res[3]
+            self.positionAngle_coordio = res[4]
             if len(w) > 0:
                 for wm in w:
                     if 'iauPmsafe return' in wm.message.args[0]:
-                        flag = 'Coordio xy coordinates converted should be eyed with suspicion.'
+                        flag = ('Coordio xy coordinates converted '
+                                'should be eyed with suspicion.')
                         warnings.warn(flag, MugatuDesignWarning)
 
         if np.any(fieldWarn):
-            flag = 'Coordio xy coordinates converted should be eyed with suspicion.'
+            flag = ('Coordio xy coordinates converted '
+                    'should be eyed with suspicion.')
             warnings.warn(flag, MugatuDesignWarning)
 
         self.design_built = True
@@ -466,7 +484,7 @@ class FPSDesign(object):
         Notes
         -----
         This function creates a manual design whether it is from
-        user inputted catalogids, or if it is a FITS file 
+        user inputted catalogids, or if it is a FITS file
         if manual_design=True.
 
         """
@@ -532,9 +550,11 @@ class FPSDesign(object):
             else:
                 roboIDs = design['robotID'][:, self.exp - 1]
             if self.idtype == 'catalogID':
-                self.design['catalogID'] = design_inst['catalogid'][roboIDs != -1]
+                self.design['catalogID'] = (design_inst['catalogid']
+                                            [roboIDs != -1])
             else:
-                self.design['catalogID'] = design_inst['carton_to_target_pk'][roboIDs != -1]
+                self.design['catalogID'] = (design_inst['carton_to_target_pk']
+                                            [roboIDs != -1])
             self.design['ra'] = design_inst['ra'][roboIDs != -1]
             self.design['dec'] = design_inst['dec'][roboIDs != -1]
             self.design['delta_ra'] = design_inst['delta_ra'][roboIDs != -1]
@@ -542,45 +562,67 @@ class FPSDesign(object):
             self.design['pmra'] = design_inst['pmra'][roboIDs != -1]
             self.design['pmdec'] = design_inst['pmdec'][roboIDs != -1]
             self.design['fiberID'] = roboIDs[roboIDs != -1]
-            self.design['obsWavelength'] = design_inst['fiberType'][roboIDs != -1]
+            self.design['obsWavelength'] = (design_inst['fiberType']
+                                            [roboIDs != -1])
             self.design['priority'] = design_inst['priority'][roboIDs != -1]
             # need to change this
-            self.design['carton_pk'] = np.arange(0, len(self.design['catalogID']), 1, dtype=int)
+            self.design['carton_pk'] = np.arange(0,
+                                                 len(self.design['catalogID']),
+                                                 1,
+                                                 dtype=int)
             self.design['category'] = design_inst['category'][roboIDs != -1]
             self.design['magnitudes'] = design_inst['magnitude'][roboIDs != -1]
 
         # make empty x,y arrays
-        self.design['x'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99
-        self.design['y'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99
-        self.design['ra_off'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99
-        self.design['dec_off'] = np.zeros(len(self.design['catalogID']), dtype=float) - 9999.99
+        self.design['x'] = (np.zeros(len(self.design['catalogID']),
+                            dtype=float)
+                            - 9999.99)
+        self.design['y'] = (np.zeros(len(self.design['catalogID']),
+                            dtype=float)
+                            - 9999.99)
+        self.design['ra_off'] = (np.zeros(len(self.design['catalogID']),
+                                 dtype=float)
+                                 - 9999.99)
+        self.design['dec_off'] = (np.zeros(len(self.design['catalogID']),
+                                  dtype=float)
+                                  - 9999.99)
 
         # here convert ra/dec to x/y based on field/time of observation
         ev = eval("(self.design['ra'] != -9999.99)")
-        self.design['ra_off'][ev], self.design['dec_off'][ev] = self._offset_radec(ra=self.design['ra'][ev],
-                                                                                   dec=self.design['dec'][ev],
-                                                                                   delta_ra=self.design['delta_ra'][ev],
-                                                                                   delta_dec=self.design['delta_dec'][ev])
+        res = self._offset_radec(ra=self.design['ra'][ev],
+                                 dec=self.design['dec'][ev],
+                                 delta_ra=self.design['delta_ra'][ev],
+                                 delta_dec=self.design['delta_dec'][ev])
+        self.design['ra_off'][ev], self.design['dec_off'][ev] = res
         with warnings.catch_warnings(record=True) as w:
-            self.design['x'][ev], self.design['y'][ev], fieldWarn, self.hourAngle, self.positionAngle_coordio = radec2wokxy(ra=self.design['ra_off'][ev],
-                                                                                                                            dec=self.design['dec_off'][ev],
-                                                                                                                            coordEpoch=Time(2015.5, format='decimalyear').jd,
-                                                                                                                            waveName=np.array(list(map(lambda x:x.title(), self.design['obsWavelength'][ev]))),
-                                                                                                                            raCen=self.racen,
-                                                                                                                            decCen=self.deccen,
-                                                                                                                            obsAngle=self.position_angle,
-                                                                                                                            obsSite=self.observatory,
-                                                                                                                            obsTime=self.obsTime,
-                                                                                                                            pmra=self.design['pmra'],
-                                                                                                                            pmdec=self.design['pmdec'])
+            res = radec2wokxy(
+                ra=self.design['ra_off'][ev],
+                dec=self.design['dec_off'][ev],
+                coordEpoch=Time(2015.5, format='decimalyear').jd,
+                waveName=np.array(list(map(lambda x: x.title(),
+                                           self.design['obsWavelength'][ev]))),
+                raCen=self.racen,
+                decCen=self.deccen,
+                obsAngle=self.position_angle,
+                obsSite=self.observatory,
+                obsTime=self.obsTime,
+                pmra=self.design['pmra'],
+                pmdec=self.design['pmdec'])
+            self.design['x'][ev] = res[0]
+            self.design['x'][ev] = res[1]
+            fieldWarn = res[2]
+            self.hourAngle = res[3]
+            self.positionAngle_coordio = res[4]
             if len(w) > 0:
                 for wm in w:
                     if 'iauPmsafe return' in wm.message.args[0]:
-                        flag = 'Coordio xy coordinates converted should be eyed with suspicion.'
+                        flag = ('Coordio xy coordinates converted '
+                                'should be eyed with suspicion.')
                         warnings.warn(flag, MugatuDesignWarning)
 
         if np.any(fieldWarn):
-            flag = 'Coordio xy coordinates converted should be eyed with suspicion.'
+            flag = ('Coordio xy coordinates converted '
+                    'should be eyed with suspicion.')
             warnings.warn(flag, MugatuDesignWarning)
 
         self.design_built = True
@@ -639,7 +681,7 @@ class FPSDesign(object):
         """
         # decollide the unassigned robots
         for robotID in self.rg.robotDict:
-            if(self.rg.robotDict[robotID].isAssigned() == False):
+            if(self.rg.robotDict[robotID].isAssigned() is False):
                 self.rg.decollideRobot(robotID)
                 # need to still set alpha/beta
                 # robot = self.rg.getRobot(robotID)
@@ -659,7 +701,7 @@ class FPSDesign(object):
             for i in self.rg.robotDict:
                 fiber_idx = np.where(self.design['fiberID'] == i)[0]
                 if (self.rg.robotDict[i].assignedTargetID == -1
-                    and len(fiber_idx) > 0):
+                   and len(fiber_idx) > 0):
                     targ_remove = self.design['catalogID'][fiber_idx[0]]
                     if targ_remove not in self.targets_unassigned:
                         self.targets_collided.append(targ_remove)
@@ -678,18 +720,25 @@ class FPSDesign(object):
         if self.design_errors['min_skies_boss'] is False:
             flag = 'Design does not meet minimum BOSS skies for DesignMode'
             warnings.warn(flag, MugatuDesignModeWarning)
-        self.design_errors['min_skies_apogee'] = mode.n_skies_min_check['APOGEE']
+        self.design_errors['min_skies_apogee'] = (mode
+                                                  .n_skies_min_check['APOGEE'])
         if self.design_errors['min_skies_apogee'] is False:
             flag = 'Design does not meet minimum APOGEE skies for DesignMode'
             warnings.warn(flag, MugatuDesignModeWarning)
 
-        self.design_errors['fov_skies_boss'] = mode.min_skies_fovmetric_check['BOSS']
+        self.design_errors['fov_skies_boss'] = (mode
+                                                .min_skies_fovmetric_check
+                                                ['BOSS'])
         if self.design_errors['fov_skies_boss'] is False:
-            flag = 'Design does not meet FOV criteria for BOSS skies for DesignMode'
+            flag = ('Design does not meet FOV criteria '
+                    'for BOSS skies for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
-        self.design_errors['fov_skies_apogee'] = mode.min_skies_fovmetric_check['APOGEE']
+        self.design_errors['fov_skies_apogee'] = (mode
+                                                  .min_skies_fovmetric_check
+                                                  ['APOGEE'])
         if self.design_errors['fov_skies_apogee'] is False:
-            flag = 'Design does not meet FOV criteria for APOGEE skies for DesignMode'
+            flag = ('Design does not meet FOV criteria '
+                    'for APOGEE skies for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
 
         self.design_errors['min_stds_boss'] = mode.n_stds_min_check['BOSS']
@@ -698,50 +747,69 @@ class FPSDesign(object):
             warnings.warn(flag, MugatuDesignModeWarning)
         self.design_errors['min_stds_apogee'] = mode.n_stds_min_check['APOGEE']
         if self.design_errors['min_stds_apogee'] is False:
-            flag = 'Design does not meet minimum APOGEE standards for DesignMode'
+            flag = ('Design does not meet minimum '
+                    'APOGEE standards for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
 
-        self.design_errors['fov_stds_boss'] = mode.min_stds_fovmetric_check['BOSS']
+        self.design_errors['fov_stds_boss'] = (mode
+                                               .min_stds_fovmetric_check
+                                               ['BOSS'])
         if self.design_errors['fov_stds_boss'] is False:
-            flag = 'Design does not meet FOV criteria for BOSS standards for DesignMode'
+            flag = ('Design does not meet FOV criteria '
+                    'for BOSS standards for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
-        self.design_errors['fov_stds_apogee'] = mode.min_stds_fovmetric_check['APOGEE']
+        self.design_errors['fov_stds_apogee'] = (mode
+                                                 .min_stds_fovmetric_check
+                                                 ['APOGEE'])
         if self.design_errors['fov_stds_apogee'] is False:
-            flag = 'Design does not meet FOV criteria for APOGEE standards for DesignMode'
+            flag = ('Design does not meet FOV criteria '
+                    'for APOGEE standards for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
 
-        self.design_errors['stds_mag_boss'] = np.all(mode.stds_mags_check['BOSS'][0][(self.design['catalogID'] != -1) &
-                                                                                     (self.design['category'] == 'standard_boss')])
+        self.design_errors['stds_mag_boss'] = np.all(
+            mode.stds_mags_check['BOSS'][0][(self.design['catalogID'] != -1)
+                                            & (self.design['category'] == 'standard_boss')])
         if self.design_errors['stds_mag_boss'] is False:
-            flag = 'Design has BOSS standard assignments too bright for DesignMode'
+            flag = ('Design has BOSS standard '
+                    'assignments too bright for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
-        self.design_errors['stds_mag_apogee'] = np.all(mode.stds_mags_check['APOGEE'][0][(self.design['catalogID'] != -1) &
-                                                                                         (self.design['category'] == 'standard_apogee')])
+        self.design_errors['stds_mag_apogee'] = np.all(
+            mode.stds_mags_check['APOGEE'][0][(self.design['catalogID'] != -1)
+                                              & (self.design['category'] == 'standard_apogee')])
         if self.design_errors['stds_mag_apogee'] is False:
-            flag = 'Design has APOGEE standard assignments too bright for DesignMode'
+            flag = ('Design has APOGEE standard '
+                    'assignments too bright for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
 
-        self.design_errors['sci_mag_boss'] = np.all(mode.bright_limit_targets_check['BOSS'][0][(self.design['catalogID'] != -1) &
-                                                                                               (self.design['category'] == 'science') &
-                                                                                               (self.design['obsWavelength'] == 'BOSS')])
+        self.design_errors['sci_mag_boss'] = np.all(
+            mode.bright_limit_targets_check['BOSS'][0][(self.design['catalogID'] != -1)
+                                                       & (self.design['category'] == 'science')
+                                                       & (self.design['obsWavelength'] == 'BOSS')])
         if self.design_errors['sci_mag_boss'] is False:
-            flag = 'Design has BOSS science assignments too bright for DesignMode'
+            flag = ('Design has BOSS science assignments '
+                    ' too bright for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
-        self.design_errors['sci_mag_apogee'] = np.all(mode.bright_limit_targets_check['APOGEE'][0][(self.design['catalogID'] != -1) &
-                                                                                                   (self.design['category'] == 'science') &
-                                                                                                   (self.design['obsWavelength'] == 'APOGEE')])
+        self.design_errors['sci_mag_apogee'] = np.all(
+            mode.bright_limit_targets_check['APOGEE'][0][(self.design['catalogID'] != -1)
+                                                         & (self.design['category'] == 'science')
+                                                         & (self.design['obsWavelength'] == 'APOGEE')])
         if self.design_errors['sci_mag_apogee'] is False:
-            flag = 'Design has APOGEE science assignments too bright for DesignMode'
+            flag = ('Design has APOGEE science assignments '
+                    'too bright for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
 
-        self.design_errors['bright_neigh_boss'] = np.all(mode.bright_neighbor_check['BOSS'][0][mode.bright_neighbor_check['BOSS'][1]])
+        self.design_errors['bright_neigh_boss'] = np.all(
+            mode.bright_neighbor_check['BOSS'][0][mode.bright_neighbor_check['BOSS'][1]])
         if self.design_errors['bright_neigh_boss'] == False:
-            flag = 'Design has BOSS fibers too near bright source for DesignMode'
+            flag = ('Design has BOSS fibers too near '
+                    'bright source for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
 
-        self.design_errors['bright_neigh_apogee'] = np.all(mode.bright_neighbor_check['APOGEE'][0][mode.bright_neighbor_check['APOGEE'][1]])
+        self.design_errors['bright_neigh_apogee'] = np.all(
+            mode.bright_neighbor_check['APOGEE'][0][mode.bright_neighbor_check['APOGEE'][1]])
         if self.design_errors['bright_neigh_apogee'] == False:
-            flag = 'Design has APOGEE fibers too near bright source for DesignMode'
+            flag = ('Design has APOGEE fibers too '
+                    'near bright source for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
         return
 
@@ -756,12 +824,12 @@ class FPSDesign(object):
                                                                  check_type='safety')
         bright_check_apogee, hasFiber_apogee = mode.bright_neighbors(instrument='APOGEE',
                                                                      check_type='safety')
-        fids = np.arange(1, 501, 1, dtype=int)
-        if (len(bright_check_boss[~bright_check_boss & hasFiber_boss]) > 0 or 
-            len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]) > 0):
+        if (len(bright_check_boss[~bright_check_boss & hasFiber_boss]) > 0
+           or len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]) > 0):
             message = 'Bright Neighbor Safety Checked Failed,'
-            message += ' %d BOSS and %d APOGEE fibers near bright sources' % (len(bright_check_boss[~bright_check_boss & hasFiber_boss]),
-                                                                              len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]))
+            message += (' %d BOSS and %d APOGEE fibers near bright sources' %
+                        (len(bright_check_boss[~bright_check_boss & hasFiber_boss]),
+                         len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee])))
             raise MugatuDesignError(message=message)
         return
 
@@ -919,19 +987,20 @@ class FPSDesign(object):
             targetdb_ver[pk] = Carton.get(pk).version_pk
 
         # add the design to targetdb
-        make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
-                                         plan='manual',
-                                         fieldid=fieldid,
-                                         exposure=exposure,
-                                         desmode_label=self.desmode_label,
-                                         catalogID=self.valid_design['catalogID'][self.valid_design['catalogID'] != -1],
-                                         fiberID=self.valid_design['fiberID'][self.valid_design['catalogID'] != -1],
-                                         obsWavelength=self.valid_design['obsWavelength'][self.valid_design['catalogID'] != -1],
-                                         carton=self.valid_design['carton_pk'][self.valid_design['catalogID'] != -1],
-                                         instr_pks=None,
-                                         cart_pks=cart_pks,
-                                         fiber_pks=None,
-                                         idtype=self.idtype)
+        make_design_assignments_targetdb(
+            targetdb_ver=targetdb_ver,
+            plan='manual',
+            fieldid=fieldid,
+            exposure=exposure,
+            desmode_label=self.desmode_label,
+            catalogID=self.valid_design['catalogID'][self.valid_design['catalogID'] != -1],
+            fiberID=self.valid_design['fiberID'][self.valid_design['catalogID'] != -1],
+            obsWavelength=self.valid_design['obsWavelength'][self.valid_design['catalogID'] != -1],
+            carton=self.valid_design['carton_pk'][self.valid_design['catalogID'] != -1],
+            instr_pks=None,
+            cart_pks=cart_pks,
+            fiber_pks=None,
+            idtype=self.idtype)
         return
 
     def design_to_opsdb(self, design):

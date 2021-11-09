@@ -575,17 +575,17 @@ class FPSDesign(object):
 
         # make empty x,y arrays
         self.design['x'] = (np.zeros(len(self.design['catalogID']),
-                            dtype=float)
-                            - 9999.99)
+                            dtype=float) -
+                            9999.99)
         self.design['y'] = (np.zeros(len(self.design['catalogID']),
-                            dtype=float)
-                            - 9999.99)
+                            dtype=float) -
+                            9999.99)
         self.design['ra_off'] = (np.zeros(len(self.design['catalogID']),
-                                 dtype=float)
-                                 - 9999.99)
+                                 dtype=float) -
+                                 9999.99)
         self.design['dec_off'] = (np.zeros(len(self.design['catalogID']),
-                                  dtype=float)
-                                  - 9999.99)
+                                  dtype=float) -
+                                  9999.99)
 
         # here convert ra/dec to x/y based on field/time of observation
         ev = eval("(self.design['ra'] != -9999.99)")
@@ -700,8 +700,8 @@ class FPSDesign(object):
             # grab all of the targets removed due to collisions
             for i in self.rg.robotDict:
                 fiber_idx = np.where(self.design['fiberID'] == i)[0]
-                if (self.rg.robotDict[i].assignedTargetID == -1
-                   and len(fiber_idx) > 0):
+                if (self.rg.robotDict[i].assignedTargetID == -1 and
+                   len(fiber_idx) > 0):
                     targ_remove = self.design['catalogID'][fiber_idx[0]]
                     if targ_remove not in self.targets_unassigned:
                         self.targets_collided.append(targ_remove)
@@ -767,32 +767,33 @@ class FPSDesign(object):
             warnings.warn(flag, MugatuDesignModeWarning)
 
         self.design_errors['stds_mag_boss'] = np.all(
-            mode.stds_mags_check['BOSS'][0][(self.design['catalogID'] != -1)
-                                            & (self.design['category'] == 'standard_boss')])
+            mode.stds_mags_check['BOSS'][0][(self.design['catalogID'] != -1) &
+                                            (self.design['category'] == 'standard_boss')])
         if self.design_errors['stds_mag_boss'] is False:
             flag = ('Design has BOSS standard '
                     'assignments too bright for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
         self.design_errors['stds_mag_apogee'] = np.all(
-            mode.stds_mags_check['APOGEE'][0][(self.design['catalogID'] != -1)
-                                              & (self.design['category'] == 'standard_apogee')])
+            mode.stds_mags_check['APOGEE'][0][(self.design['catalogID'] != -1) &
+                                              (self.design['category'] == 'standard_apogee')])
         if self.design_errors['stds_mag_apogee'] is False:
             flag = ('Design has APOGEE standard '
                     'assignments too bright for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
 
         self.design_errors['sci_mag_boss'] = np.all(
-            mode.bright_limit_targets_check['BOSS'][0][(self.design['catalogID'] != -1)
-                                                       & (self.design['category'] == 'science')
-                                                       & (self.design['obsWavelength'] == 'BOSS')])
+            mode.bright_limit_targets_check['BOSS'][0][(self.design['catalogID'] != -1) &
+                                                       (self.design['category'] == 'science') &
+                                                       (self.design['obsWavelength'] == 'BOSS')])
         if self.design_errors['sci_mag_boss'] is False:
             flag = ('Design has BOSS science assignments '
                     ' too bright for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
         self.design_errors['sci_mag_apogee'] = np.all(
-            mode.bright_limit_targets_check['APOGEE'][0][(self.design['catalogID'] != -1)
-                                                         & (self.design['category'] == 'science')
-                                                         & (self.design['obsWavelength'] == 'APOGEE')])
+            mode.bright_limit_targets_check['APOGEE'][0][(self.design['catalogID'] != -1) &
+                                                         (self.design['category'] == 'science') &
+                                                         (self.design['obsWavelength'] ==
+                                                          'APOGEE')])
         if self.design_errors['sci_mag_apogee'] is False:
             flag = ('Design has APOGEE science assignments '
                     'too bright for DesignMode')
@@ -824,8 +825,8 @@ class FPSDesign(object):
                                                                  check_type='safety')
         bright_check_apogee, hasFiber_apogee = mode.bright_neighbors(instrument='APOGEE',
                                                                      check_type='safety')
-        if (len(bright_check_boss[~bright_check_boss & hasFiber_boss]) > 0
-           or len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]) > 0):
+        if (len(bright_check_boss[~bright_check_boss & hasFiber_boss]) > 0 or
+           len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]) > 0):
             message = 'Bright Neighbor Safety Checked Failed,'
             message += (' %d BOSS and %d APOGEE fibers near bright sources' %
                         (len(bright_check_boss[~bright_check_boss & hasFiber_boss]),

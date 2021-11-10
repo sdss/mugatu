@@ -276,7 +276,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "imageio"
-version = "2.10.1"
+version = "2.10.3"
 description = "Library for reading and writing a wide range of image, video, scientific, and volumetric data formats."
 category = "main"
 optional = false
@@ -300,7 +300,7 @@ test = ["invoke", "pytest", "pytest-cov"]
 
 [[package]]
 name = "importlib-metadata"
-version = "4.8.1"
+version = "4.8.2"
 description = "Read metadata from Python packages"
 category = "main"
 optional = false
@@ -313,7 +313,7 @@ zipp = ">=0.5"
 [package.extras]
 docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 perf = ["ipython"]
-testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "packaging", "pep517", "pyfakefs", "flufl.flake8", "pytest-perf (>=0.9.2)", "pytest-black (>=0.3.7)", "pytest-mypy", "importlib-resources (>=1.3)"]
+testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "packaging", "pep517", "pyfakefs", "flufl.flake8", "pytest-perf (>=0.9.2)", "pytest-black (>=0.3.7)", "pytest-mypy", "importlib-resources (>=1.3)"]
 
 [[package]]
 name = "importlib-resources"
@@ -437,7 +437,7 @@ testing = ["Django (<3.1)", "colorama", "docopt", "pytest (<6.0.0)"]
 
 [[package]]
 name = "jinja2"
-version = "3.0.2"
+version = "3.0.3"
 description = "A very fast and expressive template engine."
 category = "main"
 optional = false
@@ -451,7 +451,7 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "jsonschema"
-version = "4.2.0"
+version = "4.2.1"
 description = "An implementation of JSON Schema validation for Python"
 category = "main"
 optional = false
@@ -460,7 +460,7 @@ python-versions = ">=3.7"
 [package.dependencies]
 attrs = ">=17.4.0"
 importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
-importlib-resources = {version = "*", markers = "python_version < \"3.9\""}
+importlib-resources = {version = ">=1.4.0", markers = "python_version < \"3.9\""}
 pyrsistent = ">=0.14.0,<0.17.0 || >0.17.0,<0.17.1 || >0.17.1,<0.17.2 || >0.17.2"
 
 [package.extras]
@@ -606,7 +606,7 @@ python-versions = "*"
 
 [[package]]
 name = "nbclient"
-version = "0.5.4"
+version = "0.5.5"
 description = "A client library for executing notebooks. Formerly nbconvert's ExecutePreprocessor."
 category = "main"
 optional = false
@@ -934,7 +934,7 @@ global = ["pybind11-global (==2.8.1)"]
 
 [[package]]
 name = "pycparser"
-version = "2.20"
+version = "2.21"
 description = "C parser in Python"
 category = "main"
 optional = false
@@ -978,7 +978,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "pyparsing"
-version = "3.0.4"
+version = "3.0.5"
 description = "Python parsing module"
 category = "main"
 optional = false
@@ -1016,14 +1016,14 @@ python-versions = "*"
 
 [[package]]
 name = "pywavelets"
-version = "1.1.1"
+version = "1.2.0"
 description = "PyWavelets, wavelet transform module"
 category = "main"
 optional = false
-python-versions = ">=3.5"
+python-versions = ">=3.7"
 
 [package.dependencies]
-numpy = ">=1.13.3"
+numpy = ">=1.17.3"
 
 [[package]]
 name = "pywin32"
@@ -1063,7 +1063,7 @@ py = {version = "*", markers = "implementation_name == \"pypy\""}
 
 [[package]]
 name = "qtconsole"
-version = "5.1.1"
+version = "5.2.0"
 description = "Jupyter Qt console"
 category = "main"
 optional = false
@@ -1173,11 +1173,12 @@ docs = ["Sphinx (>=2.1.0)", "sphinx-bootstrap-theme (>=0.4.12)", "recommonmark (
 
 [[package]]
 name = "sdss-coordio"
-version = "1.1.1"
-description = "Coordinate conversion for SDSS-V"
+version = "1.1.2-alpha.0"
+description = ""
 category = "main"
 optional = false
 python-versions = ">=3.7"
+develop = false
 
 [package.dependencies]
 matplotlib = ">=3.1.1"
@@ -1190,6 +1191,12 @@ sdsstools = ">=0.1.0"
 
 [package.extras]
 dev = ["flake8 (>=3.7.9)", "doc8 (>=0.8.0)", "pytest (>=5.2.2)", "pytest-asyncio (>=0.10.0)", "pytest-cov (>=2.8.1)", "pytest-mock (>=1.13.0)", "pytest-sugar (>=0.9.2)", "isort (>=4.3.21)", "codecov (>=2.0.15)", "coverage[toml] (>=5.0)", "ipdb (>=0.12.3)", "rstcheck (>=3.3.1)", "astropy (>=4.0.1)", "twine (>=3.4.2)", "wheel (>=0.36.2)", "sphinx (>=4.0)", "seaborn"]
+
+[package.source]
+type = "git"
+url = "https://github.com/sdss/coordio"
+reference = "master"
+resolved_reference = "ba98cd4bf0aef539302600fad8b1503acfc0143a"
 
 [[package]]
 name = "sdss-kaiju"
@@ -1519,7 +1526,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.1"
-content-hash = "f27fb0a56c474899014241c7cc387c1d38a6ed891459380a6e15a5a677370bc3"
+content-hash = "a3420a870f5f440bc67156d1616b797c36eca7abc817e2cedf0ca36b7af42056"
 
 [metadata.files]
 absl-py = [
@@ -1764,12 +1771,12 @@ idna = [
     {file = "idna-3.3.tar.gz", hash = "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"},
 ]
 imageio = [
-    {file = "imageio-2.10.1-py3-none-any.whl", hash = "sha256:fce6d3658c4c445cc5af7b2494275773fb10213ba72706740bfb8a03b8ebf5b8"},
-    {file = "imageio-2.10.1.tar.gz", hash = "sha256:1fbf909bac3f07faabd05a3f71b3c49428709c3c55f43770a3f76e0eb1b525d1"},
+    {file = "imageio-2.10.3-py3-none-any.whl", hash = "sha256:93ee376a8dc96182ead8d773c3ac2becf79c6f2b93d38f31d7ac036c62a6c72e"},
+    {file = "imageio-2.10.3.tar.gz", hash = "sha256:469c59fe71c81cdc41c84f842d62dd2739a08fac8cb85f5a518a92a6227e2ed6"},
 ]
 importlib-metadata = [
-    {file = "importlib_metadata-4.8.1-py3-none-any.whl", hash = "sha256:b618b6d2d5ffa2f16add5697cf57a46c76a56229b0ed1c438322e4e95645bd15"},
-    {file = "importlib_metadata-4.8.1.tar.gz", hash = "sha256:f284b3e11256ad1e5d03ab86bb2ccd6f5339688ff17a4d797a0fe7df326f23b1"},
+    {file = "importlib_metadata-4.8.2-py3-none-any.whl", hash = "sha256:53ccfd5c134223e497627b9815d5030edf77d2ed573922f7a0b8f8bb81a1c100"},
+    {file = "importlib_metadata-4.8.2.tar.gz", hash = "sha256:75bdec14c397f528724c1bfd9709d660b33a4d2e77387a3358f20b848bb5e5fb"},
 ]
 importlib-resources = [
     {file = "importlib_resources-5.4.0-py3-none-any.whl", hash = "sha256:33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45"},
@@ -1801,12 +1808,12 @@ jedi = [
     {file = "jedi-0.18.0.tar.gz", hash = "sha256:92550a404bad8afed881a137ec9a461fed49eca661414be45059329614ed0707"},
 ]
 jinja2 = [
-    {file = "Jinja2-3.0.2-py3-none-any.whl", hash = "sha256:8569982d3f0889eed11dd620c706d39b60c36d6d25843961f33f77fb6bc6b20c"},
-    {file = "Jinja2-3.0.2.tar.gz", hash = "sha256:827a0e32839ab1600d4eb1c4c33ec5a8edfbc5cb42dafa13b81f182f97784b45"},
+    {file = "Jinja2-3.0.3-py3-none-any.whl", hash = "sha256:077ce6014f7b40d03b47d1f1ca4b0fc8328a692bd284016f806ed0eaca390ad8"},
+    {file = "Jinja2-3.0.3.tar.gz", hash = "sha256:611bb273cd68f3b993fabdc4064fc858c5b47a973cb5aa7999ec1ba405c87cd7"},
 ]
 jsonschema = [
-    {file = "jsonschema-4.2.0-py3-none-any.whl", hash = "sha256:2b563117f3659a7f433dffe1371c88f52115b79133493f376f15724b9caa7efa"},
-    {file = "jsonschema-4.2.0.tar.gz", hash = "sha256:e2d3601321ac74d38214e2853300ae740cd07e53d919a15862b8c71f9d840574"},
+    {file = "jsonschema-4.2.1-py3-none-any.whl", hash = "sha256:2a0f162822a64d95287990481b45d82f096e99721c86534f48201b64ebca6e8c"},
+    {file = "jsonschema-4.2.1.tar.gz", hash = "sha256:390713469ae64b8a58698bb3cbc3859abe6925b565a973f87323ef21b09a27a8"},
 ]
 jupyter = [
     {file = "jupyter-1.0.0-py2.py3-none-any.whl", hash = "sha256:5b290f93b98ffbc21c0c7e749f054b3267782166d72fa5e3ed1ed4eaf34a2b78"},
@@ -1982,8 +1989,8 @@ mistune = [
     {file = "mistune-0.8.4.tar.gz", hash = "sha256:59a3429db53c50b5c6bcc8a07f8848cb00d7dc8bdb431a4ab41920d201d4756e"},
 ]
 nbclient = [
-    {file = "nbclient-0.5.4-py3-none-any.whl", hash = "sha256:95a300c6fbe73721736cf13972a46d8d666f78794b832866ed7197a504269e11"},
-    {file = "nbclient-0.5.4.tar.gz", hash = "sha256:6c8ad36a28edad4562580847f9f1636fe5316a51a323ed85a24a4ad37d4aefce"},
+    {file = "nbclient-0.5.5-py3-none-any.whl", hash = "sha256:542b1dfd492bc2524fff52064461149208ac3d53fa6353ce21da2219910b0cfc"},
+    {file = "nbclient-0.5.5.tar.gz", hash = "sha256:ed7d18431393750d29a64da432e0b7889274eb5a5056682be5691b1b1dc8f755"},
 ]
 nbconvert = [
     {file = "nbconvert-6.2.0-py3-none-any.whl", hash = "sha256:b1b9dc4f1ff6cafae0e6d91f42fb9046fdc32e6beb6d7e2fa2cd7191ad535240"},
@@ -2259,8 +2266,8 @@ pybind11 = [
     {file = "pybind11-2.8.1.tar.gz", hash = "sha256:2ff4e50f171e3ae12b11c69e6ad49b05aa5e4b7eaa17b8148bee3cb3f0e4284b"},
 ]
 pycparser = [
-    {file = "pycparser-2.20-py2.py3-none-any.whl", hash = "sha256:7582ad22678f0fcd81102833f60ef8d0e57288b6b5fb00323d101be910e35705"},
-    {file = "pycparser-2.20.tar.gz", hash = "sha256:2d475327684562c3a96cc71adf7dc8c4f0565175cf86b6d7a404ff4c771f15f0"},
+    {file = "pycparser-2.21-py2.py3-none-any.whl", hash = "sha256:8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9"},
+    {file = "pycparser-2.21.tar.gz", hash = "sha256:e644fdec12f7872f86c58ff790da456218b10f863970249516d60a5eaca77206"},
 ]
 pydl = [
     {file = "pydl-0.7.0.tar.gz", hash = "sha256:8f35c97815b73e1da0cd67b56a051aa9768a88e46a1aad080d23c2a4cdc45b84"},
@@ -2301,8 +2308,8 @@ pygments = [
     {file = "Pygments-2.10.0.tar.gz", hash = "sha256:f398865f7eb6874156579fdf36bc840a03cab64d1cde9e93d68f46a425ec52c6"},
 ]
 pyparsing = [
-    {file = "pyparsing-3.0.4-py3-none-any.whl", hash = "sha256:c0a7dfcd26825bd4453574c4e7ad04aa095975ce54d04f738fe3a8350fbd223a"},
-    {file = "pyparsing-3.0.4.tar.gz", hash = "sha256:e0df773d7fa2240322daae7805626dfc5f2d5effb34e1a7be2702c99cfb9f6b1"},
+    {file = "pyparsing-3.0.5-py3-none-any.whl", hash = "sha256:4881e3d2979f27b41a3a2421b10be9cbfa7ce2baa6c7117952222f8bbea6650c"},
+    {file = "pyparsing-3.0.5.tar.gz", hash = "sha256:9329d1c1b51f0f76371c4ded42c5ec4cc0be18456b22193e0570c2da98ed288b"},
 ]
 pyrsistent = [
     {file = "pyrsistent-0.18.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:f4c8cabb46ff8e5d61f56a037974228e978f26bfefce4f61a4b1ac0ba7a2ab72"},
@@ -2336,36 +2343,44 @@ pytz = [
     {file = "pytz-2021.3.tar.gz", hash = "sha256:acad2d8b20a1af07d4e4c9d2e9285c5ed9104354062f275f3fcd88dcef4f1326"},
 ]
 pywavelets = [
-    {file = "PyWavelets-1.1.1-cp35-cp35m-macosx_10_6_intel.whl", hash = "sha256:35959c041ec014648575085a97b498eafbbaa824f86f6e4a59bfdef8a3fe6308"},
-    {file = "PyWavelets-1.1.1-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:55e39ec848ceec13c9fa1598253ae9dd5c31d09dfd48059462860d2b908fb224"},
-    {file = "PyWavelets-1.1.1-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:c06d2e340c7bf8b9ec71da2284beab8519a3908eab031f4ea126e8ccfc3fd567"},
-    {file = "PyWavelets-1.1.1-cp35-cp35m-win32.whl", hash = "sha256:be105382961745f88d8196bba5a69ee2c4455d87ad2a2e5d1eed6bd7fda4d3fd"},
-    {file = "PyWavelets-1.1.1-cp35-cp35m-win_amd64.whl", hash = "sha256:076ca8907001fdfe4205484f719d12b4a0262dfe6652fa1cfc3c5c362d14dc84"},
-    {file = "PyWavelets-1.1.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:7947e51ca05489b85928af52a34fe67022ab5b81d4ae32a4109a99e883a0635e"},
-    {file = "PyWavelets-1.1.1-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:9e2528823ccf5a0a1d23262dfefe5034dce89cd84e4e124dc553dfcdf63ebb92"},
-    {file = "PyWavelets-1.1.1-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:80b924edbc012ded8aa8b91cb2fd6207fb1a9a3a377beb4049b8a07445cec6f0"},
-    {file = "PyWavelets-1.1.1-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:c2a799e79cee81a862216c47e5623c97b95f1abee8dd1f9eed736df23fb653fb"},
-    {file = "PyWavelets-1.1.1-cp36-cp36m-win32.whl", hash = "sha256:d510aef84d9852653d079c84f2f81a82d5d09815e625f35c95714e7364570ad4"},
-    {file = "PyWavelets-1.1.1-cp36-cp36m-win_amd64.whl", hash = "sha256:889d4c5c5205a9c90118c1980df526857929841df33e4cd1ff1eff77c6817a65"},
-    {file = "PyWavelets-1.1.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:68b5c33741d26c827074b3d8f0251de1c3019bb9567b8d303eb093c822ce28f1"},
-    {file = "PyWavelets-1.1.1-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:18a51b3f9416a2ae6e9a35c4af32cf520dd7895f2b69714f4aa2f4342fca47f9"},
-    {file = "PyWavelets-1.1.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:cfe79844526dd92e3ecc9490b5031fca5f8ab607e1e858feba232b1b788ff0ea"},
-    {file = "PyWavelets-1.1.1-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:2f7429eeb5bf9c7068002d0d7f094ed654c77a70ce5e6198737fd68ab85f8311"},
-    {file = "PyWavelets-1.1.1-cp37-cp37m-win32.whl", hash = "sha256:720dbcdd3d91c6dfead79c80bf8b00a1d8aa4e5d551dc528c6d5151e4efc3403"},
-    {file = "PyWavelets-1.1.1-cp37-cp37m-win_amd64.whl", hash = "sha256:bc5e87b72371da87c9bebc68e54882aada9c3114e640de180f62d5da95749cd3"},
-    {file = "PyWavelets-1.1.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:98b2669c5af842a70cfab33a7043fcb5e7535a690a00cd251b44c9be0be418e5"},
-    {file = "PyWavelets-1.1.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:e02a0558e0c2ac8b8bbe6a6ac18c136767ec56b96a321e0dfde2173adfa5a504"},
-    {file = "PyWavelets-1.1.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:6162dc0ae04669ea04b4b51420777b9ea2d30b0a9d02901b2a3b4d61d159c2e9"},
-    {file = "PyWavelets-1.1.1-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:39c74740718e420d38c78ca4498568fa57976d78d5096277358e0fa9629a7aea"},
-    {file = "PyWavelets-1.1.1-cp38-cp38-win32.whl", hash = "sha256:79f5b54f9dc353e5ee47f0c3f02bebd2c899d49780633aa771fed43fa20b3149"},
-    {file = "PyWavelets-1.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:935ff247b8b78bdf77647fee962b1cc208c51a7b229db30b9ba5f6da3e675178"},
-    {file = "PyWavelets-1.1.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:6ebfefebb5c6494a3af41ad8c60248a95da267a24b79ed143723d4502b1fe4d7"},
-    {file = "PyWavelets-1.1.1-cp39-cp39-manylinux1_i686.whl", hash = "sha256:6bc78fb9c42a716309b4ace56f51965d8b5662c3ba19d4591749f31773db1125"},
-    {file = "PyWavelets-1.1.1-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:411e17ca6ed8cf5e18a7ca5ee06a91c25800cc6c58c77986202abf98d749273a"},
-    {file = "PyWavelets-1.1.1-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:83c5e3eb78ce111c2f0b45f46106cc697c3cb6c4e5f51308e1f81b512c70c8fb"},
-    {file = "PyWavelets-1.1.1-cp39-cp39-win32.whl", hash = "sha256:2b634a54241c190ee989a4af87669d377b37c91bcc9cf0efe33c10ff847f7841"},
-    {file = "PyWavelets-1.1.1-cp39-cp39-win_amd64.whl", hash = "sha256:732bab78435c48be5d6bc75486ef629d7c8f112e07b313bf1f1a2220ab437277"},
-    {file = "PyWavelets-1.1.1.tar.gz", hash = "sha256:1a64b40f6acb4ffbaccce0545d7fc641744f95351f62e4c6aaa40549326008c9"},
+    {file = "PyWavelets-1.2.0-cp310-cp310-macosx_10_13_universal2.whl", hash = "sha256:4c29efb581245e4ba3e76b23b1bf254a7c79821d7e63f432e68044cf2d233e9e"},
+    {file = "PyWavelets-1.2.0-cp310-cp310-macosx_10_13_x86_64.whl", hash = "sha256:3089aa6b4962e1f5dbd0434a10f174f7a50f80bf64cb7d33cc725af07bd30ecc"},
+    {file = "PyWavelets-1.2.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:16c30e98f52e1a5d0a06b4b8f294114aaa94a0e95445b4056b6ca0a7a5535a42"},
+    {file = "PyWavelets-1.2.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:79386f4d8518e344487acf22b1c130e5907b3c45852aa50c18df5e19895aa92e"},
+    {file = "PyWavelets-1.2.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b9bf543d552d20cf6ddfd690c5c18afacc8440cfb09b7515b2242bb9abfcc5eb"},
+    {file = "PyWavelets-1.2.0-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:28bb3d7d411ffbcfaa5a81a5a32044805893752c1641b39f6544b7e0a24661c3"},
+    {file = "PyWavelets-1.2.0-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:333e1370167b0a2b963df82e42968000734bfa23b2ce88191e8ce9d24fc4cc57"},
+    {file = "PyWavelets-1.2.0-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:2ec1fc92573f56c1b129006d109e7518a098f3c8c6a2183b495619faca931461"},
+    {file = "PyWavelets-1.2.0-cp310-cp310-win32.whl", hash = "sha256:d30c09fa805533bf7c8a5d06aa8babda5ae6c1541cd652cb2ebe6ab0b9536c0e"},
+    {file = "PyWavelets-1.2.0-cp310-cp310-win_amd64.whl", hash = "sha256:73805016353a47c5b5f9cea547ea6ae07cd3520abfd7888916ff56b01e71307a"},
+    {file = "PyWavelets-1.2.0-cp37-cp37m-macosx_10_13_x86_64.whl", hash = "sha256:ec670e78be2c3193e26c4bfa31dff1edd89ee8d7e2f4219782f3ef3f6daf37f0"},
+    {file = "PyWavelets-1.2.0-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:151a7f3d3db36baffe640d691403b7cd3938a1886c8a387b719e7e8b580dd4b1"},
+    {file = "PyWavelets-1.2.0-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:616fd2967dd153c3f539b1e0979168969f3702125caae4caa769efc5621cc2b7"},
+    {file = "PyWavelets-1.2.0-cp37-cp37m-musllinux_1_1_i686.whl", hash = "sha256:abedc0b49273a734d4592e325a5fb32f0741e115d6722e0c59964ecf21344640"},
+    {file = "PyWavelets-1.2.0-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:9b05d2f21da666f918692f0313484002307794b5380f7291a395b9271abdda5c"},
+    {file = "PyWavelets-1.2.0-cp37-cp37m-win32.whl", hash = "sha256:537b5a8a8a3e9e5b931d34b517aa2312a3d8385937f98c4f8ffa668483329cfb"},
+    {file = "PyWavelets-1.2.0-cp37-cp37m-win_amd64.whl", hash = "sha256:7a725030682bf891ced9819b4b21d6ef356fa11b70399d2d3adb319aead1efb0"},
+    {file = "PyWavelets-1.2.0-cp38-cp38-macosx_10_13_universal2.whl", hash = "sha256:d9831b251f63460302811607f80a20285292ed0a0a046f95b4648edc0ed90f9c"},
+    {file = "PyWavelets-1.2.0-cp38-cp38-macosx_10_13_x86_64.whl", hash = "sha256:7e4749ff324e8e01a2fdc859ac9714c4be1cbc6e8a34d5ddedb28fc9513b31a1"},
+    {file = "PyWavelets-1.2.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:333684cc0d0e89cf6cb3a8b3ea68528790e1a3edc565a100cda47e29860f892d"},
+    {file = "PyWavelets-1.2.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:71415f2c376ae3e1331249043dddb63370c92fed162ebcb108fd87e12a956d89"},
+    {file = "PyWavelets-1.2.0-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:44315d197bad9564210ef42f2d5a01c07ee6fd456c679d4a6d0f4e23ec9930cf"},
+    {file = "PyWavelets-1.2.0-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:c8b388652b6afb4bf7be313be057240386de93817c6744c2aaf43a22890733c8"},
+    {file = "PyWavelets-1.2.0-cp38-cp38-musllinux_1_1_i686.whl", hash = "sha256:a1131c27b9f79ca56dd6347d5585a609f51ed3cad0cfb6c17419b1733d3b6acd"},
+    {file = "PyWavelets-1.2.0-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:df4d950be507a68d107c8f618ef7a9e0d9071789cfc1a840f89d0c985448880f"},
+    {file = "PyWavelets-1.2.0-cp38-cp38-win32.whl", hash = "sha256:8a72f11c4d23f8ed8544def0003f500e98598e7a1efce892e6f964c430469c05"},
+    {file = "PyWavelets-1.2.0-cp38-cp38-win_amd64.whl", hash = "sha256:be231e4bc569f2b1177711390d406d08ce388c1e01ab864f89be8928db234856"},
+    {file = "PyWavelets-1.2.0-cp39-cp39-macosx_10_13_universal2.whl", hash = "sha256:90d53119f4b518236ad9a8a6be96d86efb1b4eeb73c28e3ed33824ae601ce7b1"},
+    {file = "PyWavelets-1.2.0-cp39-cp39-macosx_10_13_x86_64.whl", hash = "sha256:351937e4fc6f3df3555cd2813e73bfc344885c5d994fd621d13dd004d05a4cb7"},
+    {file = "PyWavelets-1.2.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:33375e3e6e361659f2519d412de2b50e2527a97c3946ffd66ca20a8ea1346fea"},
+    {file = "PyWavelets-1.2.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:449d2d5f9c1f28a1bce01f714f9f742d9fdbce90f66de0a92cad39d98d24477b"},
+    {file = "PyWavelets-1.2.0-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:18d84982417790a645f74cb0f968e89fb8af575dbf17a52c64af5075aa5528b8"},
+    {file = "PyWavelets-1.2.0-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:b3d9dab8223d0ce30e7480751f526ce1e97a1dcf5242875f8206e4449953116c"},
+    {file = "PyWavelets-1.2.0-cp39-cp39-musllinux_1_1_i686.whl", hash = "sha256:a82e8c307b98d65737b286e0b458343ecee8505dfb519cd314a5f211f4fb92b9"},
+    {file = "PyWavelets-1.2.0-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:663d265cb433653ef6335973edd13c66cd86c85fbe9c09e4bd138119bac15974"},
+    {file = "PyWavelets-1.2.0-cp39-cp39-win32.whl", hash = "sha256:fd5ca221ac7bedb2a9aebcf3b05020827564db5a979b25005b3a2c7ba84069a2"},
+    {file = "PyWavelets-1.2.0-cp39-cp39-win_amd64.whl", hash = "sha256:69cfc7f2ceb0a1097e7e8d1a026cbb2ff1afecc2d79820856f1abccb6cb59cc4"},
+    {file = "PyWavelets-1.2.0.tar.gz", hash = "sha256:6cbd69b047bb4e00873097472133425f5f08a4e6bc8b3f0ae709274d4d5e9a8d"},
 ]
 pywin32 = [
     {file = "pywin32-302-cp310-cp310-win32.whl", hash = "sha256:251b7a9367355ccd1a4cd69cd8dd24bd57b29ad83edb2957cfa30f7ed9941efa"},
@@ -2472,8 +2487,8 @@ pyzmq = [
     {file = "pyzmq-22.3.0.tar.gz", hash = "sha256:8eddc033e716f8c91c6a2112f0a8ebc5e00532b4a6ae1eb0ccc48e027f9c671c"},
 ]
 qtconsole = [
-    {file = "qtconsole-5.1.1-py3-none-any.whl", hash = "sha256:73994105b0369bb99f4164df4a131010f3c7b33a7b5169c37366358d8744675b"},
-    {file = "qtconsole-5.1.1.tar.gz", hash = "sha256:bbc34bca14f65535afcb401bc74b752bac955e5313001ba640383f7e5857dc49"},
+    {file = "qtconsole-5.2.0-py3-none-any.whl", hash = "sha256:a287f9f0f7365ccb2f2a88e0cd4da883822e94d15b75dc19098cd8eec44d70d1"},
+    {file = "qtconsole-5.2.0.tar.gz", hash = "sha256:6bb4df839609f240194213407872076f871e3a3884cf8e785068e8c7f39344c6"},
 ]
 qtpy = [
     {file = "QtPy-1.11.2-py2.py3-none-any.whl", hash = "sha256:83c502973e9fdd7b648d8267a421229ea3d9a0651c22e4c65a4d9228479c39b6"},
@@ -2532,9 +2547,7 @@ sdss-access = [
     {file = "sdss-access-1.1.1.tar.gz", hash = "sha256:f785c4e49285f8ad793b3dff3c626192f3b2a7bc0d58a005ec6cd4206931f113"},
     {file = "sdss_access-1.1.1-py2.py3-none-any.whl", hash = "sha256:9cfc7fce0802fa0f16d73184304b31536343f574365616167e0c59a48d5bd001"},
 ]
-sdss-coordio = [
-    {file = "sdss-coordio-1.1.1.tar.gz", hash = "sha256:a2506c50b49539c6ac11bb65aef5294ef7ab8b3fee559f35a4832bfe7ba31e8b"},
-]
+sdss-coordio = []
 sdss-kaiju = []
 sdss-roboscheduler = []
 sdss-tree = [

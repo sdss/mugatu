@@ -433,6 +433,9 @@ class FPSDesign(object):
             self.design['magnitudes'][pos_id][5] = d.rp
             self.design['magnitudes'][pos_id][6] = d.h
 
+        # set nan pm tp zero
+        self.design['pmra'][np.isnan(self.design['pmra'])] = 0.
+        self.design['pmdec'][np.isnan(self.design['pmdec'])] = 0.
         # here convert ra/dec to x/y based on field/time of observation
         # I think I need to add inertial in here at some point,
         # dont see this in targetdb though
@@ -457,7 +460,7 @@ class FPSDesign(object):
                 pmra=self.design['pmra'],
                 pmdec=self.design['pmdec'])
             self.design['x'][ev] = res[0]
-            self.design['x'][ev] = res[1]
+            self.design['y'][ev] = res[1]
             fieldWarn = res[2]
             self.hourAngle = res[3]
             self.positionAngle_coordio = res[4]
@@ -573,6 +576,9 @@ class FPSDesign(object):
             self.design['category'] = design_inst['category'][roboIDs != -1]
             self.design['magnitudes'] = design_inst['magnitude'][roboIDs != -1]
 
+        # set nan pm tp zero
+        self.design['pmra'][np.isnan(self.design['pmra'])] = 0.
+        self.design['pmdec'][np.isnan(self.design['pmdec'])] = 0.
         # make empty x,y arrays
         self.design['x'] = (np.zeros(len(self.design['catalogID']),
                             dtype=float) -
@@ -609,7 +615,7 @@ class FPSDesign(object):
                 pmra=self.design['pmra'],
                 pmdec=self.design['pmdec'])
             self.design['x'][ev] = res[0]
-            self.design['x'][ev] = res[1]
+            self.design['y'][ev] = res[1]
             fieldWarn = res[2]
             self.hourAngle = res[3]
             self.positionAngle_coordio = res[4]

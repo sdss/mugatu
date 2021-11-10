@@ -859,6 +859,8 @@ class FPSDesign(object):
         self.valid_design['category'] = np.zeros(500, dtype='<U10')
         self.valid_design['ra'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['pmra'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['pmdec'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['delta_ra'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['delta_dec'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['ra_off'] = np.zeros(500, dtype=float) - 9999.99
@@ -881,6 +883,8 @@ class FPSDesign(object):
                 self.valid_design['category'][i] = self.design['category'][cond][0]
                 self.valid_design['ra'][i] = self.design['ra'][cond][0]
                 self.valid_design['dec'][i] = self.design['dec'][cond][0]
+                self.valid_design['pmra'][i] = self.design['pmra'][cond][0]
+                self.valid_design['pmdec'][i] = self.design['pmdec'][cond][0]
                 self.valid_design['delta_ra'][i] = self.design['delta_ra'][cond][0]
                 self.valid_design['delta_dec'][i] = self.design['delta_dec'][cond][0]
                 self.valid_design['ra_off'][i] = self.design['ra_off'][cond][0]

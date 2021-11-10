@@ -101,6 +101,9 @@ class FPSDesign(object):
         are provided, declinations will be pulled from
         targetdb.
 
+    epoch: np.array
+        Array of epochs for the coordinates in decimal years.
+
     fiberID: np.array
         Fiber assignement for each catalogid target in the
         manual design.
@@ -180,7 +183,7 @@ class FPSDesign(object):
                  position_angle=None, observatory=None, desmode_label=None,
                  idtype='carton_to_target', catalogids=None, ra=None, dec=None,
                  pmra=None, pmdec=None, delta_ra=None, delta_dec=None,
-                 fiberID=None, obsWavelength=None,
+                 epoch=None, fiberID=None, obsWavelength=None,
                  priority=None, carton_pk=None, category=None, magnitudes=None,
                  design_file=None, manual_design=False, exp=0,
                  collisionBuffer=2.):
@@ -236,6 +239,7 @@ class FPSDesign(object):
         self.pmdec = pmdec
         self.delta_ra = delta_ra
         self.delta_dec = delta_dec
+        self.epoch = epoch
         self.fiberID = fiberID
         self.obsWavelength = obsWavelength
         self.priority = priority
@@ -355,6 +359,7 @@ class FPSDesign(object):
         self.design['dec'] = np.zeros(500, dtype=float) - 9999.99
         self.design['delta_ra'] = np.zeros(500, dtype=float) - 9999.99
         self.design['delta_dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['epoch'] = np.zeros(500, dtype=float) - 9999.99
         self.design['ra_off'] = np.zeros(500, dtype=float) - 9999.99
         self.design['dec_off'] = np.zeros(500, dtype=float) - 9999.99
         self.design['pmra'] = np.zeros(500, dtype=float) - 9999.99
@@ -386,6 +391,7 @@ class FPSDesign(object):
                               Target.delta_dec,
                               Target.pmra,
                               Target.pmdec,
+                              Target.epoch,
                               Category.label.alias('cat_lab'))
                       .join(Positioner)
                       .switch(Assignment)
@@ -425,6 +431,7 @@ class FPSDesign(object):
             self.design['delta_dec'][pos_id] = d.delta_dec
             self.design['pmra'][pos_id] = d.pmra
             self.design['pmdec'][pos_id] = d.pmdec
+            self.design['epoch'][pos_id] = d.epoch
             self.design['magnitudes'][pos_id][0] = d.g
             self.design['magnitudes'][pos_id][1] = d.r
             self.design['magnitudes'][pos_id][2] = d.i
@@ -449,7 +456,8 @@ class FPSDesign(object):
             res = radec2wokxy(
                 ra=self.design['ra_off'][ev],
                 dec=self.design['dec_off'][ev],
-                coordEpoch=Time(2015.5, format='decimalyear').jd,
+                coordEpoch=Time(self.design['epoch'][ev],
+                                format='decimalyear').jd,
                 waveName=np.array(list(map(lambda x: x.title(),
                                            self.design['obsWavelength'][ev]))),
                 raCen=self.racen,
@@ -526,6 +534,7 @@ class FPSDesign(object):
                 self.design['pmdec'] = self.pmdec
                 self.design['delta_ra'] = self.delta_ra
                 self.design['delta_dec'] = self.delta_dec
+                self.design['epoch'] = self.epoch
 
             # here somehow assign these
             self.design['fiberID'] = self.fiberID
@@ -564,6 +573,7 @@ class FPSDesign(object):
             self.design['delta_dec'] = design_inst['delta_dec'][roboIDs != -1]
             self.design['pmra'] = design_inst['pmra'][roboIDs != -1]
             self.design['pmdec'] = design_inst['pmdec'][roboIDs != -1]
+            self.design['epoch'] = design_inst['epoch'][roboIDs != -1]
             self.design['fiberID'] = roboIDs[roboIDs != -1]
             self.design['obsWavelength'] = (design_inst['fiberType']
                                             [roboIDs != -1])
@@ -604,7 +614,8 @@ class FPSDesign(object):
             res = radec2wokxy(
                 ra=self.design['ra_off'][ev],
                 dec=self.design['dec_off'][ev],
-                coordEpoch=Time(2015.5, format='decimalyear').jd,
+                coordEpoch=Time(self.design['epoch'][ev],
+                                format='decimalyear').jd,
                 waveName=np.array(list(map(lambda x: x.title(),
                                            self.design['obsWavelength'][ev]))),
                 raCen=self.racen,
@@ -865,6 +876,7 @@ class FPSDesign(object):
         self.valid_design['delta_dec'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['ra_off'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['dec_off'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['epoch'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['x'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['y'] = np.zeros(500, dtype=float) - 9999.99
 
@@ -889,6 +901,7 @@ class FPSDesign(object):
                 self.valid_design['delta_dec'][i] = self.design['delta_dec'][cond][0]
                 self.valid_design['ra_off'][i] = self.design['ra_off'][cond][0]
                 self.valid_design['dec_off'][i] = self.design['dec_off'][cond][0]
+                self.valid_design['epoch'][i] = self.design['epoch'][cond][0]
             self.valid_design['x'][i] = self.rg.robotDict[rid].xPos
             self.valid_design['y'][i] = self.rg.robotDict[rid].yPos
 

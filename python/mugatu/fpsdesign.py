@@ -104,7 +104,7 @@ class FPSDesign(object):
     epoch: np.array
         Array of epochs for the coordinates in decimal years.
 
-    fiberID: np.array
+    robotID: np.array
         Fiber assignement for each catalogid target in the
         manual design.
 
@@ -158,6 +158,9 @@ class FPSDesign(object):
         catalogid of targets that could not be assigned due to assigned
         robot not being able to reach the assigned target.
 
+    holeID_mapping: np.array
+        Mapping between robotID (index + 1) and holeID
+
     targets_collided: list
         catalogid of targets that could not be assigned due to assigned
         robot to assigned target resulting in a collision.
@@ -183,7 +186,7 @@ class FPSDesign(object):
                  position_angle=None, observatory=None, desmode_label=None,
                  idtype='carton_to_target', catalogids=None, ra=None, dec=None,
                  pmra=None, pmdec=None, delta_ra=None, delta_dec=None,
-                 epoch=None, fiberID=None, obsWavelength=None,
+                 epoch=None, robotID=None, obsWavelength=None,
                  priority=None, carton_pk=None, category=None, magnitudes=None,
                  design_file=None, manual_design=False, exp=0,
                  collisionBuffer=2.):
@@ -240,7 +243,7 @@ class FPSDesign(object):
         self.delta_ra = delta_ra
         self.delta_dec = delta_dec
         self.epoch = epoch
-        self.fiberID = fiberID
+        self.robotID = robotID
         self.obsWavelength = obsWavelength
         self.priority = priority
         self.carton_pk = carton_pk
@@ -262,6 +265,9 @@ class FPSDesign(object):
             self.rg = kaiju.robotGrid.RobotGridLCO(
                 collisionBuffer=self.collisionBuffer,
                 stepSize=0.05)
+        self.holeID_mapping = np.zeros(500, dtype='<U10')
+        for i, robotID in enumerate(range(1, 501)):
+            self.holeID_mapping[i] = self.rg.robotDict[robotID].holeID
         # this is in Conor's test, I'm not quite sure what it does
         # but without paths wont generate
         for k in self.rg.robotDict.keys():
@@ -349,8 +355,8 @@ class FPSDesign(object):
         self.design['design_pk'] = self.design_pk
         self.design['desmode_label'] = self.desmode_label
         self.design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
-        self.design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
-        # self.design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
+        self.design['robotID'] = np.zeros(500, dtype=np.int64) - 1
+        self.design['holeID'] = np.zeros(500, dtype='<U10')
         self.design['obsWavelength'] = np.zeros(500, dtype='<U6')
         self.design['priority'] = np.zeros(500, dtype=int) - 1
         self.design['carton_pk'] = np.zeros(500, dtype=int) - 1
@@ -393,7 +399,7 @@ class FPSDesign(object):
                               Target.pmdec,
                               Target.epoch,
                               Category.label.alias('cat_lab'))
-                      .join(Positioner)
+                      .join(Hole)
                       .switch(Assignment)
                       .join(Instrument)
                       .switch(Assignment)
@@ -409,13 +415,14 @@ class FPSDesign(object):
         for d in design_targ_db.objects():
             # assign to index that corresponds to fiber assignment
             # index should match length of arrays
-            pos_id = d.holeid
+            pos_id = np.where(self.holeID_mapping == d.holeid)[0][0]
             if self.idtype == 'carton_to_target':
                 self.design['catalogID'][pos_id] = d.catalogid
             else:
                 self.design['catalogID'][pos_id] = d.pk
 
-            self.design['fiberID'][pos_id] = pos_id
+            self.design['robotID'][pos_id] = pos_id + 1
+            self.design['holeID'][pos_id] = d.holeid
             # design['wokHoleID'][i] = design_targ_db[i]
             self.design['obsWavelength'][pos_id] = d.label
             # catch targets with no assigned priority
@@ -536,8 +543,11 @@ class FPSDesign(object):
                 self.design['delta_dec'] = self.delta_dec
                 self.design['epoch'] = self.epoch
 
-            # here somehow assign these
-            self.design['fiberID'] = self.fiberID
+            self.design['robotID'] = self.robotID
+            self.design['holeID'] = np.zeros(len(self.design['robotID']),
+                                             dtype='<U10')
+            for i in range(len(self.design['robotID'])):
+                self.design['holeID'][i] = self.holeID_mapping[self.design['robotID'][i] - 1]
             self.design['magnitudes'] = self.magnitudes
         else:
             # manual design from flat file
@@ -574,7 +584,11 @@ class FPSDesign(object):
             self.design['pmra'] = design_inst['pmra'][roboIDs != -1]
             self.design['pmdec'] = design_inst['pmdec'][roboIDs != -1]
             self.design['epoch'] = design_inst['epoch'][roboIDs != -1]
-            self.design['fiberID'] = roboIDs[roboIDs != -1]
+            self.design['robotID'] = roboIDs[roboIDs != -1]
+            self.design['holeID'] = np.zeros(len(self.design['robotID']),
+                                             dtype='<U10')
+            for i in range(len(self.design['robotID'])):
+                self.design['holeID'][i] = self.holeID_mapping[self.design['robotID'][i] - 1]
             self.design['obsWavelength'] = (design_inst['fiberType']
                                             [roboIDs != -1])
             self.design['priority'] = design_inst['priority'][roboIDs != -1]
@@ -660,7 +674,7 @@ class FPSDesign(object):
         is_unassigned = False
 
         for i in range(len(self.design['x'])):
-            if self.design['fiberID'][i] != -1:
+            if self.design['robotID'][i] != -1:
                 if self.design['obsWavelength'][i] == 'BOSS':
                     self.rg.addTarget(targetID=self.design['catalogID'][i],
                                       x=self.design['x'][i],
@@ -674,9 +688,9 @@ class FPSDesign(object):
                                       priority=self.design['priority'][i],
                                       fiberType=kaiju.cKaiju.ApogeeFiber)
         for i in range(len(self.design['x'])):
-            if self.design['fiberID'][i] > 0:
+            if self.design['robotID'][i] > 0:
                 try:
-                    self.rg.assignRobot2Target(self.design['fiberID'][i],
+                    self.rg.assignRobot2Target(self.design['robotID'][i],
                                                self.design['catalogID'][i])
                 except RuntimeError:
                     # this catches the fact that robot cant be
@@ -716,7 +730,7 @@ class FPSDesign(object):
 
             # grab all of the targets removed due to collisions
             for i in self.rg.robotDict:
-                fiber_idx = np.where(self.design['fiberID'] == i)[0]
+                fiber_idx = np.where(self.design['robotID'] == i)[0]
                 if (self.rg.robotDict[i].assignedTargetID == -1 and
                    len(fiber_idx) > 0):
                     targ_remove = self.design['catalogID'][fiber_idx[0]]
@@ -862,8 +876,8 @@ class FPSDesign(object):
         self.valid_design['design_pk'] = self.design_pk
         self.valid_design['desmode_label'] = self.desmode_label
         self.valid_design['catalogID'] = np.zeros(500, dtype=np.int64) - 1
-        self.valid_design['fiberID'] = np.zeros(500, dtype=np.int64) - 1
-        # self.valid_design['wokHoleID'] = np.zeros(500, dtype=np.int64) - 1
+        self.valid_design['robotID'] = np.zeros(500, dtype=np.int64) - 1
+        self.valid_design['holeID'] = np.zeros(500, dtype='<U10')
         self.valid_design['obsWavelength'] = np.zeros(500, dtype='<U6')
         self.valid_design['priority'] = np.zeros(500, dtype=int) - 1
         self.valid_design['carton_pk'] = np.zeros(500, dtype=int) - 1
@@ -884,11 +898,11 @@ class FPSDesign(object):
             self.valid_design['catalogID'][i] = (self.rg.robotDict[rid]
                                                  .assignedTargetID)
             if self.valid_design['catalogID'][i] != -1:
-                self.valid_design['fiberID'][i] = rid
+                self.valid_design['robotID'][i] = rid
+                self.valid_design['holeID'][i] = self.holeID_mapping[rid - 1]
                 # is below necessary? i dont know if decollide ever reassigns
                 # or just removes
                 cond = eval("self.design['catalogID'] == self.valid_design['catalogID'][i]")
-                # self.valid_design['wokHoleID'][i] = self.design['wokHoleID'][cond][0]
                 self.valid_design['obsWavelength'][i] = self.design['obsWavelength'][cond][0]
                 self.valid_design['priority'][i] = self.design['priority'][cond][0]
                 self.valid_design['carton_pk'][i] = self.design['carton_pk'][cond][0]
@@ -1019,7 +1033,7 @@ class FPSDesign(object):
             exposure=exposure,
             desmode_label=self.desmode_label,
             catalogID=self.valid_design['catalogID'][self.valid_design['catalogID'] != -1],
-            fiberID=self.valid_design['fiberID'][self.valid_design['catalogID'] != -1],
+            robotID=self.valid_design['robotID'][self.valid_design['catalogID'] != -1],
             obsWavelength=self.valid_design['obsWavelength'][self.valid_design['catalogID'] != -1],
             carton=self.valid_design['carton_pk'][self.valid_design['catalogID'] != -1],
             observatory=self.observatory,

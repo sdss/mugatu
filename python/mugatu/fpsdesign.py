@@ -1001,7 +1001,8 @@ class FPSDesign(object):
                                    racen=self.racen,
                                    deccen=self.deccen,
                                    position_angle=self.position_angle,
-                                   observatory=self.observatory)
+                                   observatory=self.observatory,
+                                   slots_exposures=list(np.zeros((2, 24))))
 
         # create dictonary for unique carton pks
         cart_pks = {}

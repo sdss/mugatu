@@ -148,7 +148,11 @@ if __name__ == '__main__':
     # targetdb.Version = targetdb.Version()
     ver_inst = targetdb.Version.get(plan=plan)
 
-    for fieldid in fieldids:
+    for allo in rsAllocation1:
+        # get fieldid and slots_exposure
+        fieldid = allo["fieldid"]
+        slots_exposures = [[int(i), int(j)]
+                           for i, j in allo["slots_exposures"]]
         # now grab the assignment file for this field
         field_assigned_file = sdss_path.full('rsFieldAssignments',
                                              plan=plan,
@@ -171,7 +175,8 @@ if __name__ == '__main__':
                                    racen=head['RACEN'],
                                    deccen=head['DECCEN'],
                                    position_angle=head['PA'],
-                                   observatory=obs_inst)
+                                   observatory=obs_inst,
+                                   slots_exposures=slots_exposures)
 
         fieldid_inst = (targetdb.Field.select()
                                       .join(targetdb.Version)

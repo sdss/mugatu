@@ -14,7 +14,7 @@ from sdssdb.peewee.sdss5db import targetdb
 
 def make_design_field_targetdb(cadence, fieldid, plan,
                                racen, deccen, position_angle,
-                               observatory):
+                               observatory, slots_exposures):
     """
     Create a new field in targetdb. Will return warning
     if the field already exists in targetdb
@@ -85,6 +85,7 @@ def make_design_field_targetdb(cadence, fieldid, plan,
             racen=racen,
             deccen=deccen,
             position_angle=position_angle,
+            slots_exposures=slots_exposures,
             cadence=dbCadence,
             observatory=obspk,
             version=verpk)

@@ -194,9 +194,11 @@ if __name__ == '__main__':
             # index correctly based on n_exp
             if n_exp == 1:
                 roboIDs = design['robotID']
+                holeIDs = design['holeID']
                 desmode_label = desmode_labels[0]
             else:
                 roboIDs = design['robotID'][:, i]
+                holeIDs = design['holeID'][:, i]
                 desmode_label = desmode_labels[i]
             # write exposure to targetdb
             make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
@@ -205,7 +207,8 @@ if __name__ == '__main__':
                                              exposure=i,
                                              desmode_label=desmode_label,
                                              design_ids=design_inst['carton_to_target_pk'],
-                                             fiberID=roboIDs,
+                                             robotID=roboIDs,
+                                             holeID=holeIDs,
                                              obsWavelength=design_inst['fiberType'],
                                              carton=design_inst['carton'],
                                              observatory=obs_inst,

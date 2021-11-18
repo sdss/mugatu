@@ -95,7 +95,8 @@ def make_design_field_targetdb(cadence, fieldid, plan,
 
 def make_design_assignments_targetdb(targetdb_ver, plan,
                                      fieldid, exposure, desmode_label,
-                                     design_ids, fiberID, obsWavelength,
+                                     design_ids, robotID, holeID,
+                                     obsWavelength,
                                      carton, observatory, instr_pks=None,
                                      cart_pks=None, fiber_pks=None,
                                      idtype='catalogID'):
@@ -125,9 +126,12 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
     catalogID: np.array
         Array of catalogids for the design of length N
 
-    fiberID: np.array
-        Array of the fiberIDs (robotIDs in robostrategy)
+    robotID: np.array
+        Array of the robotIDs (robotIDs in robostrategy)
         for the design of length N
+
+    holeID: np.array
+        Array of holeIDs for the design of length N
 
     obsWavelength: np.array
         Array of obsWavelength for the design (choice of
@@ -208,21 +212,21 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
 
     # add the assignments for the design to the assignment database
     rows = []
-    for j in range(len(fiberID)):
+    for j in range(len(robotID)):
         row_dict = {}
 
         # right now calibrations are fake, so need to skip
-        if fiberID[j] != -1 and carton[j] != 'CALIBRATION':
+        if robotID[j] != -1 and carton[j] != 'CALIBRATION':
             # get the pk for the positioner_info
             # (where I assume the ID is just the
             # row # in the fits file)
 
             if fiber_pks is None:
                 this_pos_DB = (targetdb.Hole.get(
-                    (targetdb.Hole.holeid == fiberID[j]) &
+                    (targetdb.Hole.holeid == holeID[j]) &
                     (targetdb.Hole.observatory == obspk)).pk)
             else:
-                this_pos_DB = fiber_pks[fiberID[j]]
+                this_pos_DB = fiber_pks[robotID[j]]
 
             # get the instrument for fiber
             inst_assign = obsWavelength[j]

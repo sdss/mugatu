@@ -1034,6 +1034,7 @@ class FPSDesign(object):
             desmode_label=self.desmode_label,
             catalogID=self.valid_design['catalogID'][self.valid_design['catalogID'] != -1],
             robotID=self.valid_design['robotID'][self.valid_design['catalogID'] != -1],
+            holeID=self.valid_design['holeID'][self.valid_design['catalogID'] != -1],
             obsWavelength=self.valid_design['obsWavelength'][self.valid_design['catalogID'] != -1],
             carton=self.valid_design['carton_pk'][self.valid_design['catalogID'] != -1],
             observatory=self.observatory,

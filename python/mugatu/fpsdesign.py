@@ -28,7 +28,7 @@ except:
 
 from sdssdb.peewee.sdss5db.targetdb import (Design, Field, Observatory,
                                             Assignment, Instrument, Target,
-                                            Positioner, CartonToTarget, Carton,
+                                            Hole, CartonToTarget, Carton,
                                             Magnitude, Category)
 
 
@@ -212,17 +212,17 @@ class FPSDesign(object):
                 self.desmode_label = desmode_labels[exp - 1]
         else:
             design_field_db = (
-                Design.select(Design.pk,
+                Design.select(Design.design_id,
                               Design.design_mode_pk,
                               Field.racen,
                               Field.deccen,
                               Field.position_angle,
                               Observatory.label)
                       .join(Field,
-                            on=(Design.field == Field.pk))
+                            on=(Design.field_pk == Field.pk))
                       .join(Observatory,
                             on=(Field.observatory == Observatory.pk))
-                      .where(Design.pk == self.design_pk))
+                      .where(Design.design_id == self.design_pk))
 
             self.racen = design_field_db[0].field.racen
             self.deccen = design_field_db[0].field.deccen
@@ -372,7 +372,7 @@ class FPSDesign(object):
         # I need to test this when v05 is up, im unsure about Joins
         design_targ_db = (
             Assignment.select(Target.catalogid,
-                              Positioner.id,
+                              Hole.holeid,
                               Instrument.label,
                               CartonToTarget.priority,
                               Target.ra,
@@ -404,12 +404,12 @@ class FPSDesign(object):
                       .switch(CartonToTarget)
                       .join(Carton)
                       .join(Category)
-                      .where(Assignment.design_pk == self.design_pk))
+                      .where(Assignment.design_id == self.design_pk))
 
         for d in design_targ_db.objects():
             # assign to index that corresponds to fiber assignment
             # index should match length of arrays
-            pos_id = d.id
+            pos_id = d.holeid
             if self.idtype == 'carton_to_target':
                 self.design['catalogID'][pos_id] = d.catalogid
             else:
@@ -1021,6 +1021,7 @@ class FPSDesign(object):
             fiberID=self.valid_design['fiberID'][self.valid_design['catalogID'] != -1],
             obsWavelength=self.valid_design['obsWavelength'][self.valid_design['catalogID'] != -1],
             carton=self.valid_design['carton_pk'][self.valid_design['catalogID'] != -1],
+            observatory=self.observatory,
             instr_pks=None,
             cart_pks=cart_pks,
             fiber_pks=None,

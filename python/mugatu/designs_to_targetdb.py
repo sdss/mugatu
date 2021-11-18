@@ -95,8 +95,9 @@ def make_design_field_targetdb(cadence, fieldid, plan,
 def make_design_assignments_targetdb(targetdb_ver, plan,
                                      fieldid, exposure, desmode_label,
                                      design_ids, fiberID, obsWavelength,
-                                     carton, instr_pks=None, cart_pks=None,
-                                     fiber_pks=None, idtype='catalogID'):
+                                     carton, observatory, instr_pks=None,
+                                     cart_pks=None, fiber_pks=None,
+                                     idtype='catalogID'):
     """
     Add assignments for a design to targetdb.
 
@@ -164,6 +165,13 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
     else:
         verpk = plan.pk
 
+    # get the observatory pk
+    if isinstance(observatory, str):
+        obsDB = targetdb.Observatory()
+        obspk = obsDB.get(label=observatory.upper()).pk
+    else:
+        obspk = observatory.pk
+
     # get the instrument pks
     if instr_pks is None:
         instr_pks = {}
@@ -209,8 +217,9 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
             # row # in the fits file)
 
             if fiber_pks is None:
-                this_pos_DB = (targetdb.Positioner.get(
-                    id=fiberID[j]).pk)
+                this_pos_DB = (targetdb.Hole.get(
+                    (targetdb.Hole.holeid == fiberID[j]) &
+                    (targetdb.Hole.observatory == obspk)).pk)
             else:
                 this_pos_DB = fiber_pks[fiberID[j]]
 
@@ -218,9 +227,9 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
             inst_assign = obsWavelength[j]
 
             # add db row info to dic
-            row_dict['design'] = designDB.pk
+            row_dict['design'] = designDB.design_id
             row_dict['instrument'] = instr_pks[inst_assign]
-            row_dict['positioner'] = this_pos_DB
+            row_dict['hole'] = this_pos_DB
             cart_pk = cart_pks[carton[j]]
             if idtype == 'catalogID':
                 row_dict['carton_to_target'] = (targetdb.CartonToTarget.select(

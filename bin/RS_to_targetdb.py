@@ -203,6 +203,7 @@ if __name__ == '__main__':
                                              fiberID=roboIDs,
                                              obsWavelength=design_inst['fiberType'],
                                              carton=design_inst['carton'],
+                                             observatory=obs_inst,
                                              instr_pks=instr_pks,
                                              cart_pks=cart_pks,
                                              fiber_pks=fiber_pks,

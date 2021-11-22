@@ -627,11 +627,15 @@ class DesignModeCheck(DesignMode):
         Dictonary of DesignMode parameters to be used as manual
         inputs to validate the design, rather than from targetdb.
 
-    mags: np.array
-        Array of magntiudes of shape (N,M), where N is the length
-        of mugatu.fpsdesign.FPSDesign.design and M=7. Columns of
-        length M in array correspond to magntidues: [g, r, i, bp,
-        gaia_g, rp, h].
+    db_query_results_boss: tuple
+        Database query results for BOSS bright neighbor check.
+        Tuple of (ras, decs, mags, catalogids). These tuples do
+        not apply to the safety check.
+
+    db_query_results_apogee: tuple
+        Database query results for APOGEE bright neighbor check.
+        Tuple of (ras, decs, mags, catalogids). These tuples do
+        not apply to the safety check.
 
     Attributes
     ----------
@@ -711,7 +715,9 @@ class DesignModeCheck(DesignMode):
     """
 
     def __init__(self, FPSDesign, desmode_label,
-                 desmode_manual=None):
+                 desmode_manual=None,
+                 db_query_results_boss=None,
+                 db_query_results_apogee=None):
         # grab needed info from FPSDesign object
         self.design = FPSDesign.design
         self.racen = FPSDesign.racen
@@ -721,6 +727,8 @@ class DesignModeCheck(DesignMode):
         self.obsTime = FPSDesign.obsTime
         self.rg = FPSDesign.rg
         self.desmode_label = desmode_label
+        self.db_query_results_boss = db_query_results_boss
+        self.db_query_results_apogee = db_query_results_apogee
 
         # grab the design mode params
         if desmode_manual is None:
@@ -1145,7 +1153,15 @@ class DesignModeCheck(DesignMode):
         else:
             # grab h 2mass mag for limit
             mag_lim = self.bright_limit_targets['APOGEE'][6][0]
-        if db_query is None:
+        if (self.db_query_results_boss is not None and
+           instrument == 'BOSS' and
+           check_type == 'designmode'):
+            db_query = self.db_query_results_boss
+        elif (self.db_query_results_apogee is not None and
+           instrument == 'APOGEE' and
+           check_type == 'designmode'):
+            db_query = self.db_query_results_apogee
+        elif db_query is None:
             db_query = build_brigh_neigh_query(check_type, instrument,
                                                mag_lim, self.racen,
                                                self.deccen)

@@ -740,12 +740,15 @@ class FPSDesign(object):
             self.design_errors['no_collisions'] = True
         return
 
-    def designmode_validate(self):
+    def designmode_validate(self, db_query_results_boss,
+                            db_query_results_apogee):
         """
         Check all designmode parameters for a design
         """
         mode = DesignModeCheck(FPSDesign=self,
-                               desmode_label=self.desmode_label)
+                               desmode_label=self.desmode_label,
+                               db_query_results_boss=db_query_results_boss,
+                               db_query_results_apogee=db_query_results_apogee)
         mode.design_mode_check_all(verbose=False)
         self.design_errors['min_skies_boss'] = mode.n_skies_min_check['BOSS']
         if self.design_errors['min_skies_boss'] is False:
@@ -921,7 +924,9 @@ class FPSDesign(object):
 
         return
 
-    def validate_design(self, designmode=True, safety=True):
+    def validate_design(self, designmode=True, safety=True,
+                        db_query_results_boss=None,
+                        db_query_results_apogee=None):
         """
         Validate design for deadlocks and collisions using Kaiju.
 
@@ -933,6 +938,14 @@ class FPSDesign(object):
         safety: bool
             Check for bright neighbors using carton of brightest Gaia/2MASS
             stars in targetdb.
+
+        db_query_results_boss: tuple
+            Database query results for BOSS bright neighbor check.
+            Tuple of (ras, decs, mags, catalogids)
+
+        db_query_results_apogee: tuple
+            Database query results for APOGEE bright neighbor check.
+            Tuple of (ras, decs, mags, catalogids)
         """
         # make dict to store design errors that may come up
         self.design_errors = {}
@@ -963,7 +976,8 @@ class FPSDesign(object):
         #     raise MugatuError(message='Kaiju pathGen failed')
 
         if designmode:
-            self.designmode_validate()
+            self.designmode_validate(db_query_results_boss,
+                                     db_query_results_apogee)
 
         # do the safety check for design
         if safety:

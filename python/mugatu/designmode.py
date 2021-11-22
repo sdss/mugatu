@@ -484,8 +484,9 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
 
     Outputs
     -------
-    db_query: peewee.query
-        Database query object.
+    db_query_results: tuple
+        Tuple of (ra, dec, mag, catalogid) for the
+        appropriate database query
     """
     if check_type == 'designmode':
         if instrument == 'BOSS':
@@ -495,6 +496,66 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
             ra_col_str = 'ra'
             dec_col_str = 'dec'
             mag_col = catalogdb.Gaia_DR2.phot_g_mean_mag
+            # run the query
+            db_query_gaia = (catalogdb.CatalogToTIC_v8.select(
+                ra_col,
+                dec_col,
+                mag_col,
+                catalogdb.CatalogToTIC_v8.catalogid)
+                .join(catalogdb.TIC_v8)
+                .join(catalogdb.Gaia_DR2)
+                .where((cat.cone_search(racen,
+                                        deccen,
+                                        1.5,
+                                        ra_col=ra_col_str,
+                                        dec_col=dec_col_str)) &
+                       (mag_col < mag_lim)))
+            rasg, decsg, magsg, catalogidsg = map(list, zip(*list(db_query_gaia.tuples())))
+            rasg = np.array(rasg)
+            decsg = np.array(decsg)
+            magsg = np.array(magsg)
+
+            cat = catalogdb.Tycho2
+            ra_col = catalogdb.Tycho2.radeg
+            dec_col = catalogdb.Tycho2.dedeg
+            ra_col_str = 'radeg'
+            dec_col_str = 'dedeg'
+            mag_colbt = catalogdb.Tycho2.btmag
+            mag_colvt = catalogdb.Tycho2.vtmag
+            # run the query
+            db_query_tych = (catalogdb.CatalogToTycho2.select(
+                ra_col,
+                dec_col,
+                mag_colbt,
+                mag_colvt,
+                catalogdb.CatalogToTycho2.catalogid)
+                .join(catalogdb.Tycho2)
+                .where((cat.cone_search(racen,
+                                        deccen,
+                                        1.5,
+                                        ra_col=ra_col_str,
+                                        dec_col=dec_col_str)) &
+                       (mag_colvt < mag_lim)))
+            rast, decst, magsbt, magsvt, catalogidst = map(list, zip(*list(db_query_tych.tuples())))
+            rast = np.array(rast)
+            decst = np.array(decst)
+            magsbt = np.array(magsbt)
+            magsvt = np.array(magsvt)
+            magsg_tych = np.zeros(len(magsbt))
+            magsg_tych[magsbt != None] = (magsvt[magsbt != None] - 0.02051 -
+                                         0.2706 * (magsbt[magsbt != None] -
+                                                   magsvt[magsbt != None]) +
+                                         0.03394 * (magsbt[magsbt != None] -
+                                                    magsvt[magsbt != None]) ** 2 -
+                                         0.05937 * (magsbt[magsbt != None] -
+                                                    magsvt[magsbt != None]) ** 3)
+            magsg_tych[magsbt == None] = magsvt[magsbt == None] - 1
+            ras = np.append(rasg, rast)
+            decs = np.append(decsg, decst)
+            mags = np.append(magsg, magsg_tych)
+            catalogids = catalogidsg + catalogidst
+            db_query_results = (ras, decs, mags, catalogids)
+
         else:
             cat = catalogdb.TwoMassPSC
             ra_col = catalogdb.TwoMassPSC.ra
@@ -502,21 +563,25 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
             ra_col_str = 'ra'
             dec_col_str = 'decl'
             mag_col = catalogdb.TwoMassPSC.h_m
-        # run the query
-        db_query = (cat.select(ra_col,
-                               dec_col,
-                               mag_col,
-                               catalogdb.Catalog.catalogid)
-                       .join(catalogdb.TIC_v8)
-                       .join(catalogdb.CatalogToTIC_v8)
-                       .join(catalogdb.Catalog)
-                       .join(catalogdb.Version)
-                       .where((cat.cone_search(racen,
-                                               deccen,
-                                               1.5,
-                                               ra_col=ra_col_str,
-                                               dec_col=dec_col_str)) &
-                              (mag_col < mag_lim)))
+            # run the query
+            db_query = (catalogdb.CatalogToTIC_v8.select(
+                ra_col,
+                dec_col,
+                mag_col,
+                catalogdb.CatalogToTIC_v8.catalogid)
+                .join(catalogdb.TIC_v8)
+                .join(cat)
+                .where((cat.cone_search(racen,
+                                        deccen,
+                                        1.5,
+                                        ra_col=ra_col_str,
+                                        dec_col=dec_col_str)) &
+                       (mag_col < mag_lim)))
+            ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
+            ras = np.array(ras)
+            decs = np.array(decs)
+            mags = np.array(mags)
+            db_query_results = (ras, decs, mags, catalogids)
     else:
         if instrument == 'BOSS':
             carts = ['ops_tycho2_brightneighbors',
@@ -539,7 +604,12 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                                                                deccen,
                                                                                1.5)) &
                                                   (targetdb.Carton.carton.in_(carts))))
-    return db_query
+        ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
+        ras = np.array(ras)
+        decs = np.array(decs)
+        mags = np.array(mags)
+        db_query_results = (ras, decs, mags, catalogids)
+    return db_query_results
 
 
 class DesignModeCheck(DesignMode):

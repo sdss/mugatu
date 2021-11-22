@@ -6,7 +6,7 @@ from astropy.io import fits
 import sdss_access.path
 
 from mugatu.fpsdesign import FPSDesign
-from mugatu.designmode import DesignModeCheck
+from mugatu.designmode import DesignModeCheck, build_brigh_neigh_query
 import robostrategy.obstime as obstime
 import coordio.time
 from sdssdb.peewee.sdss5db import targetdb
@@ -36,6 +36,45 @@ def bright_neighbor_test(file, exp, obsTime,
     print('Took %.6f secs to build design' % (time.time() - start))
     start = time.time()
     des.validate_design(safety=False)
+    print('Took %.6f secs to validate design' % (time.time() - start))
+
+    mode = DesignModeCheck(FPSDesign=des,
+                           desmode_label=designmode_label)
+
+    if 'bright' in mode.desmode_label:
+        # no r_sdss for bright so do g band
+        # this is hacky and needs to be fixed!!!
+        mag_lim = mode.bright_limit_targets['BOSS'][0][0]
+    else:
+        mag_lim = mode.bright_limit_targets['BOSS'][1][0]
+
+    db_query_results_boss = build_brigh_neigh_query('designmode', 'BOSS', mag_lim,
+                                                    des.racen, des.deccen)
+
+    if 'bright' in mode.desmode_label:
+        # no r_sdss for bright so do g band
+        # this is hacky and needs to be fixed!!!
+        mag_lim = mode.bright_limit_targets['APOGEE'][-1][0]
+    else:
+        mag_lim = mode.bright_limit_targets['APOGEE'][-1][0]
+
+    db_query_results_apogee = build_brigh_neigh_query('designmode', 'APOGEE', mag_lim,
+                                                    des.racen, des.deccen)
+
+    des = FPSDesign(design_pk=-1,
+                    obsTime=obsTime,
+                    design_file=file,
+                    manual_design=True,
+                    exp=exp,
+                    idtype='carton_to_target')
+
+    start = time.time()
+    des.build_design_manual()
+    print('Took %.6f secs to build design' % (time.time() - start))
+    start = time.time()
+    des.validate_design(safety=False,
+                        db_query_results_boss=db_query_results_boss,
+                        db_query_results_apogee=db_query_results_apogee)
     print('Took %.6f secs to validate design' % (time.time() - start))
 
     mode = DesignModeCheck(FPSDesign=des,
@@ -76,177 +115,35 @@ def bright_neighbor_test(file, exp, obsTime,
     else:
         mag_lim = mode.bright_limit_targets['BOSS'][1][0]
 
-    cat = catalogdb.Gaia_DR2
-    ra_col = catalogdb.Gaia_DR2.ra
-    dec_col = catalogdb.Gaia_DR2.dec
-    ra_col_str = 'ra'
-    dec_col_str = 'dec'
-    mag_col = catalogdb.Gaia_DR2.phot_g_mean_mag
-    db_query = (cat.select(ra_col,
-                           dec_col,
-                           mag_col,
-                           catalogdb.Catalog.catalogid)
-                   .join(catalogdb.TIC_v8)
-                   .join(catalogdb.CatalogToTIC_v8)
-                   .join(catalogdb.Catalog)
-                   .join(catalogdb.Version)
-                   .where((cat.cone_search(des.racen,
-                                           des.deccen,
-                                           1.5,
-                                           ra_col=ra_col_str,
-                                           dec_col=dec_col_str)) &
-                          (mag_col < mag_lim)))
-    db_query.execute()
+    db_query_results_boss = build_brigh_neigh_query('designmode', 'BOSS', mag_lim,
+                                                    des.racen, des.deccen)
+
     start = time.time()
+    mode = DesignModeCheck(FPSDesign=des,
+                           desmode_label=designmode_label,
+                           db_query_results_boss=db_query_results_boss)
     bright_check, hasFiber = mode.bright_neighbors(instrument='BOSS',
-                                                   check_type='designmode',
-                                                   db_query=db_query)
+                                                   check_type='designmode')
     print('Took %.6f secs to do checkk' % (time.time() - start))
     print('%d fibers fail desmode bright check for BOSS' % len(bright_check[~bright_check & hasFiber]))
     print('')
 
-    cat = catalogdb.TwoMassPSC
-    ra_col = catalogdb.TwoMassPSC.ra
-    dec_col = catalogdb.TwoMassPSC.decl
-    ra_col_str = 'ra'
-    dec_col_str = 'decl'
-    mag_col = catalogdb.TwoMassPSC.h_m
-    db_query = (cat.select(ra_col,
-                           dec_col,
-                           mag_col,
-                           catalogdb.Catalog.catalogid)
-                   .join(catalogdb.TIC_v8)
-                   .join(catalogdb.CatalogToTIC_v8)
-                   .join(catalogdb.Catalog)
-                   .join(catalogdb.Version)
-                   .where((cat.cone_search(des.racen,
-                                           des.deccen,
-                                           1.5,
-                                           ra_col=ra_col_str,
-                                           dec_col=dec_col_str)) &
-                          (mag_col < mag_lim)))
-    db_query.execute()
-    start = time.time()
-    bright_check, hasFiber = mode.bright_neighbors(instrument='APOGEE',
-                                                   check_type='designmode',
-                                                   db_query=db_query)
-    print('Took %.6f secs to do checkk' % (time.time() - start))
-    print('%d fibers fail desmode bright check for APOGEE' % len(bright_check[~bright_check & hasFiber]))
-    print('')
-
-    carts = ['ops_tycho2_brightneighbors',
-             'ops_gaia_brightneighbors']
-    mag_col = targetdb.Magnitude.gaia_g
-    db_query = (targetdb.CartonToTarget.select(targetdb.Target.ra,
-                                               targetdb.Target.dec,
-                                               mag_col,
-                                               targetdb.CartonToTarget.pk)
-                                       .join(targetdb.Target)
-                                       .switch(targetdb.CartonToTarget)
-                                       .join(targetdb.Magnitude)
-                                       .switch(targetdb.CartonToTarget)
-                                       .join(targetdb.Carton)
-                                       .where((targetdb.Target.cone_search(des.racen,
-                                                                           des.deccen,
-                                                                           1.5)) &
-                                              (targetdb.Carton.carton.in_(carts))))
-    db_query.execute()
-    start = time.time()
-    bright_check, hasFiber = mode.bright_neighbors(instrument='BOSS',
-                                                   check_type='safety',
-                                                   db_query=db_query)
-    print('Took %.6f secs to do checkk' % (time.time() - start))
-    print('%d fibers fail safety bright check for BOSS' % len(bright_check[~bright_check & hasFiber]))
-    print('')
-
-    carts = ['ops_2mass_psc_brightneighbors']
-    mag_col = targetdb.Magnitude.h
-    db_query = (targetdb.CartonToTarget.select(targetdb.Target.ra,
-                                               targetdb.Target.dec,
-                                               mag_col,
-                                               targetdb.CartonToTarget.pk)
-                                       .join(targetdb.Target)
-                                       .switch(targetdb.CartonToTarget)
-                                       .join(targetdb.Magnitude)
-                                       .switch(targetdb.CartonToTarget)
-                                       .join(targetdb.Carton)
-                                       .where((targetdb.Target.cone_search(des.racen,
-                                                                           des.deccen,
-                                                                           1.5)) &
-                                              (targetdb.Carton.carton.in_(carts))))
-    db_query.execute()
-    bright_check, hasFiber = mode.bright_neighbors(instrument='APOGEE',
-                                                   check_type='safety',
-                                                   db_query=db_query)
-    print('Took %.6f secs to do checkk' % (time.time() - start))
-    print('%d fibers fail safety bright check for APOGEE' % len(bright_check[~bright_check & hasFiber]))
-    print('')
-
-    print('')
-    print('Test with supplying tuples')
     if 'bright' in mode.desmode_label:
         # no r_sdss for bright so do g band
         # this is hacky and needs to be fixed!!!
-        mag_lim = mode.bright_limit_targets['BOSS'][0][0]
+        mag_lim = mode.bright_limit_targets['APOGEE'][-1][0]
     else:
-        mag_lim = mode.bright_limit_targets['BOSS'][1][0]
+        mag_lim = mode.bright_limit_targets['APOGEE'][-1][0]
 
-    cat = catalogdb.Gaia_DR2
-    ra_col = catalogdb.Gaia_DR2.ra
-    dec_col = catalogdb.Gaia_DR2.dec
-    ra_col_str = 'ra'
-    dec_col_str = 'dec'
-    mag_col = catalogdb.Gaia_DR2.phot_g_mean_mag
-    db_query = (cat.select(ra_col,
-                           dec_col,
-                           mag_col,
-                           catalogdb.Catalog.catalogid)
-                   .join(catalogdb.TIC_v8)
-                   .join(catalogdb.CatalogToTIC_v8)
-                   .join(catalogdb.Catalog)
-                   .join(catalogdb.Version)
-                   .where((cat.cone_search(des.racen,
-                                           des.deccen,
-                                           1.5,
-                                           ra_col=ra_col_str,
-                                           dec_col=dec_col_str)) &
-                          (mag_col < mag_lim)))
-    # db_query.execute()
-    ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
-    start = time.time()
-    bright_check, hasFiber = mode.bright_neighbors(instrument='BOSS',
-                                                   check_type='designmode',
-                                                   db_query=(ras, decs, mags, catalogids))
-    print('Took %.6f secs to do checkk' % (time.time() - start))
-    print('%d fibers fail desmode bright check for BOSS' % len(bright_check[~bright_check & hasFiber]))
-    print('')
+    db_query_results_apogee = build_brigh_neigh_query('designmode', 'APOGEE', mag_lim,
+                                                    des.racen, des.deccen)
 
-    cat = catalogdb.TwoMassPSC
-    ra_col = catalogdb.TwoMassPSC.ra
-    dec_col = catalogdb.TwoMassPSC.decl
-    ra_col_str = 'ra'
-    dec_col_str = 'decl'
-    mag_col = catalogdb.TwoMassPSC.h_m
-    db_query = (cat.select(ra_col,
-                           dec_col,
-                           mag_col,
-                           catalogdb.Catalog.catalogid)
-                   .join(catalogdb.TIC_v8)
-                   .join(catalogdb.CatalogToTIC_v8)
-                   .join(catalogdb.Catalog)
-                   .join(catalogdb.Version)
-                   .where((cat.cone_search(des.racen,
-                                           des.deccen,
-                                           1.5,
-                                           ra_col=ra_col_str,
-                                           dec_col=dec_col_str)) &
-                          (mag_col < mag_lim)))
-    # db_query.execute()
-    ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
     start = time.time()
+    mode = DesignModeCheck(FPSDesign=des,
+                           desmode_label=designmode_label,
+                           db_query_results_apogee=db_query_results_apogee)
     bright_check, hasFiber = mode.bright_neighbors(instrument='APOGEE',
-                                                   check_type='designmode',
-                                                   db_query=(ras, decs, mags, catalogids))
+                                                   check_type='designmode')
     print('Took %.6f secs to do checkk' % (time.time() - start))
     print('%d fibers fail desmode bright check for APOGEE' % len(bright_check[~bright_check & hasFiber]))
     print('')
@@ -267,12 +164,11 @@ def bright_neighbor_test(file, exp, obsTime,
                                                                            des.deccen,
                                                                            1.5)) &
                                               (targetdb.Carton.carton.in_(carts))))
-    # db_query.execute()
-    ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
+    db_query.execute()
     start = time.time()
     bright_check, hasFiber = mode.bright_neighbors(instrument='BOSS',
                                                    check_type='safety',
-                                                   db_query=(ras, decs, mags, catalogids))
+                                                   db_query=db_query)
     print('Took %.6f secs to do checkk' % (time.time() - start))
     print('%d fibers fail safety bright check for BOSS' % len(bright_check[~bright_check & hasFiber]))
     print('')
@@ -292,11 +188,10 @@ def bright_neighbor_test(file, exp, obsTime,
                                                                            des.deccen,
                                                                            1.5)) &
                                               (targetdb.Carton.carton.in_(carts))))
-    # db_query.execute()
-    ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
+    db_query.execute()
     bright_check, hasFiber = mode.bright_neighbors(instrument='APOGEE',
                                                    check_type='safety',
-                                                   db_query=(ras, decs, mags, catalogids))
+                                                   db_query=db_query)
     print('Took %.6f secs to do checkk' % (time.time() - start))
     print('%d fibers fail safety bright check for APOGEE' % len(bright_check[~bright_check & hasFiber]))
     print('')

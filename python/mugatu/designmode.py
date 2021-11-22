@@ -627,15 +627,15 @@ class DesignModeCheck(DesignMode):
         Dictonary of DesignMode parameters to be used as manual
         inputs to validate the design, rather than from targetdb.
 
-    db_query_results_boss: tuple
+    db_query_results_boss: dict
         Database query results for BOSS bright neighbor check.
-        Tuple of (ras, decs, mags, catalogids). These tuples do
-        not apply to the safety check.
+        Each index of dict is a tuple of (ras, decs, mags, catalogids)
+        with one index for designmode and the other safety.
 
-    db_query_results_apogee: tuple
+    db_query_results_apogee: dict
         Database query results for APOGEE bright neighbor check.
-        Tuple of (ras, decs, mags, catalogids). These tuples do
-        not apply to the safety check.
+        Each index of dict is a tuple of (ras, decs, mags, catalogids)
+        with one index for designmode and the other safety.
 
     Attributes
     ----------
@@ -1154,13 +1154,11 @@ class DesignModeCheck(DesignMode):
             # grab h 2mass mag for limit
             mag_lim = self.bright_limit_targets['APOGEE'][6][0]
         if (self.db_query_results_boss is not None and
-           instrument == 'BOSS' and
-           check_type == 'designmode'):
-            db_query = self.db_query_results_boss
+           instrument == 'BOSS'):
+            db_query = self.db_query_results_boss[check_type]
         elif (self.db_query_results_apogee is not None and
-           instrument == 'APOGEE' and
-           check_type == 'designmode'):
-            db_query = self.db_query_results_apogee
+           instrument == 'APOGEE'):
+            db_query = self.db_query_results_apogee[check_type]
         elif db_query is None:
             db_query = build_brigh_neigh_query(check_type, instrument,
                                                mag_lim, self.racen,

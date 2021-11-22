@@ -848,13 +848,16 @@ class FPSDesign(object):
             warnings.warn(flag, MugatuDesignModeWarning)
         return
 
-    def bright_neigh_safety(self):
+    def bright_neigh_safety(self, db_query_results_boss,
+                            db_query_results_apogee):
         """
         Perform safety version of bright neighbor check
         on the design
         """
         mode = DesignModeCheck(FPSDesign=self,
-                               desmode_label=self.desmode_label)
+                               desmode_label=self.desmode_label,
+                               db_query_results_boss=db_query_results_boss,
+                               db_query_results_apogee=db_query_results_apogee)
         bright_check_boss, hasFiber_boss = mode.bright_neighbors(instrument='BOSS',
                                                                  check_type='safety')
         bright_check_apogee, hasFiber_apogee = mode.bright_neighbors(instrument='APOGEE',
@@ -939,13 +942,15 @@ class FPSDesign(object):
             Check for bright neighbors using carton of brightest Gaia/2MASS
             stars in targetdb.
 
-        db_query_results_boss: tuple
+        db_query_results_boss: dict
             Database query results for BOSS bright neighbor check.
-            Tuple of (ras, decs, mags, catalogids)
+            Each index of dict is a tuple of (ras, decs, mags, catalogids)
+            with one index for designmode and the other safety.
 
-        db_query_results_apogee: tuple
+        db_query_results_apogee: dict
             Database query results for APOGEE bright neighbor check.
-            Tuple of (ras, decs, mags, catalogids)
+            Each index of dict is a tuple of (ras, decs, mags, catalogids)
+            with one index for designmode and the other safety.
         """
         # make dict to store design errors that may come up
         self.design_errors = {}
@@ -981,7 +986,8 @@ class FPSDesign(object):
 
         # do the safety check for design
         if safety:
-            self.bright_neigh_safety()
+            self.bright_neigh_safety(db_query_results_boss,
+                                     db_query_results_apogee)
 
         # I imagine that the above step would manipulate the robogrid based on
         # collisions and deadlocks, so the below would take these Kaiju results

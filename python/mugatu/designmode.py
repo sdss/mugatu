@@ -734,8 +734,7 @@ class DesignModeCheck(DesignMode):
         if desmode_manual is None:
             self.fromdb(label=self.desmode_label)
         else:
-            self.frommanual(label=self.desmode_label,
-                            desmode_manual=desmode_manual)
+            self.fromdict(designmode_dict=desmode_manual)
 
         # classify cartons as skies, standards or science
         self.carton_classes = {}

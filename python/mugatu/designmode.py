@@ -488,6 +488,9 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
         Tuple of (ra, dec, mag, catalogid) for the
         appropriate database query
     """
+    # return empty tuple if no mag limit
+    if mag_lim == -999.:
+        return ()
     if check_type == 'designmode':
         if instrument == 'BOSS':
             cat = catalogdb.Gaia_DR2

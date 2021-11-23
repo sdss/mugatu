@@ -145,9 +145,10 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
         Optional dictonary with the isntrument pks from
         targetdb
 
-    cart_pks: dict
+    cart_pks: dict or array
         Optional dictonary with the possible carton pks
-        for the design
+        for the design. Optionally can be array of carton pks
+        same length as design entries
 
     fiber_pks: dict
         Optional dictonary with the fiber pks
@@ -236,7 +237,10 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
             row_dict['design'] = designDB.design_id
             row_dict['instrument'] = instr_pks[inst_assign]
             row_dict['hole'] = this_pos_DB
-            cart_pk = cart_pks[carton[j]]
+            if isinstance(cart_pks, dict):
+                cart_pk = cart_pks[carton[j]]
+            else:
+                cart_pk = cart_pks[j]
             if idtype == 'catalogID':
                 row_dict['carton_to_target'] = (targetdb.CartonToTarget.select(
                     targetdb.CartonToTarget.pk)

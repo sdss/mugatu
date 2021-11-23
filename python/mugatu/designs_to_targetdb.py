@@ -74,7 +74,8 @@ def make_design_field_targetdb(cadence, fieldid, plan,
     field_test = (targetdb.Field
                   .select()
                   .where((targetdb.Field.field_id == fieldid) &
-                         (targetdb.Field.version == verpk)))
+                         (targetdb.Field.version == verpk) &
+                         (targetdb.Field.cadence == dbCadence)))
     # creates new field in database if it doesnt exist
     if field_test.exists():
         flag = 'Field already exists in targetdb'

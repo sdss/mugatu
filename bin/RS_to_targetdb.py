@@ -62,44 +62,44 @@ if __name__ == '__main__':
     for v in ver:
         targetdb_ver_pk[v.plan] = v.pk
 
-    # get the targetdb version pk for each carton from config file
-    targetdb_ver = {}
-    # also get carton pks here
-    cart_pks = {}
-    cartonDB = targetdb.Carton()
-    with open(config_file, 'r') as f:
-        read = False
-        for x in f:
-            # remove \n from line
-            if len(x) > 0:
-                x = x[:-1]
-            # stop reading at blank line
-            if x == '':
-                read = False
-            # read if previously reached cartons line
-            if read:
-                # skip commented lines
-                if x[0] != '#':
-                    cart_line = x.split(' = ')
-                    # mike formats cartons as 30A in output files
-                    if len(cart_line[0]) > 30:
-                        cart_key = cart_line[0][:30]
-                    else:
-                        cart_key = cart_line[0]
-                    # set targetdb ver for carton
-                    targetdb_ver[cart_key] = targetdb_ver_pk[cart_line[1]]
-                    # get the carton pk for this version
-                    try:
-                        cart_pks[cart_key] = (targetdb.Carton.select()
-                                                             .where((targetdb.Carton.carton == cart_line[0]) &
-                                                                    (targetdb.Carton.version_pk == targetdb_ver[cart_key]))[0].pk)
-                    # skip if not carton in targetdb version specified
-                    # this is what RS does
-                    except IndexError:
-                        pass
-            # start reading lines if reach cartons
-            if x == '[Cartons]' or x == '[CartonsExtra]':
-                read = True
+    # # get the targetdb version pk for each carton from config file
+    # targetdb_ver = {}
+    # # also get carton pks here
+    # cart_pks = {}
+    # cartonDB = targetdb.Carton()
+    # with open(config_file, 'r') as f:
+    #     read = False
+    #     for x in f:
+    #         # remove \n from line
+    #         if len(x) > 0:
+    #             x = x[:-1]
+    #         # stop reading at blank line
+    #         if x == '':
+    #             read = False
+    #         # read if previously reached cartons line
+    #         if read:
+    #             # skip commented lines
+    #             if x[0] != '#':
+    #                 cart_line = x.split(' = ')
+    #                 # mike formats cartons as 30A in output files
+    #                 if len(cart_line[0]) > 30:
+    #                     cart_key = cart_line[0][:30]
+    #                 else:
+    #                     cart_key = cart_line[0]
+    #                 # set targetdb ver for carton
+    #                 targetdb_ver[cart_key] = targetdb_ver_pk[cart_line[1]]
+    #                 # get the carton pk for this version
+    #                 try:
+    #                     cart_pks[cart_key] = (targetdb.Carton.select()
+    #                                                          .where((targetdb.Carton.carton == cart_line[0]) &
+    #                                                                 (targetdb.Carton.version_pk == targetdb_ver[cart_key]))[0].pk)
+    #                 # skip if not carton in targetdb version specified
+    #                 # this is what RS does
+    #                 except IndexError:
+    #                     pass
+    #         # start reading lines if reach cartons
+    #         if x == '[Cartons]' or x == '[CartonsExtra]':
+    #             read = True
 
     # add new robostratgey version to targetDB if it doesnt exist
     try:
@@ -216,6 +216,6 @@ if __name__ == '__main__':
                                              carton=design_inst['carton'],
                                              observatory=obs_inst,
                                              instr_pks=instr_pks,
-                                             cart_pks=cart_pks,
+                                             cart_pks=design_inst['carton_pk'],
                                              fiber_pks=fiber_pks,
                                              idtype='carton_to_target')

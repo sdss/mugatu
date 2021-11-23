@@ -218,7 +218,7 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
         row_dict = {}
 
         # right now calibrations are fake, so need to skip
-        if robotID[j] != -1 and carton[j] != 'CALIBRATION':
+        if robotID[j] != -1:
             # get the pk for the positioner_info
             # (where I assume the ID is just the
             # row # in the fits file)

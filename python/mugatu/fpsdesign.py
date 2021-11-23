@@ -740,15 +740,17 @@ class FPSDesign(object):
             self.design_errors['no_collisions'] = True
         return
 
-    def designmode_validate(self, db_query_results_boss,
-                            db_query_results_apogee):
+    def designmode_validate(self, db_query_results_boss=None,
+                            db_query_results_apogee=None,
+                            desmode_manual=None):
         """
         Check all designmode parameters for a design
         """
         mode = DesignModeCheck(FPSDesign=self,
                                desmode_label=self.desmode_label,
                                db_query_results_boss=db_query_results_boss,
-                               db_query_results_apogee=db_query_results_apogee)
+                               db_query_results_apogee=db_query_results_apogee,
+                               desmode_manual=desmode_manual)
         mode.design_mode_check_all(verbose=False)
         self.design_errors['min_skies_boss'] = mode.n_skies_min_check['BOSS']
         if self.design_errors['min_skies_boss'] is False:
@@ -848,8 +850,9 @@ class FPSDesign(object):
             warnings.warn(flag, MugatuDesignModeWarning)
         return
 
-    def bright_neigh_safety(self, db_query_results_boss,
-                            db_query_results_apogee):
+    def bright_neigh_safety(self, db_query_results_boss=None,
+                            db_query_results_apogee=None,
+                            desmode_manual=None):
         """
         Perform safety version of bright neighbor check
         on the design
@@ -857,7 +860,8 @@ class FPSDesign(object):
         mode = DesignModeCheck(FPSDesign=self,
                                desmode_label=self.desmode_label,
                                db_query_results_boss=db_query_results_boss,
-                               db_query_results_apogee=db_query_results_apogee)
+                               db_query_results_apogee=db_query_results_apogee,
+                               desmode_manual=desmode_manual)
         bright_check_boss, hasFiber_boss = mode.bright_neighbors(instrument='BOSS',
                                                                  check_type='safety')
         bright_check_apogee, hasFiber_apogee = mode.bright_neighbors(instrument='APOGEE',
@@ -929,7 +933,8 @@ class FPSDesign(object):
 
     def validate_design(self, designmode=True, safety=True,
                         db_query_results_boss=None,
-                        db_query_results_apogee=None):
+                        db_query_results_apogee=None,
+                        desmode_manual=None):
         """
         Validate design for deadlocks and collisions using Kaiju.
 
@@ -981,13 +986,15 @@ class FPSDesign(object):
         #     raise MugatuError(message='Kaiju pathGen failed')
 
         if designmode:
-            self.designmode_validate(db_query_results_boss,
-                                     db_query_results_apogee)
+            self.designmode_validate(db_query_results_boss=db_query_results_boss,
+                                     db_query_results_apogee=db_query_results_apogee,
+                                     desmode_manual=desmode_manual)
 
         # do the safety check for design
         if safety:
-            self.bright_neigh_safety(db_query_results_boss,
-                                     db_query_results_apogee)
+            self.bright_neigh_safety(db_query_results_boss=db_query_results_boss,
+                                     db_query_results_apogee=db_query_results_apogee,
+                                     desmode_manual=desmode_manual)
 
         # I imagine that the above step would manipulate the robogrid based on
         # collisions and deadlocks, so the below would take these Kaiju results

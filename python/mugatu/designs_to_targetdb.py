@@ -226,7 +226,7 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
                     (targetdb.Hole.holeid == holeID[j]) &
                     (targetdb.Hole.observatory == obspk)).pk)
             else:
-                this_pos_DB = fiber_pks[robotID[j]]
+                this_pos_DB = fiber_pks[holeID[j]]
 
             # get the instrument for fiber
             inst_assign = obsWavelength[j]

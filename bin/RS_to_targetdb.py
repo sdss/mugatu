@@ -130,11 +130,6 @@ if __name__ == '__main__':
     # targetdb.Field = targetdb.Field()
     # targetdb.Positioner = targetdb.Positioner()
 
-    # create dict of fiber pks
-    fiber_pks = {}
-    for fp in range(500):
-        fiber_pks[fp] = targetdb.Positioner.get(id=fp).pk
-
     # get the instrument pks
     instr_pks = {}
     instr_pks['BOSS'] = targetdb.Instrument.get(label='BOSS').pk
@@ -143,6 +138,14 @@ if __name__ == '__main__':
     # get observatory pk
     obsDB = targetdb.Observatory()
     obs_inst = obsDB.get(label=observatory.upper())
+
+    # create dict of fiber pks
+    fiber_pks = {}
+    holes = targetdb.Hole.select()
+                         .where(targetdb.Hole.observatory ==
+                                obs_inst.pk)
+    for hole in holes:
+        fiber_pks[hole.holeid] = hole.pk
 
     # get plan pk
     # targetdb.Version = targetdb.Version()

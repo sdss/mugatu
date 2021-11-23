@@ -22,7 +22,8 @@ from itertools import repeat
 
 
 def validate_design(design_file, exp, obsTime,
-                    db_query_results_boss, db_query_results_apogee):
+                    db_query_results_boss, db_query_results_apogee,
+                    desmode_manual):
     """
     Validate a design and record any errors or warnings
     from the validation
@@ -41,7 +42,8 @@ def validate_design(design_file, exp, obsTime,
     # try to validate design and catch any design errors
     try:
         des.validate_design(db_query_results_boss=db_query_results_boss,
-                            db_query_results_apogee=db_query_results_apogee)
+                            db_query_results_apogee=db_query_results_apogee,
+                            desmode_manual=desmode_manual.todict())
     except MugatuDesignError as e:
         if 'Kaiju' in str(e):
             decolide = False
@@ -111,13 +113,15 @@ def design_outputs_to_array(des, decolide,
 
 
 def valid_design_func(file, exp, obsTime, field_desmodes,
-                      db_results_boss, db_results_apogee):
+                      db_results_boss, db_results_apogee,
+                      desmodes):
     dm = field_desmodes[exp]
     des, decolide, bright_safety = validate_design(file,
                                                    exp + 1,
                                                    obsTime,
                                                    db_results_boss[dm],
-                                                   db_results_apogee[dm])
+                                                   db_results_apogee[dm],
+                                                   desmodes[dm])
     valid_arr_des = design_outputs_to_array(des, decolide,
                                             bright_safety)
     return valid_arr_des
@@ -240,54 +244,15 @@ if __name__ == '__main__':
                                                                       mag_lim,
                                                                       racen,
                                                                       deccen)
-        # if n_exp == 1:
-        #     exp = 0
-        #     dm = field_desmodes[exp]
-        #     des, decolide, bright_safety = validate_design(file,
-        #                                                    exp,
-        #                                                    obsTime,
-        #                                                    db_results_boss[dm],
-        #                                                    db_results_apogee[dm])
-        #     valid_arr_des = design_outputs_to_array(des, decolide,
-        #                                             bright_safety)
-        #     if 'valid_arr' in locals():
-        #         valid_arr = np.append(valid_arr,
-        #                               valid_arr_des)
-        #     else:
-        #         valid_arr = valid_arr_des
-        # else:
-        #     if n_exp > 4:
-        #         nPool = 4
-        #     else:
-        #         nPool = n_exp
-        #     with Pool(processes=nPool) as pool:
-        #         res = pool.starmap(valid_design_func, zip(repeat(file),
-        #                                                   range(n_exp),
-        #                                                   repeat(obsTime),
-        #                                                   repeat(field_desmodes),
-        #                                                   repeat(db_results_boss),
-        #                                                   repeat(db_results_apogee)))
-        #     for valid_arr_des in res:
-        #         if 'valid_arr' in locals():
-        #             valid_arr = np.append(valid_arr,
-        #                                   valid_arr_des)
-        #         else:
-        #             valid_arr = valid_arr_des
-
-        for exp in range(n_exp):
+        if n_exp == 1:
+            exp = 0
             dm = field_desmodes[exp]
-            if n_exp == 1:
-                des, decolide, bright_safety = validate_design(file,
-                                                               exp,
-                                                               obsTime,
-                                                               db_results_boss[dm],
-                                                               db_results_apogee[dm])
-            else:
-                des, decolide, bright_safety = validate_design(file,
-                                                               exp + 1,
-                                                               obsTime,
-                                                               db_results_boss[dm],
-                                                               db_results_apogee[dm])
+            des, decolide, bright_safety = validate_design(file,
+                                                           exp,
+                                                           obsTime,
+                                                           db_results_boss[dm],
+                                                           db_results_apogee[dm],
+                                                           desmodes[dm])
             valid_arr_des = design_outputs_to_array(des, decolide,
                                                     bright_safety)
             if 'valid_arr' in locals():
@@ -295,6 +260,49 @@ if __name__ == '__main__':
                                       valid_arr_des)
             else:
                 valid_arr = valid_arr_des
+        else:
+            if n_exp > 4:
+                nPool = 4
+            else:
+                nPool = n_exp
+            with Pool(processes=nPool) as pool:
+                res = pool.starmap(valid_design_func, zip(repeat(file),
+                                                          range(n_exp),
+                                                          repeat(obsTime),
+                                                          repeat(field_desmodes),
+                                                          repeat(db_results_boss),
+                                                          repeat(db_results_apogee),
+                                                          repeat(desmodes)))
+            for valid_arr_des in res:
+                if 'valid_arr' in locals():
+                    valid_arr = np.append(valid_arr,
+                                          valid_arr_des)
+                else:
+                    valid_arr = valid_arr_des
+
+        # for exp in range(n_exp):
+        #     dm = field_desmodes[exp]
+        #     if n_exp == 1:
+        #         des, decolide, bright_safety = validate_design(file,
+        #                                                        exp,
+        #                                                        obsTime,
+        #                                                        db_results_boss[dm],
+        #                                                        db_results_apogee[dm],
+        #                                                        desmodes[dm])
+        #     else:
+        #         des, decolide, bright_safety = validate_design(file,
+        #                                                        exp + 1,
+        #                                                        obsTime,
+        #                                                        db_results_boss[dm],
+        #                                                        db_results_apogee[dm],
+        #                                                        desmodes[dm])
+        #     valid_arr_des = design_outputs_to_array(des, decolide,
+        #                                             bright_safety)
+        #     if 'valid_arr' in locals():
+        #         valid_arr = np.append(valid_arr,
+        #                               valid_arr_des)
+        #     else:
+        #         valid_arr = valid_arr_des
     # write to fits file
     valid_arr = Table(valid_arr)
     valid_arr.write(file_save, format='fits')

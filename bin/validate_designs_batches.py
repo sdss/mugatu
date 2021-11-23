@@ -146,6 +146,9 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--observatory', dest='observatory',
                         type=str, help='apo or lco (for type=rs)',
                         choices=['apo', 'lco'], required=False)
+    parser.add_argument('-n', '--Ncores', dest='Ncores',
+                        type=int, help='number of cores to use. If Ncores=1, then not run in parallal.',
+                        default=1, nargs='?')
 
     args = parser.parse_args()
     vtype = args.type
@@ -153,6 +156,7 @@ if __name__ == '__main__':
     directory = args.dir
     plan = args.plan
     observatory = args.observatory
+    Ncores = args.Ncores
 
     if loc == 'local':
         targetdb.database.connect_from_parameters(user='sdss_user',
@@ -261,48 +265,41 @@ if __name__ == '__main__':
             else:
                 valid_arr = valid_arr_des
         else:
-            if n_exp > 4:
-                nPool = 4
-            else:
-                nPool = n_exp
-            with Pool(processes=nPool) as pool:
-                res = pool.starmap(valid_design_func, zip(repeat(file),
-                                                          range(n_exp),
-                                                          repeat(obsTime),
-                                                          repeat(field_desmodes),
-                                                          repeat(db_results_boss),
-                                                          repeat(db_results_apogee),
-                                                          repeat(desmodes)))
-            for valid_arr_des in res:
-                if 'valid_arr' in locals():
-                    valid_arr = np.append(valid_arr,
-                                          valid_arr_des)
+            if Ncores > 1:
+                if n_exp > Ncores:
+                    nPool = Ncores
                 else:
-                    valid_arr = valid_arr_des
-
-        # for exp in range(n_exp):
-        #     dm = field_desmodes[exp]
-        #     if n_exp == 1:
-        #         des, decolide, bright_safety = validate_design(file,
-        #                                                        exp,
-        #                                                        obsTime,
-        #                                                        db_results_boss[dm],
-        #                                                        db_results_apogee[dm],
-        #                                                        desmodes[dm])
-        #     else:
-        #         des, decolide, bright_safety = validate_design(file,
-        #                                                        exp + 1,
-        #                                                        obsTime,
-        #                                                        db_results_boss[dm],
-        #                                                        db_results_apogee[dm],
-        #                                                        desmodes[dm])
-        #     valid_arr_des = design_outputs_to_array(des, decolide,
-        #                                             bright_safety)
-        #     if 'valid_arr' in locals():
-        #         valid_arr = np.append(valid_arr,
-        #                               valid_arr_des)
-        #     else:
-        #         valid_arr = valid_arr_des
+                    nPool = n_exp
+                with Pool(processes=nPool) as pool:
+                    res = pool.starmap(valid_design_func, zip(repeat(file),
+                                                              range(n_exp),
+                                                              repeat(obsTime),
+                                                              repeat(field_desmodes),
+                                                              repeat(db_results_boss),
+                                                              repeat(db_results_apogee),
+                                                              repeat(desmodes)))
+                for valid_arr_des in res:
+                    if 'valid_arr' in locals():
+                        valid_arr = np.append(valid_arr,
+                                              valid_arr_des)
+                    else:
+                        valid_arr = valid_arr_des
+            else:
+                for exp in range(n_exp):
+                    dm = field_desmodes[exp]
+                    des, decolide, bright_safety = validate_design(file,
+                                                                   exp + 1,
+                                                                   obsTime,
+                                                                   db_results_boss[dm],
+                                                                   db_results_apogee[dm],
+                                                                   desmodes[dm])
+                    valid_arr_des = design_outputs_to_array(des, decolide,
+                                                            bright_safety)
+                    if 'valid_arr' in locals():
+                        valid_arr = np.append(valid_arr,
+                                              valid_arr_des)
+                    else:
+                        valid_arr = valid_arr_des
     # write to fits file
     valid_arr = Table(valid_arr)
     valid_arr.write(file_save, format='fits')

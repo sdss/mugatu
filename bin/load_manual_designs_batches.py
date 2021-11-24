@@ -48,6 +48,28 @@ if __name__ == '__main__':
     obs_inst['APO'] = obsDB.get(label='APO')
     obs_inst['LCO'] = obsDB.get(label='LCO')
 
+    # get the instrument pks
+    instr_pks = {}
+    instr_pks['BOSS'] = targetdb.Instrument.get(label='BOSS').pk
+    instr_pks['APOGEE'] = targetdb.Instrument.get(label='APOGEE').pk
+
+    # create dict of fiber pks
+    fiber_pks = {}
+    fiber_pks['APO'] = {}
+    fiber_pks['LCO'] = {}
+    # get APO holes
+    holes = (targetdb.Hole.select()
+                          .where(targetdb.Hole.observatory ==
+                                 obs_inst['APO'].pk))
+    for hole in holes:
+        fiber_pks['APO'][hole.holeid] = hole.pk
+    # get LCO holes
+    holes = (targetdb.Hole.select()
+                          .where(targetdb.Hole.observatory ==
+                                 obs_inst['LCO'].pk))
+    for hole in holes:
+        fiber_pks['LCO'][hole.holeid] = hole.pk
+
     # get plan pk
     ver_inst = targetdb.Version.get(plan='manual')
 
@@ -98,8 +120,7 @@ if __name__ == '__main__':
                 holeIDs = design['holeID'][:, i]
                 desmode_label = desmode_labels[i]
             # write exposure to targetdb
-            make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
-                                             plan=ver_inst,
+            make_design_assignments_targetdb(plan=ver_inst,
                                              fieldid=fieldid_inst,
                                              exposure=i,
                                              desmode_label=desmode_label,
@@ -109,9 +130,10 @@ if __name__ == '__main__':
                                              obsWavelength=design_inst['fiberType'],
                                              carton=design_inst['carton'],
                                              observatory=obs_inst[obs],
+                                             targetdb_ver=None,
                                              instr_pks=instr_pks,
-                                             cart_pks=cart_pks,
-                                             fiber_pks=fiber_pks,
+                                             cart_pks=None,
+                                             fiber_pks=fiber_pks[obs],
                                              idtype='carton_to_target')
         # add 1 for next fieldid
         fieldid += 1

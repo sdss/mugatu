@@ -1045,16 +1045,19 @@ class FPSDesign(object):
                                    observatory=self.observatory,
                                    slots_exposures=list(np.zeros((2, 24))))
 
-        # create dictonary for unique carton pks
-        cart_pks = {}
-        targetdb_ver = {}
-        for pk in np.unique(self.valid_design['carton_pk'][self.valid_design['catalogID'] != -1]):
-            cart_pks[pk] = pk
-            targetdb_ver[pk] = Carton.get(pk).version_pk
+        # create dictonary for unique carton pks for idtype is catalogID
+        if self.idtype == 'catalogID':
+            cart_pks = {}
+            targetdb_ver = {}
+            for pk in np.unique(self.valid_design['carton_pk'][self.valid_design['catalogID'] != -1]):
+                cart_pks[pk] = pk
+                targetdb_ver[pk] = Carton.get(pk).version_pk
+        else:
+            cart_pks = None
+            targetdb_ver = None
 
         # add the design to targetdb
         make_design_assignments_targetdb(
-            targetdb_ver=targetdb_ver,
             plan='manual',
             fieldid=fieldid,
             exposure=exposure,
@@ -1065,6 +1068,7 @@ class FPSDesign(object):
             obsWavelength=self.valid_design['obsWavelength'][self.valid_design['catalogID'] != -1],
             carton=self.valid_design['carton_pk'][self.valid_design['catalogID'] != -1],
             observatory=self.observatory,
+            targetdb_ver=targetdb_ver,
             instr_pks=None,
             cart_pks=cart_pks,
             fiber_pks=None,

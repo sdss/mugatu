@@ -142,19 +142,21 @@ def make_design_assignments_targetdb(plan, fieldid, exposure,
 
     targetdb_ver: dict
         Optional dictonary of pks for the targetdb version of each carton
-        used in this design. Only needed if idtype='catalogID'.
+        used in this design. Dict is indexed by carton names.
+        Only needed if idtype='catalogID'.
 
     instr_pks: dict
         Optional dictonary with the isntrument pks from
-        targetdb
+        targetdb. Dict is indexed by instrument names.
 
     cart_pks: dict or array
         Optional dictonary with the possible carton pks
-        for the design. Optionally can be array of carton pks
+        for the design. If dict, then indexed by carton name.
+        Optionally can be array of carton pks
         same length as design entries. Only needed if idtype='catalogID'.
 
     fiber_pks: dict
-        Optional dictonary with the fiber pks
+        Optional dictonary with the holeID pks. Dict is indexed by holeID.
 
     idtype: str
         Defines the id type used in defining the design_ids.

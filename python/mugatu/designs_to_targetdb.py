@@ -10,6 +10,7 @@ except:
     _database = False
 
 from sdssdb.peewee.sdss5db import targetdb
+from peewee import fn
 
 
 def make_design_field_targetdb(cadence, fieldid, plan,
@@ -255,3 +256,79 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
 
     # write all exposures for field to targetdb
     targetdb.Assignment.insert_many(rows).execute()
+
+
+class TargetdbFieldIDs(object):
+    """
+    Class to find available fieldids in targetdb
+
+    Parameters
+    ----------
+    fieldid: int or list
+        Single or multiple fieldids to check
+
+    fieldid_type: str
+        Which type of fields you are considering.
+        Either 'manual' for manual commissioning
+        fields or 'survey' for fields used in survey
+        operations.
+
+    version_plan: str
+        The targetdb.Version.plan for the fields you
+        want to consider.
+    """
+    def __init__(self, fieldid=None, fieldid_type=None,
+                 version_plan=None):
+        self.fieldid = fieldid
+        self.fieldid_type = fieldid_type
+        self.version_plan = version_plan
+
+    def find_next_available(self):
+        """
+        Find the next availble fieldid for the fieldid_type.
+        Optionally can be some version plan.
+        """
+        if self.fieldid_type == 'manual':
+            fieldid_bounds = [16000, 100000]
+        else:
+            fieldid_bounds = [100000, -999]
+        # find the minimum field_id to start with
+        if fieldid_bounds[1] == -999:
+            arg = (targetdb.Field.field_id >= fieldid_bounds[0])
+        else:
+            arg = ((targetdb.Field.field_id >= fieldid_bounds[0]) &
+                   (targetdb.Field.field_id < fieldid_bounds[1]))
+        if self.version_plan is not None:
+            arg = arg & (targetdb.Version.plan == self.version_plan)
+        field_start = (targetdb.Field.select(
+            fn.MAX(targetdb.Field.field_id).alias('min_fieldid'))
+            .join(targetdb.Version)
+            .where(arg))
+        fieldid = field_start[0].min_fieldid
+        # if no fieldids yet, start at min
+        if fieldid is None:
+            fieldid = fieldid_bounds[0]
+        else:
+            fieldid += 1
+        return fieldid
+
+    def check_availability(self):
+        """
+        check if fieldid(s) are currently available in
+        targetdb.
+        """
+        if isinstance(self.fieldid, int):
+            arg = (targetdb.Field.field_id == self.fieldid)
+        else:
+            arg = (targetdb.Field.field_id.in_(self.fieldid))
+        if self.version_plan is not None:
+            arg = arg & (targetdb.Version.plan == self.version_plan)
+        field = (targetdb.Field.select(
+            targetdb.Field.field_id)
+            .where(arg))
+        fieldids = [f[0] for f in field.tuples()]
+        if isinstance(self.fieldid, int):
+            field_exists = self.fieldid in fieldids
+        else:
+            field_exists = np.isin(self.fieldid, fieldids)
+        return field_exists

@@ -106,9 +106,9 @@ if __name__ == '__main__':
         verpk = targetdb.Version.get(plan=plan).pk
     except:
         targetdb.Version = targetdb.Version.create(plan=plan,
-                                            target_selection=False,
-                                            robostrategy=True,
-                                            tag="test")  # add test flag for now
+                                                   target_selection=False,
+                                                   robostrategy=True,
+                                                   tag="test")  # add test flag for now
 
         targetdb.Version.save()
 
@@ -141,9 +141,9 @@ if __name__ == '__main__':
 
     # create dict of fiber pks
     fiber_pks = {}
-    holes = targetdb.Hole.select()
-                         .where(targetdb.Hole.observatory ==
-                                obs_inst.pk)
+    holes = (targetdb.Hole.select()
+                          .where(targetdb.Hole.observatory ==
+                                 obs_inst.pk))
     for hole in holes:
         fiber_pks[hole.holeid] = hole.pk
 
@@ -204,8 +204,7 @@ if __name__ == '__main__':
                 holeIDs = design['holeID'][:, i]
                 desmode_label = desmode_labels[i]
             # write exposure to targetdb
-            make_design_assignments_targetdb(targetdb_ver=targetdb_ver,
-                                             plan=ver_inst,
+            make_design_assignments_targetdb(plan=ver_inst,
                                              fieldid=fieldid_inst,
                                              exposure=i,
                                              desmode_label=desmode_label,
@@ -215,6 +214,7 @@ if __name__ == '__main__':
                                              obsWavelength=design_inst['fiberType'],
                                              carton=design_inst['carton'],
                                              observatory=obs_inst,
+                                             targetdb_ver=None,
                                              instr_pks=instr_pks,
                                              cart_pks=design_inst['carton_pk'],
                                              fiber_pks=fiber_pks,

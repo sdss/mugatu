@@ -198,11 +198,9 @@ def make_design_assignments_targetdb(plan, fieldid, exposure,
 
     # get the fieldpk
     if isinstance(fieldid, int):
-        fieldDB = targetdb.Field()
         field = (targetdb.Field.select()
-                               .join(targetdb.Version)
                                .where((targetdb.Field.field_id == fieldid) &
-                                      (targetdb.Version.plan == plan)))
+                                      (targetdb.Field.version == verpk)))
         fieldpk = field[0].pk
     else:
         fieldpk = fieldid[0].pk

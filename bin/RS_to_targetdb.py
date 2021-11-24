@@ -33,10 +33,13 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--observatory', dest='observatory',
                         type=str, help='apo or lco',
                         choices=['apo', 'lco'], required=True)
+    parser.add_argument('-t', '--tag', dest='tag',
+                        type=str, help='tag for the plan', required=True)
 
     args = parser.parse_args()
     plan = args.plan
     observatory = args.observatory
+    tag = args.tag
 
     # COMMENT OUT FOR TEST
     # file with cadences for each field
@@ -108,7 +111,7 @@ if __name__ == '__main__':
         targetdb.Version = targetdb.Version.create(plan=plan,
                                                    target_selection=False,
                                                    robostrategy=True,
-                                                   tag="test")  # add test flag for now
+                                                   tag=tag)
 
         targetdb.Version.save()
 

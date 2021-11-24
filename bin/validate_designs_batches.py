@@ -32,8 +32,7 @@ def validate_design(design_file, exp, obsTime,
                     obsTime=obsTime,
                     design_file=design_file,
                     manual_design=True,
-                    exp=exp,
-                    idtype='catalogID')
+                    exp=exp)
     # set default
     decolide = True
     bright_safety = True

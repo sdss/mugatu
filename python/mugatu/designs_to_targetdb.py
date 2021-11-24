@@ -95,22 +95,19 @@ def make_design_field_targetdb(cadence, fieldid, plan,
         fieldDB.save()
 
 
-def make_design_assignments_targetdb(targetdb_ver, plan,
-                                     fieldid, exposure, desmode_label,
+def make_design_assignments_targetdb(plan, fieldid, exposure,
+                                     desmode_label,
                                      design_ids, robotID, holeID,
                                      obsWavelength,
-                                     carton, observatory, instr_pks=None,
+                                     carton, observatory, targetdb_ver=None,
+                                     instr_pks=None,
                                      cart_pks=None, fiber_pks=None,
-                                     idtype='catalogID'):
+                                     idtype='carton_to_target'):
     """
     Add assignments for a design to targetdb.
 
     Parameters
     ----------
-    targetdb_ver: dict
-        dictonary of pks for the targetdb version of each carton
-        used in this design
-
     plan: str or targetdb.Version instance
         Either robostratgegy plan as a str or a targetdb.Version.get
         instance for the plan that can be used to get the version pk
@@ -125,8 +122,9 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
     desmode_label: str
         DesignMode labe for the design.
 
-    catalogID: np.array
-        Array of catalogids for the design of length N
+    design_ids: np.array
+        Array of catalogids or carton_to_target_pks for the
+        design of length N
 
     robotID: np.array
         Array of the robotIDs (robotIDs in robostrategy)
@@ -135,12 +133,16 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
     holeID: np.array
         Array of holeIDs for the design of length N
 
+    carton: np.array
+        Array of cartons for the design of length N
+
     obsWavelength: np.array
         Array of obsWavelength for the design (choice of
         'BOSS' or 'APOGEE') for the design of legnth N
 
-    carton: np.array
-        Array of cartons for the design of length N
+    targetdb_ver: dict
+        Optional dictonary of pks for the targetdb version of each carton
+        used in this design. Only needed if idtype='catalogID'.
 
     instr_pks: dict
         Optional dictonary with the isntrument pks from
@@ -149,7 +151,7 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
     cart_pks: dict or array
         Optional dictonary with the possible carton pks
         for the design. Optionally can be array of carton pks
-        same length as design entries
+        same length as design entries. Only needed if idtype='catalogID'.
 
     fiber_pks: dict
         Optional dictonary with the fiber pks
@@ -162,11 +164,7 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
     if idtype != 'catalogID' and idtype != 'carton_to_target':
         raise MugatuError(message='idtype must be catalogID or carton_to_target')
 
-    # grab the targetdb tables
-    carton_to_targetDB = targetdb.CartonToTarget()
-    positionerDB = targetdb.Positioner()
-
-   # get the version pk based on the plan
+    # get the version pk based on the plan
     if isinstance(plan, str):
         versionDB = targetdb.Version()
         verpk = versionDB.get(plan=plan).pk
@@ -187,14 +185,16 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
         instr_pks['APOGEE'] = targetdb.Instrument.get(label='APOGEE').pk
 
     # grab all carton pks here
-    if cart_pks is None:
+    if cart_pks is None and idtype == 'catalogID':
         cart_pks = {}
         for cart in np.unique(carton):
             # skip calibration from now
             if cart != 'CALIBRATION':
                 cart_pks[cart] = (targetdb.Carton.select(targetdb.Carton.pk)
-                                                 .where((targetdb.Carton.carton == cart) &
-                                                        (targetdb.Carton.version_pk == targetdb_ver[cart]))[0].pk)
+                                                 .where((targetdb.Carton.carton ==
+                                                         cart) &
+                                                        (targetdb.Carton.version_pk ==
+                                                         targetdb_ver[cart]))[0].pk)
 
     # get the fieldpk
     if isinstance(fieldid, int):
@@ -209,7 +209,7 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
 
     designDB = targetdb.Design.create(field=fieldpk,
                                       exposure=exposure,
-                                      design_mode_pk=desmode_label)
+                                      design_mode=desmode_label)
     # save row
     designDB.save()
 
@@ -238,11 +238,11 @@ def make_design_assignments_targetdb(targetdb_ver, plan,
             row_dict['design'] = designDB.design_id
             row_dict['instrument'] = instr_pks[inst_assign]
             row_dict['hole'] = this_pos_DB
-            if isinstance(cart_pks, dict):
-                cart_pk = cart_pks[carton[j]]
-            else:
-                cart_pk = cart_pks[j]
             if idtype == 'catalogID':
+                if isinstance(cart_pks, dict):
+                    cart_pk = cart_pks[carton[j]]
+                else:
+                    cart_pk = cart_pks[j]
                 row_dict['carton_to_target'] = (targetdb.CartonToTarget.select(
                     targetdb.CartonToTarget.pk)
                     .join(targetdb.Target,

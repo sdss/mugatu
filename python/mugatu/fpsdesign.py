@@ -417,9 +417,9 @@ class FPSDesign(object):
             # index should match length of arrays
             pos_id = np.where(self.holeID_mapping == d.holeid)[0][0]
             if self.idtype == 'carton_to_target':
-                self.design['catalogID'][pos_id] = d.catalogid
-            else:
                 self.design['catalogID'][pos_id] = d.pk
+            else:
+                self.design['catalogID'][pos_id] = d.catalogid
 
             self.design['robotID'][pos_id] = pos_id + 1
             self.design['holeID'][pos_id] = d.holeid

@@ -102,7 +102,8 @@ def make_design_assignments_targetdb(plan, fieldid, exposure,
                                      carton, observatory, targetdb_ver=None,
                                      instr_pks=None,
                                      cart_pks=None, fiber_pks=None,
-                                     idtype='carton_to_target'):
+                                     idtype='carton_to_target',
+                                     return_design_id=False):
     """
     Add assignments for a design to targetdb.
 
@@ -161,6 +162,9 @@ def make_design_assignments_targetdb(plan, fieldid, exposure,
     idtype: str
         Defines the id type used in defining the design_ids.
         Must be 'catalogID' or 'carton_to_target'.
+
+    return_design_id: boolean
+        Optionally return the design_id for the new entry in the database.
     """
     # make sure idtype is catalogID or carton_to_target
     if idtype != 'catalogID' and idtype != 'carton_to_target':
@@ -256,6 +260,9 @@ def make_design_assignments_targetdb(plan, fieldid, exposure,
 
     # write all exposures for field to targetdb
     targetdb.Assignment.insert_many(rows).execute()
+    # return design_id if requested
+    if return_design_id:
+        return designDB.design_id
 
 
 class TargetdbFieldIDs(object):

@@ -5,6 +5,7 @@ import numpy as np
 import glob
 
 from astropy.io import fits
+from astropy.table import Table
 
 from sdssdb.peewee.sdss5db import targetdb
 from mugatu.designs_to_targetdb import (make_design_field_targetdb,
@@ -120,20 +121,44 @@ if __name__ == '__main__':
                 holeIDs = design['holeID'][:, i]
                 desmode_label = desmode_labels[i]
             # write exposure to targetdb
-            make_design_assignments_targetdb(plan=ver_inst,
-                                             fieldid=fieldid_inst,
-                                             exposure=i,
-                                             desmode_label=desmode_label,
-                                             design_ids=design_inst['carton_to_target_pk'],
-                                             robotID=roboIDs,
-                                             holeID=holeIDs,
-                                             obsWavelength=design_inst['fiberType'],
-                                             carton=design_inst['carton'],
-                                             observatory=obs_inst[obs],
-                                             targetdb_ver=None,
-                                             instr_pks=instr_pks,
-                                             cart_pks=None,
-                                             fiber_pks=fiber_pks[obs],
-                                             idtype='carton_to_target')
+            design_id = make_design_assignments_targetdb(plan=ver_inst,
+                                                         fieldid=fieldid_inst,
+                                                         exposure=i,
+                                                         desmode_label=desmode_label,
+                                                         design_ids=design_inst['carton_to_target_pk'],
+                                                         robotID=roboIDs,
+                                                         holeID=holeIDs,
+                                                         obsWavelength=design_inst['fiberType'],
+                                                         carton=design_inst['carton'],
+                                                         observatory=obs_inst[obs],
+                                                         targetdb_ver=None,
+                                                         instr_pks=instr_pks,
+                                                         cart_pks=None,
+                                                         fiber_pks=fiber_pks[obs],
+                                                         idtype='carton_to_target')
+            # create new entry in summary file
+            dtype = np.dtype([('file_name', '<U50'),
+                              ('exp', np.int32),
+                              ('racen', np.float64),
+                              ('deccen', np.float64),
+                              ('designmode', '<U15'),
+                              ('design_id', np.int32)])
+            save_arr0 = np.zeros(1, dtype=dtype)
+            save_arr0['file_name'][0] = os.path.split(file)[-1]
+            save_arr0['exp'][0] = i + 1
+            save_arr0['racen'][0] = head['RACEN']
+            save_arr0['deccen'][0] = head['DECCEN']
+            save_arr0['designmode'][0] = desmode_label
+            save_arr0['design_id'][0] = design_id
+            if 'save_arr' in locals():
+                save_arr = np.append(save_arr,
+                                     save_arr0)
+            else:
+                save_arr = save_arr0
         # add 1 for next fieldid
         fieldid += 1
+    # write to fits file
+    save_arr = Table(save_arr)
+    save_arr.write(directory +
+                   'design_ids_for_design_files.fits',
+                   format='fits')

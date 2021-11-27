@@ -135,7 +135,8 @@ if __name__ == '__main__':
                                                          instr_pks=instr_pks,
                                                          cart_pks=None,
                                                          fiber_pks=fiber_pks[obs],
-                                                         idtype='carton_to_target')
+                                                         idtype='carton_to_target',
+                                                         return_design_id=True)
             # create new entry in summary file
             dtype = np.dtype([('file_name', '<U50'),
                               ('exp', np.int32),

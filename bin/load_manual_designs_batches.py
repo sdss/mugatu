@@ -46,7 +46,8 @@ if __name__ == '__main__':
         files = [file for file in glob.glob(directory + '*.fits')]
     else:
         valid_files = fits.open(file_valid)[1].data
-        files = list(np.unique(valid_files['file_name']))
+        files = [directory + file
+                 for file in np.unique(valid_files['file_name'])]
 
     # find the minimum field_id to start with
     fieldid = (TargetdbFieldIDs(fieldid_type='manual',

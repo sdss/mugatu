@@ -111,7 +111,7 @@ if __name__ == '__main__':
         fieldid_inst = (targetdb.Field.select()
                                       .join(targetdb.Version)
                                       .where((targetdb.Field.field_id == fieldid) &
-                                             (targetdb.Version.plan == plan)))
+                                             (targetdb.Version.plan == 'manual')))
 
         # get number of exposures
         try:

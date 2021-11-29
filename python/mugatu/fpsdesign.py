@@ -8,6 +8,7 @@ import numpy as np
 import warnings
 from astropy.io import fits
 from astropy.time import Time
+from peewee import JOIN
 
 import kaiju
 import kaiju.robotGrid
@@ -406,7 +407,7 @@ class FPSDesign(object):
                       .join(CartonToTarget)
                       .join(Target)
                       .switch(CartonToTarget)
-                      .join(Magnitude)
+                      .join(Magnitude, JOIN.LEFT_OUTER)
                       .switch(CartonToTarget)
                       .join(Carton)
                       .join(Category)

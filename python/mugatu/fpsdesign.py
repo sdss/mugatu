@@ -216,7 +216,7 @@ class FPSDesign(object):
         else:
             design_field_db = (
                 Design.select(Design.design_id,
-                              Design.design_mode_pk,
+                              Design.design_mode,
                               Field.racen,
                               Field.deccen,
                               Field.position_angle,
@@ -227,11 +227,11 @@ class FPSDesign(object):
                             on=(Field.observatory == Observatory.pk))
                       .where(Design.design_id == self.design_pk))
 
-            self.racen = design_field_db[0].field.racen
-            self.deccen = design_field_db[0].field.deccen
-            self.position_angle = design_field_db[0].field.position_angle
-            self.observatory = design_field_db[0].field.observatory.label
-            self.desmode_label = design_field_db[0].design_mode_pk
+            self.racen = design_field_db.objects()[0].racen
+            self.deccen = design_field_db.objects()[0].deccen
+            self.position_angle = design_field_db.objects()[0].position_angle
+            self.observatory = design_field_db.objects()[0].label
+            self.desmode_label = design_field_db.objects()[0].design_mode
 
         # should these be catalogids or carton_to_target?
         self.idtype = idtype

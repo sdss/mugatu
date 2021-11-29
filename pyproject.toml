@@ -4,6 +4,10 @@ version = "1.0.0"
 description = "Package to read, write and validate FPS designs"
 authors = ["Ilija Medan"]
 license = "BSD 3-Clause License"
+homepage = "https://pypi.org/project/sdss-mugatu/"
+repository = "https://github.com/sdss/mugatu"
+documentation = "https://mugatu.readthedocs.io/en/latest/"
+readme = "README.md"
 packages = [
     { include = "mugatu", from = "python" }
 ]

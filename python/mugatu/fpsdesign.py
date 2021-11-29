@@ -231,7 +231,7 @@ class FPSDesign(object):
             self.deccen = design_field_db.objects()[0].deccen
             self.position_angle = design_field_db.objects()[0].position_angle
             self.observatory = design_field_db.objects()[0].label
-            self.desmode_label = design_field_db.objects()[0].design_mode
+            self.desmode_label = design_field_db.objects()[0].design_mode.label
 
         # should these be catalogids or carton_to_target?
         self.idtype = idtype

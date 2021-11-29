@@ -23,10 +23,15 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--dir', dest='dir',
                         type=str, help='directory with design files',
                         required=True)
+    parser.add_argument('-f', '--file_valid', dest='file_valid',
+                        type=str, help='Fits file with names of validated ' +
+                                       'designs to be ingested.',
+                        required=False)
 
     args = parser.parse_args()
     loc = args.loc
     directory = args.dir
+    file_valid = args.file_valid
 
     if loc == 'local':
         targetdb.database.connect_from_parameters(user='sdss',
@@ -37,7 +42,11 @@ if __name__ == '__main__':
                                                   host='operations.sdss.utah.edu',
                                                   port=5432)
     # get the files to ingest in the directory
-    files = [file for file in glob.glob(directory + '*.fits')]
+    if file_valid is None:
+        files = [file for file in glob.glob(directory + '*.fits')]
+    else:
+        valid_files = fits.open(file_valid)[1].data
+        files = list(np.unique(valid_files['file_name']))
 
     # find the minimum field_id to start with
     fieldid = (TargetdbFieldIDs(fieldid_type='manual',

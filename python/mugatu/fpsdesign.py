@@ -1043,7 +1043,7 @@ class FPSDesign(object):
                                    deccen=self.deccen,
                                    position_angle=self.position_angle,
                                    observatory=self.observatory,
-                                   slots_exposures=list(np.zeros((2, 24))))
+                                   slots_exposures=list(np.zeros((24, 2))))
 
         # create dictonary for unique carton pks for idtype is catalogID
         if self.idtype == 'catalogID':

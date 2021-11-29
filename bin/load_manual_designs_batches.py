@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     # add designs in the files
     for file in files:
-        slots_exposures = list(np.zeros((24, 2), dtype=int))
+        slots_exposures = None
 
         # get header with field info
         head = fits.open(file)[0].header

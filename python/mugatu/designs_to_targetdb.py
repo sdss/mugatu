@@ -271,9 +271,6 @@ class TargetdbFieldIDs(object):
 
     Parameters
     ----------
-    fieldid: int or list
-        Single or multiple fieldids to check
-
     fieldid_type: str
         Which type of fields you are considering.
         Either 'manual' for manual commissioning
@@ -284,9 +281,8 @@ class TargetdbFieldIDs(object):
         The targetdb.Version.plan for the fields you
         want to consider.
     """
-    def __init__(self, fieldid=None, fieldid_type=None,
+    def __init__(self, fieldid_type=None,
                  version_plan=None):
-        self.fieldid = fieldid
         self.fieldid_type = fieldid_type
         self.version_plan = version_plan
 
@@ -294,6 +290,11 @@ class TargetdbFieldIDs(object):
         """
         Find the next availble fieldid for the fieldid_type.
         Optionally can be some version plan.
+
+        Returns
+        -------
+        fieldid: int
+            Next available fieldid for the fieldid_type.
         """
         if self.fieldid_type == 'manual':
             fieldid_bounds = [16000, 100000]
@@ -319,23 +320,34 @@ class TargetdbFieldIDs(object):
             fieldid += 1
         return fieldid
 
-    def check_availability(self):
+    def check_availability(self, fieldid):
         """
         check if fieldid(s) are currently available in
         targetdb.
+
+        Parameters
+        ----------
+        fieldid: int or list
+            Single or multiple fieldids to check
+
+        Returns
+        -------
+        field_avail: bool or np.array
+            Single or array of booleans if the fieldid(s)
+            are available (True) or not (False).
         """
-        if isinstance(self.fieldid, int):
-            arg = (targetdb.Field.field_id == self.fieldid)
+        if isinstance(fieldid, int):
+            arg = (targetdb.Field.field_id == fieldid)
         else:
-            arg = (targetdb.Field.field_id.in_(self.fieldid))
+            arg = (targetdb.Field.field_id.in_(fieldid))
         if self.version_plan is not None:
             arg = arg & (targetdb.Version.plan == self.version_plan)
         field = (targetdb.Field.select(
             targetdb.Field.field_id)
             .where(arg))
         fieldids = [f[0] for f in field.tuples()]
-        if isinstance(self.fieldid, int):
-            field_exists = self.fieldid in fieldids
+        if isinstance(fieldid, int):
+            field_avail = fieldid not in fieldids
         else:
-            field_exists = np.isin(self.fieldid, fieldids)
-        return field_exists
+            field_avail = ~np.isin(fieldid, fieldids)
+        return field_avail

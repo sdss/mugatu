@@ -126,7 +126,8 @@ def valid_design_func(file, exp, obsTime, field_desmodes,
     return valid_arr_des
 
 
-sdss_path = sdss_access.path.Path(release='sdss5')
+sdss_path = sdss_access.path.Path(release='sdss5',
+                                  preserve_envvars=True)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -176,18 +177,19 @@ if __name__ == '__main__':
     else:
         files = []
 
-        allocate_file = sdss_path.full('rsAllocation', plan=plan,
+        allocate_file = sdss_path.full('rsAllocationFinal', plan=plan,
                                        observatory=observatory)
         if 'sas' in allocate_file:
             allocate_file = allocate_file[:32] + 'sdss50' + allocate_file[44:]
 
-        rsAllocation1 = fits.open(allocate_file)[1].data
+        # only grab unique fields for this
+        rsAllocation1 = np.unique(fits.open(allocate_file)[1].data)
 
         fieldids = rsAllocation1["fieldid"]
 
         for fieldid in fieldids:
             # now grab the assignment file for this field
-            field_assigned_file = sdss_path.full('rsFieldAssignments',
+            field_assigned_file = sdss_path.full('rsFieldAssignmentsFinal',
                                                  plan=plan,
                                                  observatory=observatory,
                                                  fieldid=fieldid)

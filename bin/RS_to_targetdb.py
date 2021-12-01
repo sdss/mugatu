@@ -7,7 +7,6 @@
 import sys
 import argparse
 import os
-import numpy as np
 import warnings
 
 from astropy.io import fits
@@ -18,7 +17,8 @@ from mugatu.designs_to_targetdb import (make_design_field_targetdb,
                                         make_design_assignments_targetdb)
 from mugatu.exceptions import MugatuWarning
 
-sdss_path = sdss_access.path.Path(release='sdss5')
+sdss_path = sdss_access.path.Path(release='sdss5',
+                                  preserve_envvars=True)
 
 if __name__ == '__main__':
 
@@ -65,7 +65,6 @@ if __name__ == '__main__':
     allocate_file = sdss_path.full('rsAllocationFinal', plan=plan,
                                    observatory=observatory)
     rsAllocation1 = fits.open(allocate_file)[1].data
-    fieldids = rsAllocation1["fieldid"]
 
     # get the instrument pks
     instr_pks = {}
@@ -93,7 +92,7 @@ if __name__ == '__main__':
         slots_exposures = [[int(i), int(j)]
                            for i, j in allo["slots_exposures"]]
         # now grab the assignment file for this field
-        field_assigned_file = sdss_path.full('rsFieldAssignments',
+        field_assigned_file = sdss_path.full('rsFieldAssignmentsFinal',
                                              plan=plan,
                                              observatory=observatory,
                                              fieldid=fieldid)
@@ -119,17 +118,17 @@ if __name__ == '__main__':
 
         fieldid_inst = (targetdb.Field.select()
                                       .join(targetdb.Version)
-                                      .where((targetdb.Field.field_id==fieldid) &
-                                             (targetdb.Version.plan==plan)))
+                                      .switch(targetdb.Field)
+                                      .join(targetdb.Cadence)
+                                      .where((targetdb.Field.field_id == fieldid) &
+                                             (targetdb.Version.plan == plan) &
+                                             (targetdb.Cadence.label == head['FCADENCE'])))
 
         # get number of exposures
-        try:
-            n_exp = len(design['robotID'][0, :])
-        except IndexError:
-            # some fields only have 1 design which is encoded as 1-D array apparently
-            n_exp = 1
+        n_exp = allo['nfilled']
 
-        for i in range(n_exp):
+        # iterate over exposures for this field entry
+        for i in range(allo['iexpst'], allo['iexpnd'] + 1):
             # index correctly based on n_exp
             if n_exp == 1:
                 roboIDs = design['robotID']

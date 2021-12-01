@@ -8,13 +8,15 @@ import sys
 import argparse
 import os
 import numpy as np
+import warnings
 
 from astropy.io import fits
 
 from sdssdb.peewee.sdss5db import targetdb
 import sdss_access.path
-from mugatu.designs_to_targetdb import make_design_field_targetdb, make_design_assignments_targetdb
-from mugatu.exceptions import MugatuError
+from mugatu.designs_to_targetdb import (make_design_field_targetdb,
+                                        make_design_assignments_targetdb)
+from mugatu.exceptions import MugatuWarning
 
 sdss_path = sdss_access.path.Path(release='sdss5')
 
@@ -41,73 +43,17 @@ if __name__ == '__main__':
     observatory = args.observatory
     tag = args.tag
 
-    # COMMENT OUT FOR TEST
-    # file with cadences for each field
-    allocate_file = sdss_path.full('rsAllocation', plan=plan,
-                                   observatory=observatory)
-
-    # get config file path
-    # dont think is sdss_path
-    stop = 0
-    for i in range(len(allocate_file)):
-        if allocate_file[i] == '/':
-            stop = i + 1
-    config_file = allocate_file[:stop] + 'robostrategy-' + plan + '.cfg'
-
     # connect to targetdb
     targetdb.database.connect_from_parameters(user='sdss',
                                               host='operations.sdss.utah.edu',
                                               port=5432)
 
-    # get targetdb version pk by plan
-    targetdb_ver_pk = {}
-    ver = targetdb.Version.select()
-    for v in ver:
-        targetdb_ver_pk[v.plan] = v.pk
-
-    # # get the targetdb version pk for each carton from config file
-    # targetdb_ver = {}
-    # # also get carton pks here
-    # cart_pks = {}
-    # cartonDB = targetdb.Carton()
-    # with open(config_file, 'r') as f:
-    #     read = False
-    #     for x in f:
-    #         # remove \n from line
-    #         if len(x) > 0:
-    #             x = x[:-1]
-    #         # stop reading at blank line
-    #         if x == '':
-    #             read = False
-    #         # read if previously reached cartons line
-    #         if read:
-    #             # skip commented lines
-    #             if x[0] != '#':
-    #                 cart_line = x.split(' = ')
-    #                 # mike formats cartons as 30A in output files
-    #                 if len(cart_line[0]) > 30:
-    #                     cart_key = cart_line[0][:30]
-    #                 else:
-    #                     cart_key = cart_line[0]
-    #                 # set targetdb ver for carton
-    #                 targetdb_ver[cart_key] = targetdb_ver_pk[cart_line[1]]
-    #                 # get the carton pk for this version
-    #                 try:
-    #                     cart_pks[cart_key] = (targetdb.Carton.select()
-    #                                                          .where((targetdb.Carton.carton == cart_line[0]) &
-    #                                                                 (targetdb.Carton.version_pk == targetdb_ver[cart_key]))[0].pk)
-    #                 # skip if not carton in targetdb version specified
-    #                 # this is what RS does
-    #                 except IndexError:
-    #                     pass
-    #         # start reading lines if reach cartons
-    #         if x == '[Cartons]' or x == '[CartonsExtra]':
-    #             read = True
-
     # add new robostratgey version to targetDB if it doesnt exist
-    try:
-        verpk = targetdb.Version.get(plan=plan).pk
-    except:
+    ver = targetdb.Version.select().where(targetdb.Version.plan == plan)
+    if ver.exists():
+        flag = 'Robostrategy plan already in targetdb'
+        warnings.warn(flag, MugatuWarning)
+    else:
         targetdb.Version = targetdb.Version.create(plan=plan,
                                                    target_selection=False,
                                                    robostrategy=True,
@@ -115,23 +61,11 @@ if __name__ == '__main__':
 
         targetdb.Version.save()
 
-    # COMMENT OUT FOR TEST
-    # data describing field (besides PA) stored here
+    # file with cadences for each field
+    allocate_file = sdss_path.full('rsAllocationFinal', plan=plan,
+                                   observatory=observatory)
     rsAllocation1 = fits.open(allocate_file)[1].data
-    # PAs are stored here
-    # rsAllocation3 = fitsio.read(allocate_file, ext=3)
-
-    # USING FOR TEST, CHANGE LATER
-    # fieldids = [4373, 4673]
     fieldids = rsAllocation1["fieldid"]
-
-    # need these databased for fks that will be stored in these tables
-    # cadenceDB = targetdb.Cadence()
-    # targetDB = targetdb.Target()
-    # carton_to_targetDB = targetdb.CartonToTarget()
-    # targetdb.Positioner = targetdb.Positioner()
-    # targetdb.Field = targetdb.Field()
-    # targetdb.Positioner = targetdb.Positioner()
 
     # get the instrument pks
     instr_pks = {}
@@ -151,7 +85,6 @@ if __name__ == '__main__':
         fiber_pks[hole.holeid] = hole.pk
 
     # get plan pk
-    # targetdb.Version = targetdb.Version()
     ver_inst = targetdb.Version.get(plan=plan)
 
     for allo in rsAllocation1:

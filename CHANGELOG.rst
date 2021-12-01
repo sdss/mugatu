@@ -6,7 +6,6 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
-* :release:`1.0.4 <2021-12-01>`
 * Specified mugatu version and run_on date in design table when ingesting new designs
 
 * :release:`1.0.3 <2021-11-29>`

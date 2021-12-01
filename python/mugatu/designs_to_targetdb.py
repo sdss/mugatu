@@ -1,5 +1,6 @@
 import warnings
 import numpy as np
+import datetime
 from mugatu.exceptions import MugatuError, MugatuWarning
 
 try:
@@ -11,6 +12,10 @@ except:
 
 from sdssdb.peewee.sdss5db import targetdb
 from peewee import fn
+import mugatu
+
+
+mugatu_version = mugatu.__version__
 
 
 def make_design_field_targetdb(cadence, fieldid, plan,
@@ -213,7 +218,9 @@ def make_design_assignments_targetdb(plan, fieldid, exposure,
 
     designDB = targetdb.Design.create(field=fieldpk,
                                       exposure=exposure,
-                                      design_mode=desmode_label)
+                                      design_mode=desmode_label,
+                                      mugatu_version=mugatu_version,
+                                      run_on=datetime.datetime.now)
     # save row
     designDB.save()
 

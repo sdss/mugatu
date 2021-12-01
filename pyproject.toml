@@ -22,6 +22,7 @@ sdss-coordio = "1.0.0"
 scipy = "^1.6.0"
 jupyter = "^1.0.0"
 ortools = "9.1.9490"
+DateTime = "^4.3"
 
 [tool.poetry.dev-dependencies]
 

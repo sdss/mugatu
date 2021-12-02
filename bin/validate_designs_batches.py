@@ -183,9 +183,9 @@ if __name__ == '__main__':
             allocate_file = allocate_file[:32] + 'sdss50' + allocate_file[44:]
 
         # only grab unique fields for this
-        rsAllocation1 = np.unique(fits.open(allocate_file)[1].data)
+        rsAllocation1 = fits.open(allocate_file)[1].data
 
-        fieldids = rsAllocation1["fieldid"]
+        fieldids = np.unique(rsAllocation1["fieldid"])
 
         for fieldid in fieldids:
             # now grab the assignment file for this field

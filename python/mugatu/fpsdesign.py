@@ -409,8 +409,8 @@ class FPSDesign(object):
                       .switch(CartonToTarget)
                       .join(Magnitude, JOIN.LEFT_OUTER)
                       .switch(CartonToTarget)
-                      .join(Carton)
-                      .join(Category)
+                      .join(Carton, JOIN.LEFT_OUTER)
+                      .join(Category, JOIN.LEFT_OUTER)
                       .where(Assignment.design_id == self.design_pk))
 
         for d in design_targ_db.objects():

@@ -6,7 +6,8 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
-* Specified mugatu version and run_on date in design table when ingesting new designs
+* Specified additional outer joins when querying design in targetdb.
+* Specified mugatu version and run_on date in design table when ingesting new designs.
 
 * :release:`1.0.3 <2021-11-29>`
 * Added some minor tweaks for database joins so designs are pulled from database completely.

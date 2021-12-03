@@ -1226,42 +1226,98 @@ class DesignModeCheck(DesignMode):
             each instrument.
         """
         self.n_skies_min_check = {}
-        self.n_skies_min_check['BOSS'] = self.skies_min(instrument='BOSS')
-        self.n_skies_min_check['APOGEE'] = self.skies_min(instrument='APOGEE')
+        result = self.skies_min(instrument='BOSS',
+                                return_metric=True)
+        self.n_skies_min_check['BOSS'] = result[0]
+        self.n_skies_min_check['BOSS_metric'] = result[1]
+        result = self.skies_min(instrument='APOGEE',
+                                return_metric=True)
+        self.n_skies_min_check['APOGEE'] = result[0]
+        self.n_skies_min_check['APOGEE_metric'] = result[1]
 
         self.min_skies_fovmetric_check = {}
-        self.min_skies_fovmetric_check['BOSS'] = self.skies_fov(instrument='BOSS')
-        self.min_skies_fovmetric_check['APOGEE'] = self.skies_fov(instrument='APOGEE')
+        result = self.skies_fov(instrument='BOSS',
+                                return_metric=True)
+        self.min_skies_fovmetric_check['BOSS'] = result[0]
+        self.min_skies_fovmetric_check['BOSS_metric'] = result[1]
+        result = self.skies_fov(instrument='APOGEE',
+                                return_metric=True)
+        self.min_skies_fovmetric_check['APOGEE'] = result[0]
+        self.min_skies_fovmetric_check['APOGEE_metric'] = result[1]
 
         self.n_stds_min_check = {}
-        self.n_stds_min_check['BOSS'] = self.stds_min(instrument='BOSS')
-        self.n_stds_min_check['APOGEE'] = self.stds_min(instrument='APOGEE')
+        result = self.stds_min(instrument='BOSS',
+                               return_metric=True)
+        self.n_stds_min_check['BOSS'] = result[0]
+        self.n_stds_min_check['BOSS_metric'] = result[1]
+        result = self.stds_min(instrument='APOGEE',
+                               return_metric=True)
+        self.n_stds_min_check['APOGEE'] = result[0]
+        self.n_stds_min_check['APOGEE_metric'] = result[1]
 
         self.min_stds_fovmetric_check = {}
-        self.min_stds_fovmetric_check['BOSS'] = self.stds_fov(instrument='BOSS')
-        self.min_stds_fovmetric_check['APOGEE'] = self.stds_fov(instrument='APOGEE')
+        result = self.stds_fov(instrument='BOSS',
+                               return_metric=True)
+        self.min_stds_fovmetric_check['BOSS'] = result[0]
+        self.min_stds_fovmetric_check['BOSS_metric'] = result[1]
+        result = self.stds_fov(instrument='APOGEE',
+                               return_metric=True)
+        self.min_stds_fovmetric_check['APOGEE'] = result[0]
+        self.min_stds_fovmetric_check['APOGEE_metric'] = result[1]
 
         self.stds_mags_check = {}
         self.stds_mags_check['BOSS'] = self.mag_limits(self.stds_mags['BOSS'],
                                                        'BOSS',
                                                        'std')
+        check_tot = len(self.stds_mags_check['BOSS'][0][self.stds_mags_check['BOSS'][0]])
+        design_tot = len(self.design['x'][(self.design['catalogID'] != -1) &
+                                          (np.isin(self.design['carton_pk'],
+                                                   self.carton_classes['std'])) &
+                                          (self.design['obsWavelength'] == 'BOSS')])
+        self.stds_mags_check['BOSS_metric'] = [check_tot, design_tot]
         self.stds_mags_check['APOGEE'] = self.mag_limits(self.stds_mags['APOGEE'],
                                                          'APOGEE',
                                                          'std')
+        check_tot = len(self.stds_mags_check['APOGEE'][0][self.stds_mags_check['APOGEE'][0]])
+        design_tot = len(self.design['x'][(self.design['catalogID'] != -1) &
+                                          (np.isin(self.design['carton_pk'],
+                                                   self.carton_classes['std'])) &
+                                          (self.design['obsWavelength'] == 'APOGEE')])
+        self.stds_mags_check['APOGEE_metric'] = [check_tot, design_tot]
 
         self.bright_limit_targets_check = {}
         self.bright_limit_targets_check['BOSS'] = self.mag_limits(self.bright_limit_targets['BOSS'],
                                                                   'BOSS',
                                                                   'science')
+        check_tot = len(self.bright_limit_targets_check['BOSS'][0][self.bright_limit_targets_check['BOSS'][0]])
+        design_tot = len(self.design['x'][(self.design['catalogID'] != -1) &
+                                          (np.isin(self.design['carton_pk'],
+                                                   self.carton_classes['science'])) &
+                                          (self.design['obsWavelength'] == 'BOSS')])
+        self.bright_limit_targets_check['BOSS_metric'] = [check_tot, design_tot]
         self.bright_limit_targets_check['APOGEE'] = self.mag_limits(self.bright_limit_targets['APOGEE'],
                                                                     'APOGEE',
                                                                     'science')
+        check_tot = len(self.bright_limit_targets_check['APOGEE'][0][self.bright_limit_targets_check['APOGEE'][0]])
+        design_tot = len(self.design['x'][(self.design['catalogID'] != -1) &
+                                          (np.isin(self.design['carton_pk'],
+                                                   self.carton_classes['science'])) &
+                                          (self.design['obsWavelength'] == 'APOGEE')])
+        self.bright_limit_targets_check['APOGEE_metric'] = [check_tot, design_tot]
 
         self.bright_neighbor_check = {}
         self.bright_neighbor_check['BOSS'] = self.bright_neighbors(instrument='BOSS',
                                                                    check_type='designmode')
+        check_tot = len(self.bright_neighbor_check['BOSS'][0][~self.bright_neighbor_check['BOSS'][0] &
+                                                              self.bright_neighbor_check['BOSS'][1]])
+        design_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][1]])
+        self.bright_neighbor_check['BOSS_metric'] = [check_tot, design_tot]
         self.bright_neighbor_check['APOGEE'] = self.bright_neighbors(instrument='APOGEE',
                                                                      check_type='designmode')
+        check_tot = len(self.bright_neighbor_check['APOGEE'][0][~self.bright_neighbor_check['APOGEE'][0] &
+                                                                self.bright_neighbor_check['APOGEE'][1]])
+        design_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][1]])
+        self.bright_neighbor_check['APOGEE_metric'] = [check_tot, design_tot]
 
         if verbose:
             verbose_output = ''
@@ -1304,11 +1360,13 @@ class DesignModeCheck(DesignMode):
                                               (self.design['obsWavelength'] == 'APOGEE')])
             verbose_output += 'Magnitude Limit Targets (APOGEE): | %d out of %d\n' % (check_tot, design_tot)
 
-            check_tot = len(self.bright_neighbor_check['BOSS'][0][~self.bright_neighbor_check['BOSS'][0] & self.bright_neighbor_check['BOSS'][1]])
+            check_tot = len(self.bright_neighbor_check['BOSS'][0][~self.bright_neighbor_check['BOSS'][0] &
+                                                                  self.bright_neighbor_check['BOSS'][1]])
             design_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][1]])
             verbose_output += 'Bright Neighbor Check (BOSS):     | %d out of %d\n' % (check_tot, design_tot)
 
-            check_tot = len(self.bright_neighbor_check['APOGEE'][0][~self.bright_neighbor_check['APOGEE'][0] & self.bright_neighbor_check['APOGEE'][1]])
+            check_tot = len(self.bright_neighbor_check['APOGEE'][0][~self.bright_neighbor_check['APOGEE'][0] &
+                                                                    self.bright_neighbor_check['APOGEE'][1]])
             design_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][1]])
             verbose_output += 'Bright Neighbor Check (APOGEE):   | %d out of %d\n' % (check_tot, design_tot)
 

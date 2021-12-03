@@ -1308,13 +1308,13 @@ class DesignModeCheck(DesignMode):
         self.bright_neighbor_check = {}
         self.bright_neighbor_check['BOSS'] = self.bright_neighbors(instrument='BOSS',
                                                                    check_type='designmode')
-        check_tot = len(self.bright_neighbor_check['BOSS'][0][~self.bright_neighbor_check['BOSS'][0] &
+        check_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][0] &
                                                               self.bright_neighbor_check['BOSS'][1]])
         design_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][1]])
         self.bright_neighbor_check['BOSS_metric'] = [check_tot, design_tot]
         self.bright_neighbor_check['APOGEE'] = self.bright_neighbors(instrument='APOGEE',
                                                                      check_type='designmode')
-        check_tot = len(self.bright_neighbor_check['APOGEE'][0][~self.bright_neighbor_check['APOGEE'][0] &
+        check_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][0] &
                                                                 self.bright_neighbor_check['APOGEE'][1]])
         design_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][1]])
         self.bright_neighbor_check['APOGEE_metric'] = [check_tot, design_tot]
@@ -1360,12 +1360,12 @@ class DesignModeCheck(DesignMode):
                                               (self.design['obsWavelength'] == 'APOGEE')])
             verbose_output += 'Magnitude Limit Targets (APOGEE): | %d out of %d\n' % (check_tot, design_tot)
 
-            check_tot = len(self.bright_neighbor_check['BOSS'][0][~self.bright_neighbor_check['BOSS'][0] &
+            check_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][0] &
                                                                   self.bright_neighbor_check['BOSS'][1]])
             design_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][1]])
             verbose_output += 'Bright Neighbor Check (BOSS):     | %d out of %d\n' % (check_tot, design_tot)
 
-            check_tot = len(self.bright_neighbor_check['APOGEE'][0][~self.bright_neighbor_check['APOGEE'][0] &
+            check_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][0] &
                                                                     self.bright_neighbor_check['APOGEE'][1]])
             design_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][1]])
             verbose_output += 'Bright Neighbor Check (APOGEE):   | %d out of %d\n' % (check_tot, design_tot)

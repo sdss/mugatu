@@ -754,11 +754,17 @@ class FPSDesign(object):
                                desmode_manual=desmode_manual)
         mode.design_mode_check_all(verbose=False)
         self.design_errors['min_skies_boss'] = mode.n_skies_min_check['BOSS']
+        self.design_errors['min_skies_boss_metric'] = (mode
+                                                       .n_skies_min_check
+                                                       ['BOSS_metric'])
         if self.design_errors['min_skies_boss'] is False:
             flag = 'Design does not meet minimum BOSS skies for DesignMode'
             warnings.warn(flag, MugatuDesignModeWarning)
         self.design_errors['min_skies_apogee'] = (mode
                                                   .n_skies_min_check['APOGEE'])
+        self.design_errors['min_skies_apogee_metric'] = (mode
+                                                         .n_skies_min_check
+                                                         ['APOGEE_metric'])
         if self.design_errors['min_skies_apogee'] is False:
             flag = 'Design does not meet minimum APOGEE skies for DesignMode'
             warnings.warn(flag, MugatuDesignModeWarning)
@@ -766,6 +772,9 @@ class FPSDesign(object):
         self.design_errors['fov_skies_boss'] = (mode
                                                 .min_skies_fovmetric_check
                                                 ['BOSS'])
+        self.design_errors['fov_skies_boss_metric'] = (mode
+                                                       .min_skies_fovmetric_check
+                                                       ['BOSS_metric'])
         if self.design_errors['fov_skies_boss'] is False:
             flag = ('Design does not meet FOV criteria '
                     'for BOSS skies for DesignMode')
@@ -773,16 +782,25 @@ class FPSDesign(object):
         self.design_errors['fov_skies_apogee'] = (mode
                                                   .min_skies_fovmetric_check
                                                   ['APOGEE'])
+        self.design_errors['fov_skies_apogee_metric'] = (mode
+                                                         .min_skies_fovmetric_check
+                                                         ['APOGEE_metric'])
         if self.design_errors['fov_skies_apogee'] is False:
             flag = ('Design does not meet FOV criteria '
                     'for APOGEE skies for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
 
         self.design_errors['min_stds_boss'] = mode.n_stds_min_check['BOSS']
+        self.design_errors['min_stds_boss_metric'] = (mode
+                                                      .n_stds_min_check
+                                                      ['BOSS_metric'])
         if self.design_errors['min_stds_boss'] is False:
             flag = 'Design does not meet minimum BOSS standards for DesignMode'
             warnings.warn(flag, MugatuDesignModeWarning)
         self.design_errors['min_stds_apogee'] = mode.n_stds_min_check['APOGEE']
+        self.design_errors['min_stds_apogee_metric'] = (mode
+                                                        .n_stds_min_check
+                                                        ['APOGEE_metric'])
         if self.design_errors['min_stds_apogee'] is False:
             flag = ('Design does not meet minimum '
                     'APOGEE standards for DesignMode')
@@ -791,6 +809,9 @@ class FPSDesign(object):
         self.design_errors['fov_stds_boss'] = (mode
                                                .min_stds_fovmetric_check
                                                ['BOSS'])
+        self.design_errors['fov_stds_boss_metric'] = (mode
+                                                      .min_stds_fovmetric_check
+                                                      ['BOSS_metric'])
         if self.design_errors['fov_stds_boss'] is False:
             flag = ('Design does not meet FOV criteria '
                     'for BOSS standards for DesignMode')
@@ -798,6 +819,9 @@ class FPSDesign(object):
         self.design_errors['fov_stds_apogee'] = (mode
                                                  .min_stds_fovmetric_check
                                                  ['APOGEE'])
+        self.design_errors['fov_stds_apogee_metric'] = (mode
+                                                        .min_stds_fovmetric_check
+                                                        ['APOGEE_metric'])
         if self.design_errors['fov_stds_apogee'] is False:
             flag = ('Design does not meet FOV criteria '
                     'for APOGEE standards for DesignMode')
@@ -806,6 +830,7 @@ class FPSDesign(object):
         self.design_errors['stds_mag_boss'] = np.all(
             mode.stds_mags_check['BOSS'][0][(self.design['catalogID'] != -1) &
                                             (self.design['category'] == 'standard_boss')])
+        self.design_errors['stds_mag_boss_metric'] = mode.stds_mags_check['BOSS_metric']
         if self.design_errors['stds_mag_boss'] is False:
             flag = ('Design has BOSS standard '
                     'assignments too bright for DesignMode')
@@ -813,6 +838,7 @@ class FPSDesign(object):
         self.design_errors['stds_mag_apogee'] = np.all(
             mode.stds_mags_check['APOGEE'][0][(self.design['catalogID'] != -1) &
                                               (self.design['category'] == 'standard_apogee')])
+        self.design_errors['stds_mag_apogee_metric'] = mode.stds_mags_check['APOGEE_metric']
         if self.design_errors['stds_mag_apogee'] is False:
             flag = ('Design has APOGEE standard '
                     'assignments too bright for DesignMode')
@@ -822,6 +848,7 @@ class FPSDesign(object):
             mode.bright_limit_targets_check['BOSS'][0][(self.design['catalogID'] != -1) &
                                                        (self.design['category'] == 'science') &
                                                        (self.design['obsWavelength'] == 'BOSS')])
+        self.design_errors['sci_mag_boss_metric'] = mode.bright_limit_targets_check['BOSS_metric']
         if self.design_errors['sci_mag_boss'] is False:
             flag = ('Design has BOSS science assignments '
                     ' too bright for DesignMode')
@@ -831,6 +858,9 @@ class FPSDesign(object):
                                                          (self.design['category'] == 'science') &
                                                          (self.design['obsWavelength'] ==
                                                           'APOGEE')])
+        self.design_errors['sci_mag_apogee_metric'] = (mode
+                                                       .bright_limit_targets_check
+                                                       ['APOGEE_metric'])
         if self.design_errors['sci_mag_apogee'] is False:
             flag = ('Design has APOGEE science assignments '
                     'too bright for DesignMode')
@@ -838,6 +868,7 @@ class FPSDesign(object):
 
         self.design_errors['bright_neigh_boss'] = np.all(
             mode.bright_neighbor_check['BOSS'][0][mode.bright_neighbor_check['BOSS'][1]])
+        self.design_errors['bright_neigh_boss_metric'] = mode.bright_neighbor_check['BOSS_metric']
         if self.design_errors['bright_neigh_boss'] == False:
             flag = ('Design has BOSS fibers too near '
                     'bright source for DesignMode')
@@ -845,6 +876,9 @@ class FPSDesign(object):
 
         self.design_errors['bright_neigh_apogee'] = np.all(
             mode.bright_neighbor_check['APOGEE'][0][mode.bright_neighbor_check['APOGEE'][1]])
+        self.design_errors['bright_neigh_apogee_metric'] = (mode
+                                                            .bright_neighbor_check
+                                                            ['APOGEE_metric'])
         if self.design_errors['bright_neigh_apogee'] == False:
             flag = ('Design has APOGEE fibers too '
                     'near bright source for DesignMode')

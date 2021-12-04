@@ -159,6 +159,9 @@ def design_outputs_to_array(des, decolide,
         design_tot = len(bright_check_apogee[hasFiber_apogee])
         valid_arr['bright_safety_pass'][0] += check_tot
         valid_arr['bright_safety_total'][0] += design_tot
+    else:
+        valid_arr['bright_safety_pass'][0] = 500
+        valid_arr['bright_safety_total'][0] = 500
     # do assigned targets
     design_total = len(des.design['catalogID'][des.design['catalogID'] != -1])
     valid_arr['all_targets_assigned_pass'][0] = design_total - len(des.targets_unassigned)

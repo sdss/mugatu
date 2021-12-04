@@ -125,7 +125,7 @@ if __name__ == '__main__':
                                              (targetdb.Cadence.label == head['FCADENCE'])))
 
         # get number of exposures
-        n_exp = allo['nfilled']
+        n_exp = head['NEXP']
 
         # iterate over exposures for this field entry
         for i in range(allo['iexpst'], allo['iexpnd'] + 1):

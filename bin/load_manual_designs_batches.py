@@ -114,11 +114,7 @@ if __name__ == '__main__':
                                              (targetdb.Version.plan == 'manual')))
 
         # get number of exposures
-        try:
-            n_exp = len(design['robotID'][0, :])
-        except IndexError:
-            # some fields only have 1 design which is encoded as 1-D array apparently
-            n_exp = 1
+        n_exp = head['NEXP']
 
         for i in range(n_exp):
             # index correctly based on n_exp

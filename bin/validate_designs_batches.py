@@ -16,6 +16,7 @@ import coordio.time
 
 from mugatu.fpsdesign import FPSDesign
 from mugatu.exceptions import MugatuDesignError
+from mugatu.designmode import DesignModeCheck
 from mugatu.designmode import build_brigh_neigh_query, allDesignModes
 from multiprocessing import Pool
 from itertools import repeat
@@ -52,7 +53,10 @@ def validate_design(design_file, exp, obsTime,
 
 
 def design_outputs_to_array(des, decolide,
-                            bright_safety):
+                            bright_safety,
+                            db_query_results_boss,
+                            db_query_results_apogee,
+                            desmode_manual):
     """
     Output validation parameters as a structured array
     """
@@ -63,22 +67,48 @@ def design_outputs_to_array(des, decolide,
                       ('designmode', '<U15'),
                       ('decolide', bool),
                       ('bright_safety', bool),
+                      ('bright_safety_pass', np.int32),
+                      ('bright_safety_total', np.int32),
                       ('all_targets_assigned', bool),
+                      ('all_targets_assigned_pass', np.int32),
+                      ('all_targets_assigned_total', np.int32),
                       ('no_collisions', bool),
+                      ('no_collisions_pass', np.int32),
+                      ('no_collisions_total', np.int32),
                       ('boss_n_skies_min', bool),
+                      ('boss_n_skies_min_value', np.int32),
                       ('apogee_n_skies_min', bool),
+                      ('apogee_n_skies_min_value', np.int32),
                       ('boss_min_skies_fovmetric', bool),
+                      ('boss_min_skies_fovmetric_value', np.float64),
                       ('apogee_min_skies_fovmetric', bool),
+                      ('apogee_min_skies_fovmetric_value', np.float64),
                       ('boss_n_stds_min', bool),
+                      ('boss_n_stds_min_value', np.int32),
                       ('apogee_n_stds_min', bool),
+                      ('apogee_n_stds_min_value', np.int32),
                       ('boss_min_stds_fovmetric', bool),
+                      ('boss_min_stds_fovmetric_value', np.float64),
                       ('apogee_min_stds_fovmetric', bool),
+                      ('apogee_min_stds_fovmetric_value', np.float64),
                       ('boss_stds_mags', bool),
+                      ('boss_stds_mags_pass', np.int32),
+                      ('boss_stds_mags_total', np.int32),
                       ('apogee_stds_mags', bool),
+                      ('apogee_stds_mags_pass', np.int32),
+                      ('apogee_stds_mags_total', np.int32),
                       ('boss_bright_limit_targets', bool),
+                      ('boss_bright_limit_targets_pass', np.int32),
+                      ('boss_bright_limit_targets_total', np.int32),
                       ('apogee_bright_limit_targets', bool),
+                      ('apogee_bright_limit_targets_pass', np.int32),
+                      ('apogee_bright_limit_targets_total', np.int32),
                       ('boss_sky_neighbors_targets', bool),
-                      ('apogee_sky_neighbors_targets', bool)])
+                      ('boss_sky_neighbors_targets_pass', np.int32),
+                      ('boss_sky_neighbors_targets_total', np.int32),
+                      ('apogee_sky_neighbors_targets', bool),
+                      ('apogee_sky_neighbors_targets_pass', np.int32),
+                      ('apogee_sky_neighbors_targets_total', np.int32)])
     valid_arr = np.zeros(1, dtype=dtype)
     valid_arr['file_name'][0] = os.path.split(des.design_file)[-1]
     if des.exp == 0:
@@ -88,7 +118,7 @@ def design_outputs_to_array(des, decolide,
     valid_arr['racen'][0] = des.racen
     valid_arr['deccen'][0] = des.deccen
     valid_arr['designmode'][0] = des.desmode_label
-    valid_arr['decolide'][0] = des.desmode_label
+    valid_arr['decolide'][0] = decolide
     valid_arr['bright_safety'][0] = bright_safety
     # check the design warnings
     column_names = ['all_targets_assigned', 'no_collisions',
@@ -108,6 +138,55 @@ def design_outputs_to_array(des, decolide,
                       'bright_neigh_apogee']
     for c, k in zip(column_names, warnings_order):
         valid_arr[c][0] = des.design_errors[k]
+    # add in the metrics
+    if not valid_arr['bright_safety'][0]:
+        mode = DesignModeCheck(FPSDesign=des,
+                               desmode_label=des.desmode_label,
+                               db_query_results_boss=db_query_results_boss,
+                               db_query_results_apogee=db_query_results_apogee,
+                               desmode_manual=desmode_manual)
+        bright_check_boss, hasFiber_boss = mode.bright_neighbors(instrument='BOSS',
+                                                                 check_type='safety')
+        check_tot = len(bright_check_boss[bright_check_boss &
+                                          hasFiber_boss])
+        design_tot = len(bright_check_boss[hasFiber_boss])
+        valid_arr['bright_safety_pass'][0] = check_tot
+        valid_arr['bright_safety_total'][0] = design_tot
+        bright_check_apogee, hasFiber_apogee = mode.bright_neighbors(instrument='APOGEE',
+                                                                     check_type='safety')
+        check_tot = len(bright_check_apogee[bright_check_apogee &
+                                            hasFiber_apogee])
+        design_tot = len(bright_check_apogee[hasFiber_apogee])
+        valid_arr['bright_safety_pass'][0] += check_tot
+        valid_arr['bright_safety_total'][0] += design_tot
+    # do assigned targets
+    design_total = len(des.design['catalogID'][des.design['catalogID'] != -1])
+    valid_arr['all_targets_assigned_pass'][0] = design_total - len(des.targets_unassigned)
+    valid_arr['all_targets_assigned_total'][0] = design_total
+    # do collisions
+    valid_arr['no_collisions_pass'][0] = design_total - len(des.targets_collided)
+    valid_arr['no_collisions_total'][0] = design_total
+    # check the design warnings
+    column_names = ['boss_n_skies_min',
+                    'apogee_n_skies_min', 'boss_min_skies_fovmetric',
+                    'apogee_min_skies_fovmetric',
+                    'boss_n_stds_min', 'apogee_n_stds_min',
+                    'boss_min_stds_fovmetric', 'apogee_min_stds_fovmetric', 
+                    'boss_stds_mags', 'apogee_stds_mags',
+                    'boss_bright_limit_targets', 'apogee_bright_limit_targets',
+                    'boss_sky_neighbors_targets', 'apogee_sky_neighbors_targets']
+    warnings_order = ['min_skies_boss',
+                      'min_skies_apogee', 'fov_skies_boss', 'fov_skies_apogee',
+                      'min_stds_boss', 'min_stds_apogee', 'fov_stds_boss',
+                      'fov_stds_apogee', 'stds_mag_boss', 'stds_mag_apogee',
+                      'sci_mag_boss', 'sci_mag_apogee', 'bright_neigh_boss',
+                      'bright_neigh_apogee']
+    for c, k in zip(column_names, warnings_order):
+        if isinstance(des.design_errors[k + '_metric'], list):
+            valid_arr[c + '_pass'][0] = des.design_errors[k + '_metric'][0]
+            valid_arr[c + '_total'][0] = des.design_errors[k + '_metric'][1]
+        else:
+            valid_arr[c + 'value'][0] = des.design_errors[k + '_metric']
     return valid_arr
 
 
@@ -122,7 +201,10 @@ def valid_design_func(file, exp, obsTime, field_desmodes,
                                                    db_results_apogee[dm],
                                                    desmodes[dm])
     valid_arr_des = design_outputs_to_array(des, decolide,
-                                            bright_safety)
+                                            bright_safety,
+                                            db_results_boss[dm],
+                                            db_results_apogee[dm],
+                                            desmodes[dm])
     return valid_arr_des
 
 
@@ -259,7 +341,10 @@ if __name__ == '__main__':
                                                            db_results_apogee[dm],
                                                            desmodes[dm])
             valid_arr_des = design_outputs_to_array(des, decolide,
-                                                    bright_safety)
+                                                    bright_safety,
+                                                    db_results_boss[dm],
+                                                    db_results_apogee[dm],
+                                                    desmodes[dm])
             if 'valid_arr' in locals():
                 valid_arr = np.append(valid_arr,
                                       valid_arr_des)
@@ -295,7 +380,10 @@ if __name__ == '__main__':
                                                                    db_results_apogee[dm],
                                                                    desmodes[dm])
                     valid_arr_des = design_outputs_to_array(des, decolide,
-                                                            bright_safety)
+                                                            bright_safety,
+                                                            db_results_boss[dm],
+                                                            db_results_apogee[dm],
+                                                            desmodes[dm])
                     if 'valid_arr' in locals():
                         valid_arr = np.append(valid_arr,
                                               valid_arr_des)

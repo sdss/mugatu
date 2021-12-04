@@ -86,8 +86,6 @@ if __name__ == '__main__':
 
     # add designs in the files
     for file in files:
-        slots_exposures = None
-
         # get header with field info
         head = fits.open(file)[0].header
         obs = head['obs'].strip().upper()
@@ -97,6 +95,11 @@ if __name__ == '__main__':
         design = fits.open(file)[2].data
         # get list of designmodes
         desmode_labels = head['DESMODE'].split(' ')
+
+        lst = int(head['RACEN'] // 15)
+
+        slots_exposures = [[0, 0] for i in range(24)]
+        slots_exposures[lst][0] = int(np.sum(head['NEXP']))
 
         # use mugatu function to create field in targetdb
         make_design_field_targetdb(cadence=head['FCADENCE'],

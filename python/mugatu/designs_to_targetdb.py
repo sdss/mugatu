@@ -302,6 +302,8 @@ class TargetdbFieldIDs(object):
         -------
         fieldid: int
             Next available fieldid for the fieldid_type.
+            This accounts for any current gaps that may be
+            in range of fieldids.
         """
         if self.fieldid_type == 'manual':
             fieldid_bounds = [16000, 100000]
@@ -316,15 +318,17 @@ class TargetdbFieldIDs(object):
         if self.version_plan is not None:
             arg = arg & (targetdb.Version.plan == self.version_plan)
         field_start = (targetdb.Field.select(
-            fn.MAX(targetdb.Field.field_id).alias('min_fieldid'))
+            targetdb.Field.field_id)
             .join(targetdb.Version)
             .where(arg))
-        fieldid = field_start[0].min_fieldid
-        # if no fieldids yet, start at min
-        if fieldid is None:
-            fieldid = fieldid_bounds[0]
+        if len(field_start) > 0:
+            fieldids = [f.field_id for f in field_start]
+            for i in range(1, len(fieldids)):
+                if fieldids[i] != fieldids[i - 1] + 1:
+                    fieldid = fieldids[i - 1] + 1
+                    break
         else:
-            fieldid += 1
+            fieldid = fieldid_bounds[0]
         return fieldid
 
     def check_availability(self, fieldid):

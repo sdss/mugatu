@@ -50,8 +50,11 @@ if __name__ == '__main__':
                  for file in np.unique(valid_files['file_name'])]
 
     # find the minimum field_id to start with
-    fieldid = (TargetdbFieldIDs(fieldid_type='manual',
-                                version_plan='manual').find_next_available())
+    fieldids_avail = (TargetdbFieldIDs(fieldid_type='manual',
+                                       version_plan='manual')
+                      .check_availability(fieldid=list(range(16000, 100000))))
+    fieldids = np.array(range(16000, 100000), dtype=int)
+    fieldids = fieldids[fieldids_avail]
 
     # get observatory insts
     obsDB = targetdb.Observatory()
@@ -85,7 +88,7 @@ if __name__ == '__main__':
     ver_inst = targetdb.Version.get(plan='manual')
 
     # add designs in the files
-    for file in files:
+    for file, fieldid in zip(files, fieldids):
         # get header with field info
         head = fits.open(file)[0].header
         obs = head['obs'].strip().upper()
@@ -165,8 +168,6 @@ if __name__ == '__main__':
                                      save_arr0)
             else:
                 save_arr = save_arr0
-        # add 1 for next fieldid
-        fieldid += 1
     # write to fits file
     save_arr = Table(save_arr)
     save_arr.write(directory +

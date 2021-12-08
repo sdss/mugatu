@@ -112,9 +112,9 @@ def design_outputs_to_array(des, decolide,
     valid_arr = np.zeros(1, dtype=dtype)
     valid_arr['file_name'][0] = os.path.split(des.design_file)[-1]
     if des.exp == 0:
-        valid_arr['exp'][0] = des.exp + 1
-    else:
         valid_arr['exp'][0] = des.exp
+    else:
+        valid_arr['exp'][0] = des.exp - 1
     valid_arr['racen'][0] = des.racen
     valid_arr['deccen'][0] = des.deccen
     valid_arr['designmode'][0] = des.desmode_label

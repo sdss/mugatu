@@ -6,6 +6,8 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* :release:`1.0.4 <2021-12-08>`
+* In TargetdbFieldIDs class, account for gaps in fieldid when finding next available.
 * Add values for designmode metrics to FPSDesign object design_errors dictionary.
 * Specified additional outer joins when querying design in targetdb.
 * Specified mugatu version and run_on date in design table when ingesting new designs.

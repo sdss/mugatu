@@ -355,6 +355,7 @@ class TargetdbFieldIDs(object):
             arg = arg & (targetdb.Version.plan == self.version_plan)
         field = (targetdb.Field.select(
             targetdb.Field.field_id)
+            .join(targetdb.Version)
             .where(arg))
         fieldids = [f[0] for f in field.tuples()]
         if isinstance(fieldid, int):

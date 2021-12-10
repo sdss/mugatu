@@ -157,7 +157,7 @@ if __name__ == '__main__':
                               ('design_id', np.int32)])
             save_arr0 = np.zeros(1, dtype=dtype)
             save_arr0['file_name'][0] = os.path.split(file)[-1]
-            save_arr0['exp'][0] = i + 1
+            save_arr0['exp'][0] = i
             save_arr0['racen'][0] = head['RACEN']
             save_arr0['deccen'][0] = head['DECCEN']
             save_arr0['designmode'][0] = desmode_label

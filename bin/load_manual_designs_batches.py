@@ -50,8 +50,7 @@ if __name__ == '__main__':
                  for file in np.unique(valid_files['file_name'])]
 
     # find the minimum field_id to start with
-    fieldids_avail = (TargetdbFieldIDs(fieldid_type='manual',
-                                       version_plan='manual')
+    fieldids_avail = (TargetdbFieldIDs()
                       .check_availability(fieldid=list(range(16000, 100000))))
     fieldids = np.array(range(16000, 100000), dtype=int)
     fieldids = fieldids[fieldids_avail]

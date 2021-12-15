@@ -480,22 +480,43 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                 plt.clf()
 
 
-def write_designmode_table(designmode):
+def write_designmode_table(designmode,
+                           dmode=None):
     """
     Write an HTML table for the designmodes for this
     run.
     """
-    html_table = """<table style="width:90%">
-  <tr>"""
-    for h in designmode.columns.names:
-        html_table += '<th>%s</th>\n' % h
-    html_table += '</tr>\n'
-    for i in range(len(designmode)):
-        html_table += '<tr>\n'
+    if dmode is None:
+        html_table = """<table style="width:90%">
+      <tr>"""
         for h in designmode.columns.names:
-            html_table += '<td>%s</td>\n' % designmode[h][i]
+            html_table += '<th>%s</th>\n' % h
         html_table += '</tr>\n'
-    html_table += '</table>\n'
+        for i in range(len(designmode)):
+            html_table += '<tr>\n'
+            for h in designmode.columns.names:
+                html_table += '<td>%s</td>\n' % designmode[h][i]
+            html_table += '</tr>\n'
+        html_table += '</table>\n'
+    else:
+        header = [''] + list(designmode.label)
+        rows = []
+        for h in designmode.columns.names:
+            if dmode in h:
+                row = [h]
+                row += list(designmode[h])
+                rows.append(row)
+        html_table = """<table style="width:90%">
+      <tr>"""
+        for h in header:
+            html_table += '<th>%s</th>\n' % h
+        html_table += '</tr>\n'
+        for row in rows:
+            html_table += '<tr>\n'
+            for r in row:
+                html_table += '<td>%s</td>\n' % r
+            html_table += '</tr>\n'
+        html_table += '</table>\n'
     return html_table
 
 
@@ -503,6 +524,42 @@ def write_html_file(valid_apo, valid_lco, designmode):
     """
     Create the summary distribution plots
     """
+    dmode_descriptions = {}
+    dmode_descriptions['decolide'] = ('A check on if the FPS grid was able '
+                                      'to be decolided if any collisions existed.')
+    dmode_descriptions['bright_safety'] = ('A check if any fibers in the grid were '
+                                           'too close to a bright neighbor such '
+                                           'that the total flux down the fiber would '
+                                           'be greater than the bright_limit_targets '
+                                           'for the designmode. This check only '
+                                           'considers a subset of very bright stars '
+                                           'with G < 13 (for BOSS) and H < 7 (for '
+                                           'APOGEE) in the FOV.')
+    dmode_descriptions['all_targets_assigned'] = ('A check if all of the requested target '
+                                                  'assignments able to be made given '
+                                                  'the physical constraints on the '
+                                                  'robots.')
+    dmode_descriptions['no_collisions'] = ('A check if any assignments were removed in order '
+                                           'to allow for the decolision of the grid.')
+    dmode_descriptions['n_skies_min'] = ('A check if the design has the minimum '
+                                         'number of skies for the designmode.')
+    dmode_descriptions['min_skies_fovmetric'] = ('A check if the skies in the design are '
+                                                 'well distributed in the FOV of the FPS.')
+    dmode_descriptions['n_stds_min'] = ('A check if the design has the minimum '
+                                        'number of standards for the designmode.')
+    dmode_descriptions['min_stds_fovmetric'] = ('A check if the standards in the design are '
+                                                'well distributed in the FOV of the FPS.')
+    dmode_descriptions['stds_mags'] = ('A check if the standards in the design are '
+                                       'within the magntiude limits of a designmode.')
+    dmode_descriptions['bright_limit_targets'] = ('A check if the science targets in the design are '
+                                                  'within the magntiude limits of a designmode.')
+    dmode_descriptions['sky_neighbors_targets'] = ('A check if any fibers in the grid were '
+                                                   'too close to a bright neighbor such '
+                                                   'that the total flux down the fiber would '
+                                                   'be greater than the bright_limit_targets '
+                                                   'for the designmode. This check '
+                                                   'considers all stars down to the minimum '
+                                                   'magnitude limit in the FOV.')
     with open('index.html', 'w') as f:
         f.write("""<!DOCTYPE html>
 <html>
@@ -513,8 +570,8 @@ table, th, td {
 </style>
 <body>""")
 
-        plots_healpix(valid_apo, valid_lco, designmode)
-        create_summary_dist_plots(valid_apo, valid_lco, designmode)
+        # plots_healpix(valid_apo, valid_lco, designmode)
+        # create_summary_dist_plots(valid_apo, valid_lco, designmode)
 
         html_tab = write_designmode_table(designmode)
         f.write('<h2>DesignModes for Run</h2>')
@@ -534,7 +591,9 @@ table, th, td {
         for col, ty in zip(valid_apo.columns.names, valid_apo.columns.formats):
             if ty == 'L' and 'boss' in col:
                 valid_check = col[5:]
-                f.write('<p><a href="%s.html">%s</a></p>\n' % (valid_check, valid_check))
+                f.write('<p><a href="%s.html">%s</a>: %s</p>\n' % (valid_check,
+                                                                   valid_check,
+                                                                   dmode_descriptions[valid_check]))
                 with open('%s.html' % valid_check, 'w') as fs:
                     fs.write("""<!DOCTYPE html>
 <html>
@@ -544,6 +603,10 @@ table, th, td {
 }
 </style>
 <body>""")
+                    html_tab = write_designmode_table(designmode,
+                                                      dmode=valid_check)
+                    fs.write('<h2>DesignModes for Run</h2>')
+                    fs.write(html_tab)
                     fs.write('<h2>Percent Designs Pass: %s</h2>' % valid_check)
                     html_tab = valid_check_html_table(valid_apo, valid_lco,
                                                       valid_check)
@@ -567,7 +630,9 @@ table, th, td {
 </html>""")
             elif ty == 'L' and 'apogee' not in col:
                 valid_check = col
-                f.write('<p><a href="%s.html">%s</a></p>\n' % (valid_check, valid_check))
+                f.write('<p><a href="%s.html">%s</a>: %s</p>\n' % (valid_check,
+                                                                   valid_check,
+                                                                   dmode_descriptions[valid_check]))
                 with open('%s.html' % valid_check, 'w') as fs:
                     fs.write("""<!DOCTYPE html>
 <html>
@@ -602,58 +667,3 @@ table, th, td {
 
         f.write("""</body>
 </html>""")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

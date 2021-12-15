@@ -1209,8 +1209,8 @@ class DesignModeCheck(DesignMode):
             # check if fibers too close to bright neighbors
             for i in range(len(r_exclude)):
                 # only do check if exclusion radius larger
-                # than fiber, i.e. 1"
-                if r_exclude[i] > 1.:
+                # than 0" (otherwise star not bright enough)
+                if r_exclude[i] > 0.:
                     dist = ang_sep(ras[i], decs[i],
                                    ra_robo, dec_robo) * 3600.
                     neigh_checks[dist < r_exclude[i]] = False

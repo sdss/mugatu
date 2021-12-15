@@ -6,6 +6,8 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Remove restriction to only consider exclusion radii > 1" for bright neighbor check (so, consider all exclusion radii for bright sources).
+
 * :release:`1.0.4 <2021-12-08>`
 * In TargetdbFieldIDs class, account for gaps in fieldid when finding next available.
 * Add values for designmode metrics to FPSDesign object design_errors dictionary.

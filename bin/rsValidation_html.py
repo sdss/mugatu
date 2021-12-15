@@ -520,7 +520,8 @@ def write_designmode_table(designmode,
     return html_table
 
 
-def write_html_file(valid_apo, valid_lco, designmode):
+def write_html_file(valid_apo, valid_lco, designmode,
+                    rs_run, mugatu_v, kaiju_v, coordio_v):
     """
     Create the summary distribution plots
     """
@@ -573,9 +574,15 @@ table, th, td {
         # plots_healpix(valid_apo, valid_lco, designmode)
         # create_summary_dist_plots(valid_apo, valid_lco, designmode)
 
-        html_tab = write_designmode_table(designmode)
-        f.write('<h2>DesignModes for Run</h2>')
-        f.write(html_tab)
+        f.write('<h1>%s Validation Results</h1>' % rs_run)
+        intro = ('Below are links to summaries of each design validation '
+                 'criteria used for the %s run of robostrategy. These '
+                 'designs were validated using v%s of mugatu, v%s '
+                 'of kaiju and v%s of coordio.' % (rs_run,
+                                                   mugatu_v,
+                                                   kaiju_v,
+                                                   coordio_v))
+        f.write('<p>%s</p>' % intro)
 
         f.write('<h2>Design Validations</h2>')
 
@@ -603,11 +610,12 @@ table, th, td {
 }
 </style>
 <body>""")
+                    fs.write('<h1>%s</h1>' % valid_check)
                     html_tab = write_designmode_table(designmode,
                                                       dmode=valid_check)
                     fs.write('<h2>DesignModes for Run</h2>')
                     fs.write(html_tab)
-                    fs.write('<h2>Percent Designs Pass: %s</h2>' % valid_check)
+                    fs.write('<h2>Percent Designs Pass</h2>')
                     html_tab = valid_check_html_table(valid_apo, valid_lco,
                                                       valid_check)
                     fs.write(html_tab)
@@ -619,9 +627,10 @@ table, th, td {
                             x = x.split('_')
                             y = ''
                             for i in range(len(x) - 2):
-                                y += x[i].capitalize()
-                                y += ' '
-                            y += '(%s)' % (x[-2] + '_' + x[-1])
+                                y += x[i]
+                                if i < len(x) - 2 - 1:
+                                    y += '_'
+                            y += ' (%s)' % (x[-2] + '_' + x[-1])
                             fs.write('<h3>%s</h3>\n' % y)
                             if h in sky_files:
                                 fs.write('<img src="%s" ' % (mypath_sky + h) + 'width="60%">\n')
@@ -642,7 +651,8 @@ table, th, td {
 }
 </style>
 <body>""")
-                    fs.write('<h2>Percent Designs Pass: %s</h2>' % valid_check)
+                    fs.write('<h1>%s</h1>' % valid_check)
+                    fs.write('<h2>Percent Designs Pass</h2>')
                     html_tab = valid_check_html_table(valid_apo, valid_lco,
                                                       valid_check, boss_apogee=False)
                     fs.write(html_tab)
@@ -654,8 +664,9 @@ table, th, td {
                             x = x.split('_')
                             y = ''
                             for i in range(len(x) - 2):
-                                y += x[i].capitalize()
-                                y += ' '
+                                y += x[i]
+                                if i < len(x) - 2 - 1:
+                                    y += '_'
                             y += '(%s)' % (x[-2] + '_' + x[-1])
                             fs.write('<h3>%s</h3>\n' % y)
                             if h in sky_files:

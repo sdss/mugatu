@@ -367,10 +367,10 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                 ev = eval("(valid_apo['designmode'] == dmode) & (valid_apo[valid_apo.columns.names[i]] >= 0)")
                 evd = eval("designmode['label'] == dmode")
                 dmode_val = designmode[valid_apo.columns.names[i-1]][evd][0]
-                xval = valid_apo[valid_apo.columns.names[i]][ev]
+                xval_apo = valid_apo[valid_apo.columns.names[i]][ev]
                 try:
-                    maxx = np.max(xval) * 1.1
-                    minn = np.min(xval) * 0.9
+                    maxx = np.max(xval_apo) * 1.1
+                    minn = np.min(xval_apo) * 0.9
                 except ValueError:
                     maxx = 1
                     minn = 0
@@ -378,7 +378,23 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                     minn = 0
                 if maxx < 0:
                     maxx = 1
-                plot_hist(ax1, xval,
+                ev = eval("(valid_lco['designmode'] == dmode) & (valid_lco[valid_lco.columns.names[i]] >= 0)")
+                xval_lco = valid_lco[valid_lco.columns.names[i]][ev]
+                try:
+                    maxx_lco = np.max(xval_lco) * 1.1
+                    minn_lco = np.min(xval_lco) * 0.9
+                except ValueError:
+                    maxx_lco = 1
+                    minn_lco = 0
+                if minn_lco < 0:
+                    minn_lco = 0
+                if maxx_lco < 0:
+                    maxx_lco = 1
+                if minn_lco < minn:
+                    minn = minn_lco
+                if maxx_lco > maxx:
+                    maxx = maxx_lco
+                plot_hist(ax1, xval_apo,
                           True, True,
                           np.linspace(minn,
                                       maxx,
@@ -386,7 +402,7 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                           '%s: %s' % (dmode, 'APO'),
                           'APO', valid_apo.columns.names[i - 1],
                           'Cumulative Fraction', dmode_val)
-                plot_hist(ax2, xval,
+                plot_hist(ax2, xval_apo,
                           False, False,
                           np.linspace(minn,
                                       maxx,
@@ -394,20 +410,7 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                           '%s: %s' % (dmode, 'APO'),
                           'APO', valid_apo.columns.names[i - 1],
                           'N', dmode_val)
-
-                ev = eval("(valid_lco['designmode'] == dmode) & (valid_lco[valid_lco.columns.names[i]] >= 0)")
-                xavl = valid_lco[valid_lco.columns.names[i]][ev]
-                try:
-                    maxx = np.max(xval) * 1.1
-                    minn = np.min(xval) * 0.9
-                except ValueError:
-                    maxx = 1
-                    minn = 0
-                if minn < 0:
-                    minn = 0
-                if maxx < 0:
-                    maxx = 1
-                plot_hist(ax3, xval,
+                plot_hist(ax3, xval_lco,
                           True, True,
                           np.linspace(minn,
                                       maxx,
@@ -415,7 +418,7 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                           '%s: %s' % (dmode, 'LCO'),
                           'LCO', valid_apo.columns.names[i - 1],
                           'Cumulative Fraction', dmode_val)
-                plot_hist(ax4, xval,
+                plot_hist(ax4, xval_lco,
                           False, False,
                           np.linspace(minn,
                                       maxx,
@@ -435,37 +438,38 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                 f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(40,10))
 
                 ev = eval("valid_apo['designmode'] == dmode")
-                xval = valid_apo[valid_apo.columns.names[i+1]][ev] - valid_apo[valid_apo.columns.names[i]][ev]
+                xval_apo = valid_apo[valid_apo.columns.names[i+1]][ev] - valid_apo[valid_apo.columns.names[i]][ev]
                 try:
-                    maxx = np.max(xval)
+                    maxx = np.max(xval_apo)
                 except ValueError:
                     maxx = 0
-                plot_hist(ax1, xval,
+                ev = eval("valid_lco['designmode'] == dmode")
+                xval_lco = valid_lco[valid_lco.columns.names[i+1]][ev] - valid_lco[valid_lco.columns.names[i]][ev]
+                try:
+                    maxx_lco = np.max(xval_lco)
+                except ValueError:
+                    maxx_lco = 0
+                if maxx_lco > maxx:
+                    maxx = maxx_lco
+                plot_hist(ax1, xval_apo,
                           True, True,
                           np.arange(0, maxx + 2, 1),
                           '%s: %s' % (dmode, 'APO'),
                           'APO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
                           'Cumulative Fraction', np.nan)
-                plot_hist(ax2, xval,
+                plot_hist(ax2, xval_apo,
                           False, False,
                           np.arange(0, maxx + 2, 1),
                           '%s: %s' % (dmode, 'APO'),
                           'APO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
                           'N', np.nan)
-
-                ev = eval("valid_lco['designmode'] == dmode")
-                xval = valid_lco[valid_lco.columns.names[i+1]][ev] - valid_lco[valid_lco.columns.names[i]][ev]
-                try:
-                    maxx = np.max(xval)
-                except ValueError:
-                    maxx = 0
-                plot_hist(ax3, xval,
+                plot_hist(ax3, xval_lco,
                           True, True,
                           np.arange(0, maxx + 2, 1),
                           '%s: %s' % (dmode, 'LCO'),
                           'LCO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
                           'Cumulative Fraction', np.nan)
-                plot_hist(ax4, xval,
+                plot_hist(ax4, xval_lco,
                           False, False,
                           np.arange(0, maxx + 2, 1),
                           '%s: %s' % (dmode, 'LCO'),

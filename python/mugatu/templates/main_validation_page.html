@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<style>
+table, th, td {
+  border:1px solid black;
+}
+</style>
+<body><h1>{{rs_run}} Validation Results</h1><p>Below are links to summaries of each design validation criteria used for the {{rs_run}} run of robostrategy. These designs were validated using v{{mugatu_v}} of mugatu, v{{kaiju_v}} of kaiju and v{{coordio_v}} of coordio.</p>
+<h2>Design Validations</h2>
+<p><a href="indv_valid/decolide.html">decolide</a>: A check on if the FPS grid was able to be decolided if any collisions existed.</p>
+<p><a href="indv_valid/bright_safety.html">bright_safety</a>: A check if any fibers in the grid were too close to a bright neighbor such that the total flux down the fiber would be greater than the bright_limit_targets for the designmode. This check only considers a subset of very bright stars with G < 13 (for BOSS) and H < 7 (for APOGEE) in the FOV.</p>
+<p><a href="indv_valid/all_targets_assigned.html">all_targets_assigned</a>: A check if all of the requested target assignments able to be made given the physical constraints on the robots.</p>
+<p><a href="indv_valid/no_collisions.html">no_collisions</a>: A check if any assignments were removed in order to allow for the decolision of the grid.</p>
+<p><a href="indv_valid/n_skies_min.html">n_skies_min</a>: A check if the design has the minimum number of skies for the designmode.</p>
+<p><a href="indv_valid/min_skies_fovmetric.html">min_skies_fovmetric</a>: A check if the skies in the design are well distributed in the FOV of the FPS.</p>
+<p><a href="indv_valid/n_stds_min.html">n_stds_min</a>: A check if the design has the minimum number of standards for the designmode.</p>
+<p><a href="indv_valid/min_stds_fovmetric.html">min_stds_fovmetric</a>: A check if the standards in the design are well distributed in the FOV of the FPS.</p>
+<p><a href="indv_valid/stds_mags.html">stds_mags</a>: A check if the standards in the design are within the magntiude limits of a designmode.</p>
+<p><a href="indv_valid/bright_limit_targets.html">bright_limit_targets</a>: A check if the science targets in the design are within the magntiude limits of a designmode.</p>
+<p><a href="indv_valid/sky_neighbors_targets.html">sky_neighbors_targets</a>: A check if any fibers in the grid were too close to a bright neighbor such that the total flux down the fiber would be greater than the bright_limit_targets for the designmode. This check considers all stars down to the minimum magnitude limit in the FOV.</p>
+</body>
+</html>

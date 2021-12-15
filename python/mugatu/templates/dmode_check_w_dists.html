@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<style>
+table, th, td {
+  border:1px solid black;
+}
+</style>
+<body><h1>{{valid_check}}</h1><h2>DesignModes for Run</h2><table style="width:90%">
+      <tr><th></th>
+<th>bright_time</th>
+<th>dark_faint</th>
+<th>dark_monit</th>
+<th>dark_plane</th>
+<th>dark_rm</th>
+</tr>
+<tr>
+<td>boss_{{valid_check}}</td>
+<td>{{bright_time_boss}}</td>
+<td>{{dark_faint_boss}}</td>
+<td>{{dark_monit_boss}}</td>
+<td>{{dark_plane_boss}}</td>
+<td>{{dark_rm_boss}}</td>
+<tr>
+<td>apogee_{{valid_check}}</td>
+<td>{{bright_time_apogee}}</td>
+<td>{{dark_faint_apogee}}</td>
+<td>{{dark_monit_apogee}}</td>
+<td>{{dark_plane_apogee}}</td>
+<td>{{dark_rm_apogee}}</td>
+</tr>
+</table>
+<h2>Percent Designs Pass</h2><table style="width:90%">
+  <tr><th></th>
+<th>bright_time</th>
+<th>dark_faint</th>
+<th>dark_monit</th>
+<th>dark_plane</th>
+<th>dark_rm</th>
+</tr>
+<tr>
+<td>APO boss_{{valid_check}}</td>
+<td>{{APO_boss_bright_time}}</td>
+<td>{{APO_boss_dark_faint}}</td>
+<td>{{APO_boss_dark_monit}}</td>
+<td>{{APO_boss_dark_plane}}</td>
+<td>{{APO_boss_dark_rm}}</td>
+</tr>
+<tr>
+<td>LCO boss_{{valid_check}}</td>
+<td>{{LCO_boss_bright_time}}</td>
+<td>{{LCO_boss_dark_faint}}</td>
+<td>{{LCO_boss_dark_monit}}</td>
+<td>{{LCO_boss_dark_plane}}</td>
+<td>{{LCO_boss_dark_rm}}</td>
+</tr>
+<tr>
+<td>APO apogee_{{valid_check}}</td>
+<td>{{APO_apogee_bright_time}}</td>
+<td>{{APO_apogee_dark_faint}}</td>
+<td>{{APO_apogee_dark_monit}}</td>
+<td>{{APO_apogee_dark_plane}}</td>
+<td>{{APO_apogee_dark_rm}}</td>
+</tr>
+<tr>
+<td>LCO apogee_{{valid_check}}</td>
+<td>{{LCO_apogee_bright_time}}</td>
+<td>{{LCO_apogee_dark_faint}}</td>
+<td>{{LCO_apogee_dark_monit}}</td>
+<td>{{LCO_apogee_dark_plane}}</td>
+<td>{{LCO_apogee_dark_rm}}</td>
+</tr>
+</table>
+<h3>apogee_{{valid_check}} (bright_time)</h3>
+<img src="../dist_plots/apogee_{{valid_check}}_bright_time.png" width="80%">
+<h3>apogee_{{valid_check}} (dark_faint)</h3>
+<img src="../dist_plots/apogee_{{valid_check}}_dark_faint.png" width="80%">
+<h3>apogee_{{valid_check}} (dark_monit)</h3>
+<img src="../dist_plots/apogee_{{valid_check}}_dark_monit.png" width="80%">
+<h3>apogee_{{valid_check}} (dark_plane)</h3>
+<img src="../dist_plots/apogee_{{valid_check}}_dark_plane.png" width="80%">
+<h3>apogee_{{valid_check}} (dark_rm)</h3>
+<img src="../dist_plots/apogee_{{valid_check}}_dark_rm.png" width="80%">
+<h3>boss_{{valid_check}} (bright_time)</h3>
+<img src="../dist_plots/boss_{{valid_check}}_bright_time.png" width="80%">
+<h3>boss_{{valid_check}} (dark_faint)</h3>
+<img src="../dist_plots/boss_{{valid_check}}_dark_faint.png" width="80%">
+<h3>boss_{{valid_check}} (dark_monit)</h3>
+<img src="../dist_plots/boss_{{valid_check}}_dark_monit.png" width="80%">
+<h3>boss_{{valid_check}} (dark_plane)</h3>
+<img src="../dist_plots/boss_{{valid_check}}_dark_plane.png" width="80%">
+<h3>boss_{{valid_check}} (dark_rm)</h3>
+<img src="../dist_plots/boss_{{valid_check}}_dark_rm.png" width="80%">
+</body>
+</html>

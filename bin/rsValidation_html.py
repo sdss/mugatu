@@ -1,68 +1,14 @@
 import numpy as np
-from astropy.io import fits
 import matplotlib.pylab as plt
-import matplotlib
-from matplotlib.patches import Ellipse
-from os import listdir
-from os.path import isfile, join
+from os import listdir, mkdir
+from os.path import isfile, join, isdir
 from matplotlib.projections.geo import GeoAxes
 import healpy as hp
 import healpy
+import jinja2
 
 plt.rcParams.update({'font.size': 18})
 plt.rcParams['savefig.facecolor'] = 'white'
-
-
-def valid_check_html_table(valid_apo, valid_lco,
-                           valid_check, boss_apogee=True):
-    """
-    Create a summary HTML table for a validation check.
-    """
-    if boss_apogee:
-        boss_col = 'boss_' + valid_check
-        ap_col = 'apogee_' + valid_check
-        cols = [boss_col, boss_col, ap_col, ap_col]
-        obs = ['APO', 'LCO', 'APO', 'LCO']
-    else:
-        cols = [valid_check, valid_check]
-        obs = ['APO', 'LCO']
-
-    header = [''] + list(np.unique(valid_apo['designmode']))
-    header = tuple(header)
-
-    rows = []
-    for o, col in zip(obs, cols):
-        row = [o + ' ' + col]
-        for m in np.unique(valid_apo['designmode']):
-            if o == 'APO':
-                try:
-                    value = (100 *
-                             len(valid_apo[col][(valid_apo[col]) & (valid_apo['designmode'] == m)]) /
-                             len(valid_apo[col][(valid_apo['designmode'] == m)]))
-                    row.append('%.2f' % value + '%')
-                except ZeroDivisionError:
-                    row.append('NA')
-            else:
-                try:
-                    value = (100 *
-                             len(valid_lco[col][(valid_lco[col]) & (valid_lco['designmode'] == m)]) /
-                             len(valid_lco[col][(valid_lco['designmode'] == m)]))
-                    row.append('%.2f' % value + '%')
-                except ZeroDivisionError:
-                    row.append('NA')
-        rows.append(row)
-    html_table = """<table style="width:90%">
-  <tr>"""
-    for h in header:
-        html_table += '<th>%s</th>\n' % h
-    html_table += '</tr>\n'
-    for row in rows:
-        html_table += '<tr>\n'
-        for r in row:
-            html_table += '<td>%s</td>\n' % r
-        html_table += '</tr>\n'
-    html_table += '</table>\n'
-    return html_table
 
 
 class ThetaFormatterShiftPi(GeoAxes.ThetaFormatter):
@@ -331,201 +277,102 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                 plt.clf()
 
 
-def write_designmode_table(designmode,
-                           dmode=None):
+def write_html_jinja(valid_apo, valid_lco, designmode,
+                     rs_run, mugatu_v, kaiju_v, coordio_v,
+                     path):
     """
-    Write an HTML table for the designmodes for this
-    run.
+    Write HTML file using jinja
     """
-    if dmode is None:
-        html_table = """<table style="width:90%">
-      <tr>"""
-        for h in designmode.columns.names:
-            html_table += '<th>%s</th>\n' % h
-        html_table += '</tr>\n'
-        for i in range(len(designmode)):
-            html_table += '<tr>\n'
-            for h in designmode.columns.names:
-                html_table += '<td>%s</td>\n' % designmode[h][i]
-            html_table += '</tr>\n'
-        html_table += '</table>\n'
-    else:
-        header = [''] + list(designmode.label)
-        rows = []
-        for h in designmode.columns.names:
-            if dmode in h:
-                row = [h]
-                row += list(designmode[h])
-                rows.append(row)
-        html_table = """<table style="width:90%">
-      <tr>"""
-        for h in header:
-            html_table += '<th>%s</th>\n' % h
-        html_table += '</tr>\n'
-        for row in rows:
-            html_table += '<tr>\n'
-            for r in row:
-                html_table += '<td>%s</td>\n' % r
-            html_table += '</tr>\n'
-        html_table += '</table>\n'
-    return html_table
+    env = jinja2.Environment(
+        loader=jinja2.PackageLoader("mugatu"),
+        autoescape=jinja2.select_autoescape()
+    )
+    if not isdir('%s/indv_valid' % path):
+        mkdir('%s/indv_valid' % path)
+    # plots_healpix(valid_apo, valid_lco, designmode)
+    # create_summary_dist_plots(valid_apo, valid_lco, designmode)
+    mypath = path + '/dist_plots/'
+    hist_files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
+    hist_files.sort()
+    hist_files = np.array(hist_files)
 
-
-def write_html_file(valid_apo, valid_lco, designmode,
-                    rs_run, mugatu_v, kaiju_v, coordio_v):
-    """
-    Create the summary distribution plots
-    """
-    dmode_descriptions = {}
-    dmode_descriptions['decolide'] = ('A check on if the FPS grid was able '
-                                      'to be decolided if any collisions existed.')
-    dmode_descriptions['bright_safety'] = ('A check if any fibers in the grid were '
-                                           'too close to a bright neighbor such '
-                                           'that the total flux down the fiber would '
-                                           'be greater than the bright_limit_targets '
-                                           'for the designmode. This check only '
-                                           'considers a subset of very bright stars '
-                                           'with G < 13 (for BOSS) and H < 7 (for '
-                                           'APOGEE) in the FOV.')
-    dmode_descriptions['all_targets_assigned'] = ('A check if all of the requested target '
-                                                  'assignments able to be made given '
-                                                  'the physical constraints on the '
-                                                  'robots.')
-    dmode_descriptions['no_collisions'] = ('A check if any assignments were removed in order '
-                                           'to allow for the decolision of the grid.')
-    dmode_descriptions['n_skies_min'] = ('A check if the design has the minimum '
-                                         'number of skies for the designmode.')
-    dmode_descriptions['min_skies_fovmetric'] = ('A check if the skies in the design are '
-                                                 'well distributed in the FOV of the FPS.')
-    dmode_descriptions['n_stds_min'] = ('A check if the design has the minimum '
-                                        'number of standards for the designmode.')
-    dmode_descriptions['min_stds_fovmetric'] = ('A check if the standards in the design are '
-                                                'well distributed in the FOV of the FPS.')
-    dmode_descriptions['stds_mags'] = ('A check if the standards in the design are '
-                                       'within the magntiude limits of a designmode.')
-    dmode_descriptions['bright_limit_targets'] = ('A check if the science targets in the design are '
-                                                  'within the magntiude limits of a designmode.')
-    dmode_descriptions['sky_neighbors_targets'] = ('A check if any fibers in the grid were '
-                                                   'too close to a bright neighbor such '
-                                                   'that the total flux down the fiber would '
-                                                   'be greater than the bright_limit_targets '
-                                                   'for the designmode. This check '
-                                                   'considers all stars down to the minimum '
-                                                   'magnitude limit in the FOV.')
-    with open('index.html', 'w') as f:
-        f.write("""<!DOCTYPE html>
-<html>
-<style>
-table, th, td {
-  border:1px solid black;
-}
-</style>
-<body>""")
-
-        # plots_healpix(valid_apo, valid_lco, designmode)
-        # create_summary_dist_plots(valid_apo, valid_lco, designmode)
-
-        f.write('<h1>%s Validation Results</h1>' % rs_run)
-        intro = ('Below are links to summaries of each design validation '
-                 'criteria used for the %s run of robostrategy. These '
-                 'designs were validated using v%s of mugatu, v%s '
-                 'of kaiju and v%s of coordio.' % (rs_run,
-                                                   mugatu_v,
-                                                   kaiju_v,
-                                                   coordio_v))
-        f.write('<p>%s</p>' % intro)
-
-        f.write('<h2>Design Validations</h2>')
-
-        mypath = 'dist_plots/'
-        hist_files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
-        hist_files.sort()
-        hist_files = np.array(hist_files)
-
-        mypath_sky = 'sky_plots/'
-        sky_files = [f for f in listdir(mypath_sky) if isfile(join(mypath_sky, f))]
-        sky_files.sort()
-        sky_files = np.array(sky_files)
-        for col, ty in zip(valid_apo.columns.names, valid_apo.columns.formats):
-            if ty == 'L' and 'boss' in col:
+    mypath_sky = path + '/sky_plots/'
+    sky_files = [f for f in listdir(mypath_sky) if isfile(join(mypath_sky, f))]
+    sky_files.sort()
+    sky_files = np.array(sky_files)
+    for col, ty in zip(valid_apo.columns.names, valid_apo.columns.formats):
+        if ty == 'L' and 'apogee' not in col:
+            html_dict = {}
+            if 'boss' in col:
                 valid_check = col[5:]
-                f.write('<p><a href="%s.html">%s</a>: %s</p>\n' % (valid_check,
-                                                                   valid_check,
-                                                                   dmode_descriptions[valid_check]))
-                with open('%s.html' % valid_check, 'w') as fs:
-                    fs.write("""<!DOCTYPE html>
-<html>
-<style>
-table, th, td {
-  border:1px solid black;
-}
-</style>
-<body>""")
-                    fs.write('<h1>%s</h1>' % valid_check)
-                    html_tab = write_designmode_table(designmode,
-                                                      dmode=valid_check)
-                    fs.write('<h2>DesignModes for Run</h2>')
-                    fs.write(html_tab)
-                    fs.write('<h2>Percent Designs Pass</h2>')
-                    html_tab = valid_check_html_table(valid_apo, valid_lco,
-                                                      valid_check)
-                    fs.write(html_tab)
-                    for h in hist_files:
-                        if valid_check in h:
-                            x = str(h)
-                            x = x.replace('.png', '')
-                            x = x.replace('dist_plots/', '')
-                            x = x.split('_')
-                            y = ''
-                            for i in range(len(x) - 2):
-                                y += x[i]
-                                if i < len(x) - 2 - 1:
-                                    y += '_'
-                            y += ' (%s)' % (x[-2] + '_' + x[-1])
-                            fs.write('<h3>%s</h3>\n' % y)
-                            if h in sky_files:
-                                fs.write('<img src="%s" ' % (mypath_sky + h) + 'width="60%">\n')
-                            fs.write('<img src="%s" ' % (mypath + h) + 'width="80%">\n')
-                    fs.write("""</body>
-</html>""")
-            elif ty == 'L' and 'apogee' not in col:
+
+                boss_col = 'boss_' + valid_check
+                ap_col = 'apogee_' + valid_check
+                cols = [boss_col, boss_col, ap_col, ap_col]
+                obs = ['APO', 'LCO', 'APO', 'LCO']
+
+                for h in designmode.columns.names:
+                    if valid_check in h:
+                        for m in np.unique(valid_apo['designmode']):
+                            val = designmode[h][designmode.label == m][0]
+                            if 'boss' in h:
+                                html_dict[m + '_boss'] = '%s' % val
+                            else:
+                                html_dict[m + '_apogee'] = '%s' % val
+            else:
                 valid_check = col
-                f.write('<p><a href="%s.html">%s</a>: %s</p>\n' % (valid_check,
-                                                                   valid_check,
-                                                                   dmode_descriptions[valid_check]))
-                with open('%s.html' % valid_check, 'w') as fs:
-                    fs.write("""<!DOCTYPE html>
-<html>
-<style>
-table, th, td {
-  border:1px solid black;
-}
-</style>
-<body>""")
-                    fs.write('<h1>%s</h1>' % valid_check)
-                    fs.write('<h2>Percent Designs Pass</h2>')
-                    html_tab = valid_check_html_table(valid_apo, valid_lco,
-                                                      valid_check, boss_apogee=False)
-                    fs.write(html_tab)
-                    for h in hist_files:
-                        if valid_check in h:
-                            x = str(h)
-                            x = x.replace('.png', '')
-                            x = x.replace('dist_plots/', '')
-                            x = x.split('_')
-                            y = ''
-                            for i in range(len(x) - 2):
-                                y += x[i]
-                                if i < len(x) - 2 - 1:
-                                    y += '_'
-                            y += '(%s)' % (x[-2] + '_' + x[-1])
-                            fs.write('<h3>%s</h3>\n' % y)
-                            if h in sky_files:
-                                fs.write('<img src="%s" ' % (mypath_sky + h) + 'width="60%">\n')
-                            fs.write('<img src="%s" ' % (mypath + h) + 'width="80%">\n')
-                    fs.write("""</body>
-</html>""")
 
+                cols = [valid_check, valid_check]
+                obs = ['APO', 'LCO']
+            html_dict['path'] = path
+            html_dict['valid_check'] = valid_check
 
-        f.write("""</body>
-</html>""")
+            for o, col in zip(obs, cols):
+                for m in np.unique(valid_apo['designmode']):
+                    if o == 'APO':
+                        try:
+                            value = (100 *
+                                     len(valid_apo[col][(valid_apo[col]) & (valid_apo['designmode'] == m)]) /
+                                     len(valid_apo[col][(valid_apo['designmode'] == m)]))
+                            val = '%.2f' % value + '%'
+                        except ZeroDivisionError:
+                            val = 'NA'
+                    else:
+                        try:
+                            value = (100 *
+                                     len(valid_lco[col][(valid_lco[col]) & (valid_lco['designmode'] == m)]) /
+                                     len(valid_lco[col][(valid_lco['designmode'] == m)]))
+                            val = '%.2f' % value + '%'
+                        except ZeroDivisionError:
+                            val = 'NA'
+                    if 'boss' in col:
+                        html_dict[o + '_boss_' + m] = val
+                    elif 'apogee' in col:
+                        html_dict[o + '_apogee_' + m] = val
+                    else:
+                        html_dict[o + '_' + m] = val
+            if len(cols) == 2:
+                if any(valid_check in s for s in hist_files):
+                    template = env.get_template('valid_check_w_dists.html')
+                else:
+                    template = env.get_template('valid_check.html')
+            else:
+                if any(valid_check in s for s in hist_files) and any(valid_check in s for s in sky_files):
+                    template = env.get_template('dmode_check_w_dists_sky.html')
+                else:
+                    template = env.get_template('dmode_check_w_dists.html')
+            page = template.render(html_dict)
+
+            fp = open('%s/indv_valid/%s.html' % (path, valid_check), 'w')
+            fp.write(page)
+            fp.close()
+    html_dict = {}
+    html_dict['rs_run'] = rs_run
+    html_dict['mugatu_v'] = mugatu_v
+    html_dict['kaiju_v'] = kaiju_v
+    html_dict['coordio_v'] = coordio_v
+    template = env.get_template('main_validation_page.html')
+    page = template.render(html_dict)
+    fp = open('%s/%s_validation.html' % (path, rs_run), 'w')
+    fp.write(page)
+    fp.close()

@@ -107,7 +107,7 @@ if __name__ == '__main__':
         desmode_labels = head['DESMODE'].split(' ')
 
         # use mugatu function to create field in targetdb
-        make_design_field_targetdb(cadence=head['FCADENCE'],
+        make_design_field_targetdb(cadence=allo['cadence'],
                                    fieldid=fieldid,
                                    plan=ver_inst,
                                    racen=head['RACEN'],

@@ -122,7 +122,7 @@ if __name__ == '__main__':
                                       .join(targetdb.Cadence)
                                       .where((targetdb.Field.field_id == fieldid) &
                                              (targetdb.Version.plan == plan) &
-                                             (targetdb.Cadence.label == head['FCADENCE'])))
+                                             (targetdb.Cadence.label == allo['cadence'])))
 
         # get number of exposures
         n_exp = head['NEXP']

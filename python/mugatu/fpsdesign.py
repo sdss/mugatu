@@ -325,6 +325,49 @@ class FPSDesign(object):
         raoff = ((np.arctan2(yoff, xoff) / deg2rad) + 360.) % 360.
         return(raoff, decoff)
 
+    def radec_to_xy(self, ev):
+        """
+        transorm radec to wok xy
+
+        Parameters
+        ---------
+        ev: eval
+            eval term to ignore unassigned fibers
+
+        Returns
+        -------
+        fieldWarn: boolean
+            Warning if any of the transformations
+            should be eyed with suspicion.
+        """
+        with warnings.catch_warnings(record=True) as w:
+            res = radec2wokxy(
+                ra=self.design['ra_off'][ev],
+                dec=self.design['dec_off'][ev],
+                coordEpoch=Time(self.design['epoch'][ev],
+                                format='decimalyear').jd,
+                waveName=np.array(list(map(lambda x: x.title(),
+                                           self.design['obsWavelength'][ev]))),
+                raCen=self.racen,
+                decCen=self.deccen,
+                obsAngle=self.position_angle,
+                obsSite=self.observatory,
+                obsTime=self.obsTime,
+                pmra=self.design['pmra'],
+                pmdec=self.design['pmdec'])
+            self.design['x'][ev] = res[0]
+            self.design['y'][ev] = res[1]
+            fieldWarn = res[2]
+            self.hourAngle = res[3]
+            self.positionAngle_coordio = res[4]
+            if len(w) > 0:
+                for wm in w:
+                    if 'iauPmsafe return' in wm.message.args[0]:
+                        flag = ('Coordio xy coordinates converted '
+                                'should be eyed with suspicion.')
+                        warnings.warn(flag, MugatuDesignWarning)
+        return fieldWarn
+
     def build_design_db(self):
         """
         Populate the design dictonary for design in targetdb.
@@ -449,32 +492,7 @@ class FPSDesign(object):
                                  delta_ra=self.design['delta_ra'][ev],
                                  delta_dec=self.design['delta_dec'][ev])
         self.design['ra_off'][ev], self.design['dec_off'][ev] = res
-        with warnings.catch_warnings(record=True) as w:
-            res = radec2wokxy(
-                ra=self.design['ra_off'][ev],
-                dec=self.design['dec_off'][ev],
-                coordEpoch=Time(self.design['epoch'][ev],
-                                format='decimalyear').jd,
-                waveName=np.array(list(map(lambda x: x.title(),
-                                           self.design['obsWavelength'][ev]))),
-                raCen=self.racen,
-                decCen=self.deccen,
-                obsAngle=self.position_angle,
-                obsSite=self.observatory,
-                obsTime=self.obsTime)  #,
-                # pmra=self.design['pmra'],
-                # pmdec=self.design['pmdec'])
-            self.design['x'][ev] = res[0]
-            self.design['y'][ev] = res[1]
-            fieldWarn = res[2]
-            self.hourAngle = res[3]
-            self.positionAngle_coordio = res[4]
-            if len(w) > 0:
-                for wm in w:
-                    if 'iauPmsafe return' in wm.message.args[0]:
-                        flag = ('Coordio xy coordinates converted '
-                                'should be eyed with suspicion.')
-                        warnings.warn(flag, MugatuDesignWarning)
+        fieldWarn = self.radec_to_xy(ev)
 
         if np.any(fieldWarn):
             flag = ('Coordio xy coordinates converted '
@@ -614,32 +632,7 @@ class FPSDesign(object):
                                  delta_ra=self.design['delta_ra'][ev],
                                  delta_dec=self.design['delta_dec'][ev])
         self.design['ra_off'][ev], self.design['dec_off'][ev] = res
-        with warnings.catch_warnings(record=True) as w:
-            res = radec2wokxy(
-                ra=self.design['ra_off'][ev],
-                dec=self.design['dec_off'][ev],
-                coordEpoch=Time(self.design['epoch'][ev],
-                                format='decimalyear').jd,
-                waveName=np.array(list(map(lambda x: x.title(),
-                                           self.design['obsWavelength'][ev]))),
-                raCen=self.racen,
-                decCen=self.deccen,
-                obsAngle=self.position_angle,
-                obsSite=self.observatory,
-                obsTime=self.obsTime)  #,
-                # pmra=self.design['pmra'],
-                # pmdec=self.design['pmdec'])
-            self.design['x'][ev] = res[0]
-            self.design['y'][ev] = res[1]
-            fieldWarn = res[2]
-            self.hourAngle = res[3]
-            self.positionAngle_coordio = res[4]
-            if len(w) > 0:
-                for wm in w:
-                    if 'iauPmsafe return' in wm.message.args[0]:
-                        flag = ('Coordio xy coordinates converted '
-                                'should be eyed with suspicion.')
-                        warnings.warn(flag, MugatuDesignWarning)
+        fieldWarn = self.radec_to_xy(ev)
 
         if np.any(fieldWarn):
             flag = ('Coordio xy coordinates converted '

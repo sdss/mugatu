@@ -16,6 +16,7 @@ from mugatu.exceptions import (MugatuError, MugatuWarning,
                                MugatuDesignError, MugatuDesignWarning,
                                MugatuDesignModeWarning)
 from coordio.utils import radec2wokxy
+from coordio.defaults import POSITIONER_HEIGHT
 from mugatu.designs_to_targetdb import (make_design_assignments_targetdb,
                                         make_design_field_targetdb)
 from mugatu.designmode import DesignModeCheck
@@ -143,9 +144,6 @@ class FPSDesign(object):
         only 1 exposure in the design file. if exp>0, then will
         choose exposure exp = 1 to N.
 
-    collisionBuffer: float
-        collisionBuffer parmameter for Kaiju RobotGrid.
-
     Attributes
     ----------
     design: dict
@@ -189,8 +187,7 @@ class FPSDesign(object):
                  pmra=None, pmdec=None, delta_ra=None, delta_dec=None,
                  epoch=None, robotID=None, obsWavelength=None,
                  priority=None, carton_pk=None, category=None, magnitudes=None,
-                 design_file=None, manual_design=False, exp=0,
-                 collisionBuffer=2.):
+                 design_file=None, manual_design=False, exp=0):
         if idtype != 'catalogID' and idtype != 'carton_to_target':
             message = 'idtype must be catalogID or carton_to_target'
             raise MugatuError(message=message)
@@ -253,19 +250,11 @@ class FPSDesign(object):
         self.design_file = design_file
         self.manual_design = manual_design
         self.exp = exp
-        self.collisionBuffer = collisionBuffer
 
         # set dummy value for collision for now
         # this may want to be a input, not sure the standard here
         # initialize robotGrid
-        if self.observatory == 'APO':
-            self.rg = kaiju.robotGrid.RobotGridAPO(
-                collisionBuffer=self.collisionBuffer,
-                stepSize=0.05)
-        else:
-            self.rg = kaiju.robotGrid.RobotGridLCO(
-                collisionBuffer=self.collisionBuffer,
-                stepSize=0.05)
+        self.rg = kaiju.robotGrid.RobotGrid(stepSize=0.05)
         self.holeID_mapping = np.zeros(500, dtype='<U10')
         for i, robotID in enumerate(range(1, 501)):
             self.holeID_mapping[i] = self.rg.robotDict[robotID].holeID
@@ -678,14 +667,16 @@ class FPSDesign(object):
             if self.design['robotID'][i] != -1:
                 if self.design['obsWavelength'][i] == 'BOSS':
                     self.rg.addTarget(targetID=self.design['catalogID'][i],
-                                      x=self.design['x'][i],
-                                      y=self.design['y'][i],
+                                      xyzWok=[self.design['x'][i],
+                                              self.design['y'][i],
+                                              POSITIONER_HEIGHT],
                                       priority=self.design['priority'][i],
                                       fiberType=kaiju.cKaiju.BossFiber)
                 else:
                     self.rg.addTarget(targetID=self.design['catalogID'][i],
-                                      x=self.design['x'][i],
-                                      y=self.design['y'][i],
+                                      xyzWok=[self.design['x'][i],
+                                              self.design['y'][i],
+                                              POSITIONER_HEIGHT],
                                       priority=self.design['priority'][i],
                                       fiberType=kaiju.cKaiju.ApogeeFiber)
         for i in range(len(self.design['x'])):

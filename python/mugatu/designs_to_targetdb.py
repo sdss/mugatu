@@ -100,6 +100,91 @@ def make_design_field_targetdb(cadence, fieldid, plan,
         fieldDB.save()
 
 
+def make_desigmmode_results_targetdb(design_id, design_pass,
+                                     design_valid_file_row=None,
+                                     design_status=None,
+                                     boss_skies_min_pass=None,
+                                     boss_skies_min_value=None,
+                                     boss_skies_fov_pass=None,
+                                     boss_skies_fov_value=None,
+                                     apogee_skies_min_pass=None,
+                                     apogee_skies_min_value=None,
+                                     apogee_skies_fov_pass=None,
+                                     apogee_skies_fov_value=None,
+                                     boss_stds_min_pass=None,
+                                     boss_stds_min_value=None,
+                                     boss_stds_fov_pass=None,
+                                     boss_stds_fov_value=None,
+                                     apogee_stds_min_pass=None,
+                                     apogee_stds_min_value=None,
+                                     apogee_stds_fov_pass=None,
+                                     apogee_stds_fov_value=None,
+                                     boss_stds_mags_pass=None,
+                                     apogee_stds_mags_pass=None,
+                                     boss_bright_limit_targets_pass=None,
+                                     apogee_bright_limit_targets_pass=None,
+                                     boss_sky_neighbors_targets_pass=None,
+                                     apogee_sky_neighbors_targets_pass=None,
+                                     apogee_trace_diff_targets_pass=None):
+    """
+    add designmode check results to targetdb
+    """
+    if design_valid_file_row is not None:
+        design_status = None
+        boss_skies_min_pass = design_valid_file_row['boss_n_skies_min']
+        boss_skies_min_value = design_valid_file_row['boss_n_skies_min_value']
+        boss_skies_fov_pass = design_valid_file_row['boss_min_skies_fovmetric']
+        boss_skies_fov_value = design_valid_file_row['boss_min_skies_fovmetric_value']
+        apogee_skies_min_pass = design_valid_file_row['apogee_n_skies_min']
+        apogee_skies_min_value = design_valid_file_row['apogee_n_skies_min_value']
+        apogee_skies_fov_pass = design_valid_file_row['apogee_min_skies_fovmetric']
+        apogee_skies_fov_value = design_valid_file_row['apogee_min_skies_fovmetric_value']
+        boss_stds_min_pass = design_valid_file_row['boss_n_stds_min']
+        boss_stds_min_value = design_valid_file_row['boss_n_stds_min_value']
+        boss_stds_fov_pass = design_valid_file_row['boss_min_stds_fovmetric']
+        boss_stds_fov_value = design_valid_file_row['boss_min_stds_fovmetric_value']
+        apogee_stds_min_pass = design_valid_file_row['apogee_n_stds_min']
+        apogee_stds_min_value = design_valid_file_row['apogee_n_stds_min_value']
+        apogee_stds_fov_pass = design_valid_file_row['apogee_min_stds_fovmetric']
+        apogee_stds_fov_value = design_valid_file_row['apogee_min_stds_fovmetric_value']
+        boss_stds_mags_pass = design_valid_file_row['boss_stds_mags']
+        apogee_stds_mags_pass = design_valid_file_row['apogee_stds_mags']
+        boss_bright_limit_targets_pass = design_valid_file_row['boss_bright_limit_targets']
+        apogee_bright_limit_targets_pass = design_valid_file_row['apogee_bright_limit_targets']
+        boss_sky_neighbors_targets_pass = design_valid_file_row['boss_sky_neighbors_targets']
+        apogee_sky_neighbors_targets_pass = design_valid_file_row['apogee_sky_neighbors_targets']
+        apogee_trace_diff_targets_pass = None  # not checking currently
+    # write to database
+    design_checkDB = targetdb.DesignModeCheckResults.create(
+        design=design_id,
+        design_pass=design_pass,
+        design_status=design_status,
+        boss_skies_min_pass=boss_skies_min_pass,
+        boss_skies_min_value=boss_skies_min_value,
+        boss_skies_fov_pass=boss_skies_fov_pass,
+        boss_skies_fov_value=boss_skies_fov_value,
+        apogee_skies_min_pass=apogee_skies_min_pass,
+        apogee_skies_min_value=apogee_skies_min_value,
+        apogee_skies_fov_pass=apogee_skies_fov_pass,
+        apogee_skies_fov_value=apogee_skies_fov_value,
+        boss_stds_min_pass=boss_stds_min_pass,
+        boss_stds_min_value=boss_stds_min_value,
+        boss_stds_fov_pass=boss_stds_fov_pass,
+        boss_stds_fov_value=boss_stds_fov_value,
+        apogee_stds_min_pass=apogee_stds_min_pass,
+        apogee_stds_min_value=apogee_stds_min_value,
+        apogee_stds_fov_pass=apogee_stds_fov_pass,
+        apogee_stds_fov_value=apogee_stds_fov_value,
+        boss_stds_mags_pass=boss_stds_mags_pass,
+        apogee_stds_mags_pass=apogee_stds_mags_pass,
+        boss_bright_limit_targets_pass=boss_bright_limit_targets_pass,
+        apogee_bright_limit_targets_pass=apogee_bright_limit_targets_pass,
+        boss_sky_neighbors_targets_pass=boss_sky_neighbors_targets_pass,
+        apogee_sky_neighbors_targets_pass=apogee_sky_neighbors_targets_pass,
+        apogee_trace_diff_targets_pass=apogee_trace_diff_targets_pass)
+    design_checkDB.save()
+
+
 def make_design_assignments_targetdb(plan, fieldid, exposure,
                                      desmode_label,
                                      design_ids, robotID, holeID,

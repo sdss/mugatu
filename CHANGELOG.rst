@@ -6,6 +6,8 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Add code to create summary of validation results as HTML page.
+* Add functionality to write validation results to new DesignModeCheckResults targetdb table.
 * Remove restriction to only consider exclusion radii > 1" for bright neighbor check (so, consider all exclusion radii for bright sources).
 
 * :release:`1.0.4 <2021-12-08>`

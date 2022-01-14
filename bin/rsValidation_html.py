@@ -6,6 +6,17 @@ from matplotlib.projections.geo import GeoAxes
 import healpy as hp
 import healpy
 import jinja2
+import sys
+import argparse
+import os
+import fitsio
+from astropy.io import fits
+from mugatu.designmode import allDesignModes
+import mugatu
+from sdssdb.peewee.sdss5db import targetdb
+
+
+mugatu_version = mugatu.__version__
 
 plt.rcParams.update({'font.size': 18})
 plt.rcParams['savefig.facecolor'] = 'white'
@@ -124,11 +135,12 @@ def plots_healpix(valid_apo, valid_lco, designmode):
                 ax.set_xlabel('R.A.')
                 ax.set_ylabel('Decl.')
                 ax.grid()
-                plt.savefig('sky_plots/%s_%s.png' % (pf, m), bbox_inches='tight',dpi=150)
+                plt.savefig(path + '/sky_plots/%s_%s.png' % (pf, m), bbox_inches='tight',dpi=150)
                 plt.figure().clear()
                 plt.close()
                 plt.cla()
                 plt.clf()
+                plt.close(fig)
 
 
 def plot_hist(ax, values, cumulative, density, bins, title,
@@ -219,13 +231,14 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                           '%s: %s' % (dmode, 'LCO'),
                           'LCO', valid_apo.columns.names[i - 1],
                           'N', dmode_val)
-                plt.savefig('dist_plots/%s_%s.png' % (valid_apo.columns.names[i-1],
+                plt.savefig(path + '/dist_plots/%s_%s.png' % (valid_apo.columns.names[i-1],
                                                       dmode),
                             bbox_inches='tight', dpi=150)
                 plt.figure().clear()
                 plt.close()
                 plt.cla()
                 plt.clf()
+                plt.close(f)
         if 'pass' in valid_apo.columns.names[i]:
             for dmode in np.unique(valid_apo['designmode']):
                 f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(40,10))
@@ -268,13 +281,14 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                           '%s: %s' % (dmode, 'LCO'),
                           'LCO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
                           'N', np.nan)
-                plt.savefig('dist_plots/%s_%s.png' % (valid_apo.columns.names[i-1],
+                plt.savefig(path + '/dist_plots/%s_%s.png' % (valid_apo.columns.names[i-1],
                                                       dmode),
                             bbox_inches='tight', dpi=150)
                 plt.figure().clear()
                 plt.close()
                 plt.cla()
                 plt.clf()
+                plt.close(f)
 
 
 def write_html_jinja(valid_apo, valid_lco, designmode,
@@ -289,8 +303,12 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
     )
     if not isdir('%s/indv_valid' % path):
         mkdir('%s/indv_valid' % path)
-    # plots_healpix(valid_apo, valid_lco, designmode)
-    # create_summary_dist_plots(valid_apo, valid_lco, designmode)
+    if not isdir('%s/dist_plots' % path):
+        mkdir('%s/dist_plots' % path)
+    if not isdir('%s/sky_plots' % path):
+        mkdir('%s/sky_plots' % path)
+    plots_healpix(valid_apo, valid_lco, designmode)
+    create_summary_dist_plots(valid_apo, valid_lco, designmode)
     mypath = path + '/dist_plots/'
     hist_files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
     hist_files.sort()
@@ -376,3 +394,50 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
     fp = open('%s/%s_validation.html' % (path, rs_run), 'w')
     fp.write(page)
     fp.close()
+
+
+if __name__ == '__main__':
+
+    # grabbed the parser from robostratgey code to keep consistent
+    # to initiate code use
+
+    parser = argparse.ArgumentParser(
+        prog=os.path.basename(sys.argv[0]),
+        description='Write validaiton summary HTML file')
+
+    parser.add_argument('-p', '--plan', dest='plan',
+                        type=str, help='name of plan', required=True)
+    parser.add_argument('-k', '--kaiju_v', dest='kaiju_v',
+                        type=str, help='kaiju_v', required=True)
+    parser.add_argument('-c', '--coordio_v', dest='coordio_v',
+                        type=str, help='coordio_v', required=True)
+    args = parser.parse_args()
+    plan = args.plan
+    kaiju_v = args.kaiju_v
+    coordio_v = args.coordio_v
+
+    targetdb.database.connect_from_parameters(user='sdss_user',
+                                              host='operations.sdss.utah.edu',
+                                              port=5432)
+
+    path = '/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/sandbox/mugatu/rs_plan_validations/%s' % plan
+
+    # create designmode file for run
+    designModeDict = allDesignModes()
+    dmarr = None
+    for i, d in enumerate(designModeDict):
+        arr = designModeDict[d].toarray()
+        if(dmarr is None):
+            dmarr = np.zeros(len(designModeDict), dtype=arr.dtype)
+        dmarr[i] = arr
+    fitsio.write(path + '/designmodes_rs_%s.fits' % plan, dmarr)
+    # get validaiton results
+    valid_apo = fits.open(path +
+                          '/rs_%s_apo_design_validation_results.fits' % plan)[1].data
+    valid_lco = fits.open(path +
+                          '/rs_%s_lco_design_validation_results.fits' % plan)[1].data
+    designmode = fits.open(path + '/designmodes_rs_%s.fits' % plan)[1].data
+
+    write_html_jinja(valid_apo, valid_lco, designmode,
+                     plan, mugatu_version, kaiju_v, coordio_v,
+                     path)

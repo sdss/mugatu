@@ -254,7 +254,11 @@ class FPSDesign(object):
         # set dummy value for collision for now
         # this may want to be a input, not sure the standard here
         # initialize robotGrid
-        self.rg = kaiju.robotGrid.RobotGrid(stepSize=0.05)
+        # check wth Mike about stepsize?
+        if self.observatory == 'APO':
+            self.rg = kaiju.robotGrid.RobotGridAPO()
+        else:
+            self.rg = kaiju.robotGrid.RobotGridLCO()
         self.holeID_mapping = np.zeros(500, dtype='<U10')
         for i, robotID in enumerate(range(1, 501)):
             self.holeID_mapping[i] = self.rg.robotDict[robotID].holeID

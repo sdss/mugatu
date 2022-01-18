@@ -627,11 +627,7 @@ class FPSDesign(object):
             self.design['obsWavelength'] = (design_inst['fiberType']
                                             [roboIDs != -1])
             self.design['priority'] = design_inst['priority'][roboIDs != -1]
-            # need to change this
-            self.design['carton_pk'] = np.arange(0,
-                                                 len(self.design['catalogID']),
-                                                 1,
-                                                 dtype=int)
+            self.design['carton_pk'] = design_inst['carton_pk'][roboIDs != -1]
             self.design['category'] = design_inst['category'][roboIDs != -1]
             self.design['magnitudes'] = design_inst['magnitude'][roboIDs != -1]
 

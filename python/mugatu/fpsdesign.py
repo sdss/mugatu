@@ -471,37 +471,37 @@ class FPSDesign(object):
         for d in design_targ_db.objects():
             # assign to index that corresponds to fiber assignment
             # index should match length of arrays
-            pos_id = np.where(self.holeID_mapping == d.holeid)[0][0]
+            robotID, pos_ind = self.holeID_to_robotID(d.holeid)
             if self.idtype == 'carton_to_target':
-                self.design['catalogID'][pos_id] = d.pk
+                self.design['catalogID'][pos_ind] = d.pk
             else:
-                self.design['catalogID'][pos_id] = d.catalogid
+                self.design['catalogID'][pos_ind] = d.catalogid
 
-            self.design['robotID'][pos_id] = pos_id + 1
-            self.design['holeID'][pos_id] = d.holeid
+            self.design['robotID'][pos_ind] = robotID
+            self.design['holeID'][pos_ind] = d.holeid
             # design['wokHoleID'][i] = design_targ_db[i]
-            self.design['obsWavelength'][pos_id] = d.label
+            self.design['obsWavelength'][pos_ind] = d.label
             # catch targets with no assigned priority
             try:
-                self.design['priority'][pos_id] = d.priority
+                self.design['priority'][pos_ind] = d.priority
             except AttributeError:
-                self.design['priority'][pos_id] = -1
-            self.design['carton_pk'][pos_id] = d.carton_pk
-            self.design['category'][pos_id] = d.cat_lab
-            self.design['ra'][pos_id] = d.ra
-            self.design['dec'][pos_id] = d.dec
-            self.design['delta_ra'][pos_id] = d.delta_ra
-            self.design['delta_dec'][pos_id] = d.delta_dec
-            self.design['pmra'][pos_id] = d.pmra
-            self.design['pmdec'][pos_id] = d.pmdec
-            self.design['epoch'][pos_id] = d.epoch
-            self.design['magnitudes'][pos_id][0] = d.g
-            self.design['magnitudes'][pos_id][1] = d.r
-            self.design['magnitudes'][pos_id][2] = d.i
-            self.design['magnitudes'][pos_id][3] = d.bp
-            self.design['magnitudes'][pos_id][4] = d.gaia_g
-            self.design['magnitudes'][pos_id][5] = d.rp
-            self.design['magnitudes'][pos_id][6] = d.h
+                self.design['priority'][pos_ind] = -1
+            self.design['carton_pk'][pos_ind] = d.carton_pk
+            self.design['category'][pos_ind] = d.cat_lab
+            self.design['ra'][pos_ind] = d.ra
+            self.design['dec'][pos_ind] = d.dec
+            self.design['delta_ra'][pos_ind] = d.delta_ra
+            self.design['delta_dec'][pos_ind] = d.delta_dec
+            self.design['pmra'][pos_ind] = d.pmra
+            self.design['pmdec'][pos_ind] = d.pmdec
+            self.design['epoch'][pos_ind] = d.epoch
+            self.design['magnitudes'][pos_ind][0] = d.g
+            self.design['magnitudes'][pos_ind][1] = d.r
+            self.design['magnitudes'][pos_ind][2] = d.i
+            self.design['magnitudes'][pos_ind][3] = d.bp
+            self.design['magnitudes'][pos_ind][4] = d.gaia_g
+            self.design['magnitudes'][pos_ind][5] = d.rp
+            self.design['magnitudes'][pos_ind][6] = d.h
 
         # set nan pm tp zero
         self.design['pmra'][np.isnan(self.design['pmra'])] = 0.

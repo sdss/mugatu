@@ -1150,12 +1150,12 @@ class DesignModeCheck(DesignMode):
         hasFiber = np.zeros(500, dtype=bool) + True
         for i, robotID in enumerate(self.rg.robotDict):
             if instrument == 'BOSS':
-                xrobo[i] = self.rg.robotDict[robotID].bossFiberPos[0]
-                yrobo[i] = self.rg.robotDict[robotID].bossFiberPos[1]
+                xrobo[i] = self.rg.robotDict[robotID].bossWokXYZ[0]
+                yrobo[i] = self.rg.robotDict[robotID].bossWokXYZ[1]
             else:
                 hasFiber[i] = self.rg.robotDict[robotID].hasApogee
-                xrobo[i] = self.rg.robotDict[robotID].apFiberPos[0]
-                yrobo[i] = self.rg.robotDict[robotID].apFiberPos[1]
+                xrobo[i] = self.rg.robotDict[robotID].apWokXYZ[0]
+                yrobo[i] = self.rg.robotDict[robotID].apWokXYZ[1]
 
         ra_robo, dec_robo, fieldWarn = wokxy2radec(xWok=xrobo,
                                                    yWok=yrobo,

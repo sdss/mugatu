@@ -106,8 +106,8 @@ class FPSDesign(object):
     epoch: np.array
         Array of epochs for the coordinates in decimal years.
 
-    robotID: np.array
-        Fiber assignement for each catalogid target in the
+    holeID: np.array
+        Fiber assignement for each target in the
         manual design.
 
     obsWavelength: np.array
@@ -190,7 +190,7 @@ class FPSDesign(object):
                  position_angle=None, observatory=None, desmode_label=None,
                  idtype='carton_to_target', catalogids=None, ra=None, dec=None,
                  pmra=None, pmdec=None, delta_ra=None, delta_dec=None,
-                 epoch=None, robotID=None, obsWavelength=None,
+                 epoch=None, holeID=None, obsWavelength=None,
                  priority=None, carton_pk=None, category=None, magnitudes=None,
                  design_file=None, manual_design=False, exp=0):
         if idtype != 'catalogID' and idtype != 'carton_to_target':
@@ -246,7 +246,7 @@ class FPSDesign(object):
         self.delta_ra = delta_ra
         self.delta_dec = delta_dec
         self.epoch = epoch
-        self.robotID = robotID
+        self.holeID = holeID
         self.obsWavelength = obsWavelength
         self.priority = priority
         self.carton_pk = carton_pk

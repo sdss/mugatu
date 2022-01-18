@@ -379,6 +379,18 @@ class FPSDesign(object):
                         warnings.warn(flag, MugatuDesignWarning)
         return fieldWarn
 
+    def holeID_to_robotID(self, holeID, return_ind=True):
+        """
+        return the robotID for a given holeID based on current
+        kaiju mapping
+        """
+        ind = np.where(self.holeID_mapping == holeID)[0][0]
+        robotID = self.robotID_mapping[ind]
+        if return_ind:
+            return robotID, ind
+        else:
+            return robotID
+
     def build_design_db(self):
         """
         Populate the design dictonary for design in targetdb.

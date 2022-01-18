@@ -600,8 +600,10 @@ class FPSDesign(object):
             # grab assignment info
             if self.exp == 0:
                 roboIDs = design['robotID']
+                holeIDs = design['holeID']
             else:
                 roboIDs = design['robotID'][:, self.exp - 1]
+                holeIDs = design['holeID'][:, self.exp - 1]
             if self.idtype == 'catalogID':
                 self.design['catalogID'] = (design_inst['catalogid']
                                             [roboIDs != -1])
@@ -615,11 +617,13 @@ class FPSDesign(object):
             self.design['pmra'] = design_inst['pmra'][roboIDs != -1]
             self.design['pmdec'] = design_inst['pmdec'][roboIDs != -1]
             self.design['epoch'] = design_inst['epoch'][roboIDs != -1]
-            self.design['robotID'] = roboIDs[roboIDs != -1]
-            self.design['holeID'] = np.zeros(len(self.design['robotID']),
-                                             dtype='<U10')
-            for i in range(len(self.design['robotID'])):
-                self.design['holeID'][i] = self.holeID_mapping[self.design['robotID'][i] - 1]
+            self.design['holeID'] = holeIDs[roboIDs != -1]
+            self.design['robotID'] = np.zeros(len(self.design['holeID']),
+                                              dtype=int) - 1
+            for i in range(len(self.design['holeID'])):
+                self.design['robotID'][i] = self.holeID_to_robotID(
+                    self.design['holeID'][i],
+                    return_ind=False)
             self.design['obsWavelength'] = (design_inst['fiberType']
                                             [roboIDs != -1])
             self.design['priority'] = design_inst['priority'][roboIDs != -1]

@@ -158,7 +158,12 @@ class FPSDesign(object):
         robot not being able to reach the assigned target.
 
     holeID_mapping: np.array
-        Mapping between robotID (index + 1) and holeID
+        Mapping between robotID and holeID. Index corresponds to robotID
+        in robotID_mapping attrobute.
+
+    robotID_mapping: np.array
+        Mapping between robotID and holeID. Index corresponds to holeID
+        in holeID_mapping attrobute.
 
     targets_collided: list
         catalogid of targets that could not be assigned due to assigned
@@ -260,8 +265,10 @@ class FPSDesign(object):
         else:
             self.rg = kaiju.robotGrid.RobotGridLCO()
         self.holeID_mapping = np.zeros(500, dtype='<U10')
-        for i, robotID in enumerate(range(1, 501)):
+        self.robotID_mapping = np.zeros(500, dtype=int)
+        for i, robotID in enumerate(self.rg.robotDict):
             self.holeID_mapping[i] = self.rg.robotDict[robotID].holeID
+            self.robotID_mapping[i] = robotID
         # this is in Conor's test, I'm not quite sure what it does
         # but without paths wont generate
         for k in self.rg.robotDict.keys():

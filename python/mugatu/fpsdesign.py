@@ -951,7 +951,8 @@ class FPSDesign(object):
                                                  .assignedTargetID)
             if self.valid_design['catalogID'][i] != -1:
                 self.valid_design['robotID'][i] = rid
-                self.valid_design['holeID'][i] = self.holeID_mapping[rid - 1]
+                ind_hole = np.where(self.robotID_mapping == rid)[0][0]
+                self.valid_design['holeID'][i] = self.holeID_mapping[ind_hole]
                 # is below necessary? i dont know if decollide ever reassigns
                 # or just removes
                 cond = eval("self.design['catalogID'] == self.valid_design['catalogID'][i]")

@@ -364,8 +364,8 @@ class FPSDesign(object):
                 obsAngle=self.position_angle,
                 obsSite=self.observatory,
                 obsTime=self.obsTime,
-                pmra=self.design['pmra'],
-                pmdec=self.design['pmdec'])
+                pmra=self.design['pmra'][ev],
+                pmdec=self.design['pmdec'][ev])
             self.design['x'][ev] = res[0]
             self.design['y'][ev] = res[1]
             fieldWarn = res[2]

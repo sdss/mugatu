@@ -6,6 +6,7 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Update coordio/kaiju syntax to be compatible with coordio=1.2.1 and kaiju=1.2.2.
 * Remove restriction to only consider exclusion radii > 1" for bright neighbor check (so, consider all exclusion radii for bright sources).
 
 * :release:`1.0.4 <2021-12-08>`

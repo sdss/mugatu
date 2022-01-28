@@ -1,6 +1,8 @@
 import warnings
 import numpy as np
 import datetime
+import json
+import hashlib
 from mugatu.exceptions import MugatuError, MugatuWarning
 
 try:
@@ -183,6 +185,32 @@ def make_desigmmode_results_targetdb(design_id, design_pass,
         apogee_sky_neighbors_targets_pass=apogee_sky_neighbors_targets_pass,
         apogee_trace_diff_targets_pass=apogee_trace_diff_targets_pass)
     design_checkDB.save()
+
+
+def assignment_hash(ids, holeIDs):
+    """
+    Create a unique hash for the design
+
+    Parameters
+    ----------
+    ids: np.array
+        carton_to_target_pks for the assignments.
+
+    holeIDs: np.array
+        corresponding holeIDs for the assignments.
+
+    Returns
+    -------
+    assign_hash: str
+        The assignment_hash for the design
+    """
+    assign_dict = {}
+    idx = np.argsort(holeIDs)
+    assign_dict['carton_to_target'] = ids[idx].tolist()
+    assign_dict['hole_id'] = holeIDs[idx].tolist()
+    assign_hash = (hashlib.md5(json.dumps(assign_dict)
+                               .encode('utf-8')).hexdigest())
+    return assign_hash
 
 
 def make_design_assignments_targetdb(plan, fieldid, exposure,

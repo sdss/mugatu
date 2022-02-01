@@ -352,6 +352,10 @@ class FPSDesign(object):
             should be eyed with suspicion.
         """
         with warnings.catch_warnings(record=True) as w:
+            radVel = (np.zeros(len(self.design['ra_off'][ev]),
+                               dtype=np.float64) + 1.e-4)
+            parallax = (np.zeros(len(self.design['ra_off'][ev]),
+                                 dtype=np.float64) + 1.e-4)
             res = radec2wokxy(
                 ra=self.design['ra_off'][ev],
                 dec=self.design['dec_off'][ev],
@@ -365,7 +369,9 @@ class FPSDesign(object):
                 obsSite=self.observatory,
                 obsTime=self.obsTime,
                 pmra=self.design['pmra'][ev],
-                pmdec=self.design['pmdec'][ev])
+                pmdec=self.design['pmdec'][ev],
+                parallax=parallax,
+                radVel=radVel)
             self.design['x'][ev] = res[0]
             self.design['y'][ev] = res[1]
             fieldWarn = res[2]

@@ -261,9 +261,9 @@ class FPSDesign(object):
         # initialize robotGrid
         # check wth Mike about stepsize?
         if self.observatory == 'APO':
-            self.rg = kaiju.robotGrid.RobotGridAPO()
+            self.rg = kaiju.robotGrid.RobotGridAPO(stepSize=0.05)
         else:
-            self.rg = kaiju.robotGrid.RobotGridLCO()
+            self.rg = kaiju.robotGrid.RobotGridLCO(stepSize=0.05)
         self.holeID_mapping = np.zeros(500, dtype='<U10')
         self.robotID_mapping = np.zeros(500, dtype=int)
         for i, robotID in enumerate(self.rg.robotDict):

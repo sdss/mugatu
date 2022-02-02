@@ -10,7 +10,8 @@ from astropy.table import Table
 from sdssdb.peewee.sdss5db import targetdb
 from mugatu.designs_to_targetdb import (make_design_field_targetdb,
                                         make_design_assignments_targetdb,
-                                        TargetdbFieldIDs)
+                                        TargetdbFieldIDs,
+                                        make_desigmmode_results_targetdb)
 
 
 if __name__ == '__main__':
@@ -24,9 +25,8 @@ if __name__ == '__main__':
                         type=str, help='directory with design files',
                         required=True)
     parser.add_argument('-f', '--file_valid', dest='file_valid',
-                        type=str, help='Fits file with names of validated ' +
-                                       'designs to be ingested.',
-                        required=False)
+                        type=str, help='Fits file with validation results',
+                        required=True)
 
     args = parser.parse_args()
     loc = args.loc
@@ -41,13 +41,8 @@ if __name__ == '__main__':
         targetdb.database.connect_from_parameters(user='sdss',
                                                   host='operations.sdss.utah.edu',
                                                   port=5432)
-    # get the files to ingest in the directory
-    if file_valid is None:
-        files = [file for file in glob.glob(directory + '*.fits')]
-    else:
-        valid_files = fits.open(file_valid)[1].data
-        files = [directory + file
-                 for file in np.unique(valid_files['file_name'])]
+    # get the validation results
+    valid_results = fits.open(file_valid)[1].data
 
     # find the minimum field_id to start with
     fieldids_avail = (TargetdbFieldIDs()
@@ -148,6 +143,12 @@ if __name__ == '__main__':
                                                          fiber_pks=fiber_pks[obs],
                                                          idtype='carton_to_target',
                                                          return_design_id=True)
+            ind = np.where((valid_results['file_name'] == file) &
+                           (valid_results['exp'] == i))[0][0]
+            make_desigmmode_results_targetdb(
+                design_id=design_id,
+                design_pass=True,
+                design_valid_file_row=valid_results[ind])
             # create new entry in summary file
             dtype = np.dtype([('file_name', '<U50'),
                               ('exp', np.int32),

@@ -405,6 +405,9 @@ class TargetdbFieldIDs(object):
                  version_plan=None):
         self.fieldid_type = fieldid_type
         self.version_plan = version_plan
+        # get the reserved field_ids
+        field_reserve = targetdb.FieldReservation.select()
+        self.field_reserve = [f.field_id for f in field_reserve]
 
     def find_next_available(self):
         """
@@ -436,10 +439,27 @@ class TargetdbFieldIDs(object):
             .where(arg))
         if len(field_start) > 0:
             fieldids = [f.field_id for f in field_start]
+            # add reserved fieldids to list
+            other_reserved = list(set(self.field_reserve) - set(fieldids))
+            for oth in other_reserved:
+                if fieldid_bounds[1] == -999:
+                    if oth >= fieldid_bounds[0]:
+                        fieldids.append(oth)
+                else:
+                    if oth >= fieldid_bounds[0] and oth < fieldid_bounds[1]:
+                        fieldids.append(oth)
+            # sort in order
+            fieldids.sort()
+            # look for breaks
+            stop = False
             for i in range(1, len(fieldids)):
                 if fieldids[i] != fieldids[i - 1] + 1:
                     fieldid = fieldids[i - 1] + 1
+                    stop = True
                     break
+            # if no stop, then max + 1
+            if not stop:
+                fieldid = max(fieldids) + 1
         else:
             fieldid = fieldid_bounds[0]
         return fieldid
@@ -471,6 +491,9 @@ class TargetdbFieldIDs(object):
             .join(targetdb.Version)
             .where(arg))
         fieldids = [f[0] for f in field.tuples()]
+        # add reserved fieldids to list
+        other_reserved = list(set(self.field_reserve) - set(fieldids))
+        fieldids += other_reserved
         if isinstance(fieldid, int):
             field_avail = fieldid not in fieldids
         else:

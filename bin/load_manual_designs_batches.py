@@ -41,6 +41,8 @@ if __name__ == '__main__':
         targetdb.database.connect_from_parameters(user='sdss',
                                                   host='operations.sdss.utah.edu',
                                                   port=5432)
+    # grab design files to ingest
+    files = [file for file in glob.glob(directory + '*.fits')]
     # get the validation results
     valid_results = fits.open(file_valid)[1].data
 

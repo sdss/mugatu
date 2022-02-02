@@ -287,7 +287,17 @@ if __name__ == '__main__':
     if vtype == 'dir':
         file_save = directory + 'design_validation_results.fits'
     else:
-        file_save = 'rs_%s_%s_design_validation_results.fits' % (plan, observatory)
+        if not os.path.isdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                              'sandbox/mugatu/rs_plan_validations/{plan}'
+                              .format(plan=plan))):
+            os.mkdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                      'sandbox/mugatu/rs_plan_validations/{plan}'
+                      .format(plan=plan)))
+        file_save = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                     'sandbox/mugatu/rs_plan_validations/{plan}/'
+                     'rs_{plan}_{obs}_design_validation_results.fits'.format(
+                         plan=plan,
+                         obs=observatory))
     start = time.time()
     # grab all designmodes
     desmodes = allDesignModes()

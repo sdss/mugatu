@@ -6,6 +6,7 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Add function to calculate assignment_hash for designs. Used to identify identical designs.
 * Check for reserved fieldids  in TargetFieldIDs object.
 * Add code to create summary of validation results as HTML page.
 * Add functionality to write validation results to new DesignModeCheckResults targetdb table.

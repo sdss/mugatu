@@ -60,7 +60,7 @@ def design_outputs_to_array(des, decolide,
     """
     Output validation parameters as a structured array
     """
-    dtype = np.dtype([('file_name', '<U50'),
+    dtype = np.dtype([('file_name', '<U100'),
                       ('exp', np.int32),
                       ('racen', np.float64),
                       ('deccen', np.float64),

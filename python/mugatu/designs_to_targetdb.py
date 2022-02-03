@@ -337,7 +337,7 @@ def make_design_assignments_targetdb(plan, fieldid, exposure,
                                       design_mode=desmode_label,
                                       mugatu_version=mugatu_version,
                                       run_on=datetime.datetime.now(),
-                                      asignment_hash=assign_hash)
+                                      assignment_hash=assign_hash)
     # save row
     designDB.save()
 

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sdss-mugatu"
-version = "1.0.4"
+version = "1.1.0"
 description = "Package to read, write and validate FPS designs"
 authors = ["Ilija Medan"]
 license = "BSD 3-Clause License"

@@ -6,6 +6,7 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* :release:`1.1.0 <2022-02-03>`
 * Update coordio/kaiju syntax to be compatible with coordio=1.2.1 and kaiju=1.2.2.
 * Add function to calculate assignment_hash for designs. Used to identify identical designs.
 * Check for reserved fieldids  in TargetFieldIDs object.

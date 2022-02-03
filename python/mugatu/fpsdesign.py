@@ -16,6 +16,7 @@ from mugatu.exceptions import (MugatuError, MugatuWarning,
                                MugatuDesignError, MugatuDesignWarning,
                                MugatuDesignModeWarning)
 from coordio.utils import radec2wokxy
+from coordio.defaults import POSITIONER_HEIGHT
 from mugatu.designs_to_targetdb import (make_design_assignments_targetdb,
                                         make_design_field_targetdb)
 from mugatu.designmode import DesignModeCheck
@@ -105,8 +106,8 @@ class FPSDesign(object):
     epoch: np.array
         Array of epochs for the coordinates in decimal years.
 
-    robotID: np.array
-        Fiber assignement for each catalogid target in the
+    holeID: np.array
+        Fiber assignement for each target in the
         manual design.
 
     obsWavelength: np.array
@@ -143,9 +144,6 @@ class FPSDesign(object):
         only 1 exposure in the design file. if exp>0, then will
         choose exposure exp = 1 to N.
 
-    collisionBuffer: float
-        collisionBuffer parmameter for Kaiju RobotGrid.
-
     Attributes
     ----------
     design: dict
@@ -160,7 +158,12 @@ class FPSDesign(object):
         robot not being able to reach the assigned target.
 
     holeID_mapping: np.array
-        Mapping between robotID (index + 1) and holeID
+        Mapping between robotID and holeID. Index corresponds to robotID
+        in robotID_mapping attrobute.
+
+    robotID_mapping: np.array
+        Mapping between robotID and holeID. Index corresponds to holeID
+        in holeID_mapping attrobute.
 
     targets_collided: list
         catalogid of targets that could not be assigned due to assigned
@@ -187,10 +190,9 @@ class FPSDesign(object):
                  position_angle=None, observatory=None, desmode_label=None,
                  idtype='carton_to_target', catalogids=None, ra=None, dec=None,
                  pmra=None, pmdec=None, delta_ra=None, delta_dec=None,
-                 epoch=None, robotID=None, obsWavelength=None,
+                 epoch=None, holeID=None, obsWavelength=None,
                  priority=None, carton_pk=None, category=None, magnitudes=None,
-                 design_file=None, manual_design=False, exp=0,
-                 collisionBuffer=2.):
+                 design_file=None, manual_design=False, exp=0):
         if idtype != 'catalogID' and idtype != 'carton_to_target':
             message = 'idtype must be catalogID or carton_to_target'
             raise MugatuError(message=message)
@@ -244,7 +246,7 @@ class FPSDesign(object):
         self.delta_ra = delta_ra
         self.delta_dec = delta_dec
         self.epoch = epoch
-        self.robotID = robotID
+        self.holeID = holeID
         self.obsWavelength = obsWavelength
         self.priority = priority
         self.carton_pk = carton_pk
@@ -253,22 +255,20 @@ class FPSDesign(object):
         self.design_file = design_file
         self.manual_design = manual_design
         self.exp = exp
-        self.collisionBuffer = collisionBuffer
 
         # set dummy value for collision for now
         # this may want to be a input, not sure the standard here
         # initialize robotGrid
+        # check wth Mike about stepsize?
         if self.observatory == 'APO':
-            self.rg = kaiju.robotGrid.RobotGridAPO(
-                collisionBuffer=self.collisionBuffer,
-                stepSize=0.05)
+            self.rg = kaiju.robotGrid.RobotGridAPO(stepSize=0.05)
         else:
-            self.rg = kaiju.robotGrid.RobotGridLCO(
-                collisionBuffer=self.collisionBuffer,
-                stepSize=0.05)
+            self.rg = kaiju.robotGrid.RobotGridLCO(stepSize=0.05)
         self.holeID_mapping = np.zeros(500, dtype='<U10')
-        for i, robotID in enumerate(range(1, 501)):
+        self.robotID_mapping = np.zeros(500, dtype=int)
+        for i, robotID in enumerate(self.rg.robotDict):
             self.holeID_mapping[i] = self.rg.robotDict[robotID].holeID
+            self.robotID_mapping[i] = robotID
         # this is in Conor's test, I'm not quite sure what it does
         # but without paths wont generate
         for k in self.rg.robotDict.keys():
@@ -335,6 +335,67 @@ class FPSDesign(object):
         decoff = np.arcsin(zoff) / deg2rad
         raoff = ((np.arctan2(yoff, xoff) / deg2rad) + 360.) % 360.
         return(raoff, decoff)
+
+    def radec_to_xy(self, ev):
+        """
+        transorm radec to wok xy
+
+        Parameters
+        ---------
+        ev: eval
+            eval term to ignore unassigned fibers
+
+        Returns
+        -------
+        fieldWarn: boolean
+            Warning if any of the transformations
+            should be eyed with suspicion.
+        """
+        with warnings.catch_warnings(record=True) as w:
+            radVel = (np.zeros(len(self.design['ra_off'][ev]),
+                               dtype=np.float64) + 1.e-4)
+            parallax = (np.zeros(len(self.design['ra_off'][ev]),
+                                 dtype=np.float64) + 1.e-4)
+            res = radec2wokxy(
+                ra=self.design['ra_off'][ev],
+                dec=self.design['dec_off'][ev],
+                coordEpoch=Time(self.design['epoch'][ev],
+                                format='decimalyear').jd,
+                waveName=np.array(list(map(lambda x: x.title(),
+                                           self.design['obsWavelength'][ev]))),
+                raCen=self.racen,
+                decCen=self.deccen,
+                obsAngle=self.position_angle,
+                obsSite=self.observatory,
+                obsTime=self.obsTime,
+                pmra=self.design['pmra'][ev],
+                pmdec=self.design['pmdec'][ev],
+                parallax=parallax,
+                radVel=radVel)
+            self.design['x'][ev] = res[0]
+            self.design['y'][ev] = res[1]
+            fieldWarn = res[2]
+            self.hourAngle = res[3]
+            self.positionAngle_coordio = res[4]
+            if len(w) > 0:
+                for wm in w:
+                    if 'iauPmsafe return' in wm.message.args[0]:
+                        flag = ('Coordio xy coordinates converted '
+                                'should be eyed with suspicion.')
+                        warnings.warn(flag, MugatuDesignWarning)
+        return fieldWarn
+
+    def holeID_to_robotID(self, holeID, return_ind=True):
+        """
+        return the robotID for a given holeID based on current
+        kaiju mapping
+        """
+        ind = np.where(self.holeID_mapping == holeID)[0][0]
+        robotID = self.robotID_mapping[ind]
+        if return_ind:
+            return robotID, ind
+        else:
+            return robotID
 
     def build_design_db(self):
         """
@@ -416,37 +477,37 @@ class FPSDesign(object):
         for d in design_targ_db.objects():
             # assign to index that corresponds to fiber assignment
             # index should match length of arrays
-            pos_id = np.where(self.holeID_mapping == d.holeid)[0][0]
+            robotID, pos_ind = self.holeID_to_robotID(d.holeid)
             if self.idtype == 'carton_to_target':
-                self.design['catalogID'][pos_id] = d.pk
+                self.design['catalogID'][pos_ind] = d.pk
             else:
-                self.design['catalogID'][pos_id] = d.catalogid
+                self.design['catalogID'][pos_ind] = d.catalogid
 
-            self.design['robotID'][pos_id] = pos_id + 1
-            self.design['holeID'][pos_id] = d.holeid
+            self.design['robotID'][pos_ind] = robotID
+            self.design['holeID'][pos_ind] = d.holeid
             # design['wokHoleID'][i] = design_targ_db[i]
-            self.design['obsWavelength'][pos_id] = d.label
+            self.design['obsWavelength'][pos_ind] = d.label
             # catch targets with no assigned priority
             try:
-                self.design['priority'][pos_id] = d.priority
+                self.design['priority'][pos_ind] = d.priority
             except AttributeError:
-                self.design['priority'][pos_id] = -1
-            self.design['carton_pk'][pos_id] = d.carton_pk
-            self.design['category'][pos_id] = d.cat_lab
-            self.design['ra'][pos_id] = d.ra
-            self.design['dec'][pos_id] = d.dec
-            self.design['delta_ra'][pos_id] = d.delta_ra
-            self.design['delta_dec'][pos_id] = d.delta_dec
-            self.design['pmra'][pos_id] = d.pmra
-            self.design['pmdec'][pos_id] = d.pmdec
-            self.design['epoch'][pos_id] = d.epoch
-            self.design['magnitudes'][pos_id][0] = d.g
-            self.design['magnitudes'][pos_id][1] = d.r
-            self.design['magnitudes'][pos_id][2] = d.i
-            self.design['magnitudes'][pos_id][3] = d.bp
-            self.design['magnitudes'][pos_id][4] = d.gaia_g
-            self.design['magnitudes'][pos_id][5] = d.rp
-            self.design['magnitudes'][pos_id][6] = d.h
+                self.design['priority'][pos_ind] = -1
+            self.design['carton_pk'][pos_ind] = d.carton_pk
+            self.design['category'][pos_ind] = d.cat_lab
+            self.design['ra'][pos_ind] = d.ra
+            self.design['dec'][pos_ind] = d.dec
+            self.design['delta_ra'][pos_ind] = d.delta_ra
+            self.design['delta_dec'][pos_ind] = d.delta_dec
+            self.design['pmra'][pos_ind] = d.pmra
+            self.design['pmdec'][pos_ind] = d.pmdec
+            self.design['epoch'][pos_ind] = d.epoch
+            self.design['magnitudes'][pos_ind][0] = d.g
+            self.design['magnitudes'][pos_ind][1] = d.r
+            self.design['magnitudes'][pos_ind][2] = d.i
+            self.design['magnitudes'][pos_ind][3] = d.bp
+            self.design['magnitudes'][pos_ind][4] = d.gaia_g
+            self.design['magnitudes'][pos_ind][5] = d.rp
+            self.design['magnitudes'][pos_ind][6] = d.h
 
         # set nan pm tp zero
         self.design['pmra'][np.isnan(self.design['pmra'])] = 0.
@@ -460,32 +521,7 @@ class FPSDesign(object):
                                  delta_ra=self.design['delta_ra'][ev],
                                  delta_dec=self.design['delta_dec'][ev])
         self.design['ra_off'][ev], self.design['dec_off'][ev] = res
-        with warnings.catch_warnings(record=True) as w:
-            res = radec2wokxy(
-                ra=self.design['ra_off'][ev],
-                dec=self.design['dec_off'][ev],
-                coordEpoch=Time(self.design['epoch'][ev],
-                                format='decimalyear').jd,
-                waveName=np.array(list(map(lambda x: x.title(),
-                                           self.design['obsWavelength'][ev]))),
-                raCen=self.racen,
-                decCen=self.deccen,
-                obsAngle=self.position_angle,
-                obsSite=self.observatory,
-                obsTime=self.obsTime)  #,
-                # pmra=self.design['pmra'],
-                # pmdec=self.design['pmdec'])
-            self.design['x'][ev] = res[0]
-            self.design['y'][ev] = res[1]
-            fieldWarn = res[2]
-            self.hourAngle = res[3]
-            self.positionAngle_coordio = res[4]
-            if len(w) > 0:
-                for wm in w:
-                    if 'iauPmsafe return' in wm.message.args[0]:
-                        flag = ('Coordio xy coordinates converted '
-                                'should be eyed with suspicion.')
-                        warnings.warn(flag, MugatuDesignWarning)
+        fieldWarn = self.radec_to_xy(ev)
 
         if np.any(fieldWarn):
             flag = ('Coordio xy coordinates converted '
@@ -570,8 +606,10 @@ class FPSDesign(object):
             # grab assignment info
             if self.exp == 0:
                 roboIDs = design['robotID']
+                holeIDs = design['holeID']
             else:
                 roboIDs = design['robotID'][:, self.exp - 1]
+                holeIDs = design['holeID'][:, self.exp - 1]
             if self.idtype == 'catalogID':
                 self.design['catalogID'] = (design_inst['catalogid']
                                             [roboIDs != -1])
@@ -585,19 +623,17 @@ class FPSDesign(object):
             self.design['pmra'] = design_inst['pmra'][roboIDs != -1]
             self.design['pmdec'] = design_inst['pmdec'][roboIDs != -1]
             self.design['epoch'] = design_inst['epoch'][roboIDs != -1]
-            self.design['robotID'] = roboIDs[roboIDs != -1]
-            self.design['holeID'] = np.zeros(len(self.design['robotID']),
-                                             dtype='<U10')
-            for i in range(len(self.design['robotID'])):
-                self.design['holeID'][i] = self.holeID_mapping[self.design['robotID'][i] - 1]
+            self.design['holeID'] = holeIDs[roboIDs != -1]
+            self.design['robotID'] = np.zeros(len(self.design['holeID']),
+                                              dtype=int) - 1
+            for i in range(len(self.design['holeID'])):
+                self.design['robotID'][i] = self.holeID_to_robotID(
+                    self.design['holeID'][i],
+                    return_ind=False)
             self.design['obsWavelength'] = (design_inst['fiberType']
                                             [roboIDs != -1])
             self.design['priority'] = design_inst['priority'][roboIDs != -1]
-            # need to change this
-            self.design['carton_pk'] = np.arange(0,
-                                                 len(self.design['catalogID']),
-                                                 1,
-                                                 dtype=int)
+            self.design['carton_pk'] = design_inst['carton_pk'][roboIDs != -1]
             self.design['category'] = design_inst['category'][roboIDs != -1]
             self.design['magnitudes'] = design_inst['magnitude'][roboIDs != -1]
 
@@ -625,32 +661,7 @@ class FPSDesign(object):
                                  delta_ra=self.design['delta_ra'][ev],
                                  delta_dec=self.design['delta_dec'][ev])
         self.design['ra_off'][ev], self.design['dec_off'][ev] = res
-        with warnings.catch_warnings(record=True) as w:
-            res = radec2wokxy(
-                ra=self.design['ra_off'][ev],
-                dec=self.design['dec_off'][ev],
-                coordEpoch=Time(self.design['epoch'][ev],
-                                format='decimalyear').jd,
-                waveName=np.array(list(map(lambda x: x.title(),
-                                           self.design['obsWavelength'][ev]))),
-                raCen=self.racen,
-                decCen=self.deccen,
-                obsAngle=self.position_angle,
-                obsSite=self.observatory,
-                obsTime=self.obsTime)  #,
-                # pmra=self.design['pmra'],
-                # pmdec=self.design['pmdec'])
-            self.design['x'][ev] = res[0]
-            self.design['y'][ev] = res[1]
-            fieldWarn = res[2]
-            self.hourAngle = res[3]
-            self.positionAngle_coordio = res[4]
-            if len(w) > 0:
-                for wm in w:
-                    if 'iauPmsafe return' in wm.message.args[0]:
-                        flag = ('Coordio xy coordinates converted '
-                                'should be eyed with suspicion.')
-                        warnings.warn(flag, MugatuDesignWarning)
+        fieldWarn = self.radec_to_xy(ev)
 
         if np.any(fieldWarn):
             flag = ('Coordio xy coordinates converted '
@@ -678,14 +689,16 @@ class FPSDesign(object):
             if self.design['robotID'][i] != -1:
                 if self.design['obsWavelength'][i] == 'BOSS':
                     self.rg.addTarget(targetID=self.design['catalogID'][i],
-                                      x=self.design['x'][i],
-                                      y=self.design['y'][i],
+                                      xyzWok=[self.design['x'][i],
+                                              self.design['y'][i],
+                                              POSITIONER_HEIGHT],
                                       priority=self.design['priority'][i],
                                       fiberType=kaiju.cKaiju.BossFiber)
                 else:
                     self.rg.addTarget(targetID=self.design['catalogID'][i],
-                                      x=self.design['x'][i],
-                                      y=self.design['y'][i],
+                                      xyzWok=[self.design['x'][i],
+                                              self.design['y'][i],
+                                              POSITIONER_HEIGHT],
                                       priority=self.design['priority'][i],
                                       fiberType=kaiju.cKaiju.ApogeeFiber)
         for i in range(len(self.design['x'])):
@@ -944,7 +957,8 @@ class FPSDesign(object):
                                                  .assignedTargetID)
             if self.valid_design['catalogID'][i] != -1:
                 self.valid_design['robotID'][i] = rid
-                self.valid_design['holeID'][i] = self.holeID_mapping[rid - 1]
+                ind_hole = np.where(self.robotID_mapping == rid)[0][0]
+                self.valid_design['holeID'][i] = self.holeID_mapping[ind_hole]
                 # is below necessary? i dont know if decollide ever reassigns
                 # or just removes
                 cond = eval("self.design['catalogID'] == self.valid_design['catalogID'][i]")

@@ -6,6 +6,7 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Update coordio/kaiju syntax to be compatible with coordio=1.2.1 and kaiju=1.2.2.
 * Add function to calculate assignment_hash for designs. Used to identify identical designs.
 * Check for reserved fieldids  in TargetFieldIDs object.
 * Add code to create summary of validation results as HTML page.
@@ -29,4 +30,3 @@ This document records the main changes to the ``mugatu`` code.
 * The bright neighbor check has been added to the verification of designs.
 * Finalized versions of all designmode checks are included in the verification of designs.
 * A new class has been added to check availability of field_id in targetdb.Field table.
-

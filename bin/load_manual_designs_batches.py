@@ -145,7 +145,7 @@ if __name__ == '__main__':
                                                          fiber_pks=fiber_pks[obs],
                                                          idtype='carton_to_target',
                                                          return_design_id=True)
-            ind = np.where((valid_results['file_name'] == file) &
+            ind = np.where((valid_results['file_name'] == file.split('/')[-1]) &
                            (valid_results['exp'] == i))[0][0]
             make_desigmmode_results_targetdb(
                 design_id=design_id,

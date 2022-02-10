@@ -450,7 +450,7 @@ def bright_neigh_exclusion_r(mag_bs, mag_limit_r, lunation):
         r_exclude = np.nanmax(np.column_stack((r_wings,
                                                r_trans,
                                                r_core)),
-                           axis=1)
+                              axis=1)
         r_exclude[mag_bs > mag_limit_r] = 0.
     return r_exclude
 
@@ -468,7 +468,7 @@ def adjusted_brigh_neigh_mag(mag_bs, r, lunation):
     mag_bs: float
         The magniutde in the G band for the bright star
 
-    r: float
+    r: float or np.array
         distance between fiber and bright star (in arcseconds)
 
     lunation: str:
@@ -486,9 +486,15 @@ def adjusted_brigh_neigh_mag(mag_bs, r, lunation):
         mag_core = (r / 1.75) ** (1 / 0.6) + mag_bs
     else:
         mag_core = (r / 1.5) ** (1 / 0.8) + mag_bs
-    adjusted_mag_bs = np.nanmin([mag_wings,
-                                 mag_trans,
-                                 mag_core])
+    if isinstance(r, float):
+        adjusted_mag_bs = np.nanmin([mag_wings,
+                                     mag_trans,
+                                     mag_core])
+    else:
+        adjusted_mag_bs = np.nanmin(np.column_stack((mag_wings,
+                                                     mag_trans,
+                                                     mag_core)),
+                                    axis=1)
     return adjusted_mag_bs
 
 
@@ -1180,11 +1186,17 @@ class DesignModeCheck(DesignMode):
             is robotID 1 to 500 robotID. True if robotID has intrument
             on fiber, False if not. If False, do not consider result from
             neigh_checks_des for this robotID
+
+        mag_adj_robo: np.array
+            If neigh_checks_des == False, reports the magntiude of nearby
+            bright source at the fiber position. If neigh_checks_des == True,
+            then no value reported (where NULL = -9999.).
         """
         # get xPos and yPos from robotGrid
         xrobo = np.zeros(500)
         yrobo = np.zeros(500)
         hasFiber = np.zeros(500, dtype=bool) + True
+        mag_adj_robo = np.zeros(500) - 9999.
         for i, robotID in enumerate(self.rg.robotDict):
             if instrument == 'BOSS':
                 xrobo[i] = self.rg.robotDict[robotID].bossWokXYZ[0]
@@ -1250,9 +1262,18 @@ class DesignModeCheck(DesignMode):
                 if r_exclude[i] > 0.:
                     dist = ang_sep(ras[i], decs[i],
                                    ra_robo, dec_robo) * 3600.
+                    if 'bright' in self.desmode_label:
+                        mag_adj = adjusted_brigh_neigh_mag(mags[i],
+                                                           dist,
+                                                           lunation='bright')
+                    else:
+                        mag_adj = adjusted_brigh_neigh_mag(mags[i],
+                                                           dist,
+                                                           lunation='dark')
                     neigh_checks[dist < r_exclude[i]] = False
+                    mag_adj_robo[dist < r_exclude[i]] = mag_adj[dist < r_exclude[i]]
 
-        return neigh_checks, hasFiber
+        return neigh_checks, hasFiber, mag_adj_robo
 
     def design_mode_check_all(self, verbose=True):
         """

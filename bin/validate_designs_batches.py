@@ -106,9 +106,11 @@ def design_outputs_to_array(des, decolide,
                       ('boss_sky_neighbors_targets', bool),
                       ('boss_sky_neighbors_targets_pass', np.int32),
                       ('boss_sky_neighbors_targets_total', np.int32),
+                      ('boss_sky_neighbors_targets_adj_mags', list),
                       ('apogee_sky_neighbors_targets', bool),
                       ('apogee_sky_neighbors_targets_pass', np.int32),
-                      ('apogee_sky_neighbors_targets_total', np.int32)])
+                      ('apogee_sky_neighbors_targets_total', np.int32),
+                      ('apogee_sky_neighbors_targets_adj_mags', list)])
     valid_arr = np.zeros(1, dtype=dtype)
     valid_arr['file_name'][0] = os.path.split(des.design_file)[-1]
     if des.exp == 0:
@@ -188,6 +190,8 @@ def design_outputs_to_array(des, decolide,
         if isinstance(des.design_errors[k + '_metric'], list):
             valid_arr[c + '_pass'][0] = des.design_errors[k + '_metric'][0]
             valid_arr[c + '_total'][0] = des.design_errors[k + '_metric'][1]
+            if len(des.design_errors[k + '_metric']) > 2:
+                valid_arr[c + '_adj_mags'][0] = des.design_errors[k + '_metric'][2]
         else:
             valid_arr[c + '_value'][0] = des.design_errors[k + '_metric']
     return valid_arr

@@ -458,7 +458,10 @@ def bright_neigh_exclusion_r(mag_bs, mag_limit_r, lunation):
 def adjusted_brigh_neigh_mag(mag_bs, r, lunation):
     """
     returns the approximate adjusted magntidue of a
-    bright source at the position of a nearby fiber
+    bright source at the position of a nearby fiber.
+    This is for the piecewise
+    appromixation used based on:
+    https://wiki.sdss.org/pages/viewpage.action?pageId=100173069
 
     Parameters
     ----------
@@ -480,9 +483,9 @@ def adjusted_brigh_neigh_mag(mag_bs, r, lunation):
     mag_wings = 8.2 + 0.05 * r + mag_bs
     mag_trans = 4.5 + 0.25 * r + mag_bs
     if lunation == 'bright':
-        mag_core = (r / 1.75) ** (1 / 0.6)
+        mag_core = (r / 1.75) ** (1 / 0.6) + mag_bs
     else:
-        mag_core = (r / 1.5) ** (1 / 0.8)
+        mag_core = (r / 1.5) ** (1 / 0.8) + mag_bs
     adjusted_mag_bs = np.nanmin([mag_wings,
                                  mag_trans,
                                  mag_core])

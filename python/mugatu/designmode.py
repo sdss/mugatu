@@ -1393,13 +1393,17 @@ class DesignModeCheck(DesignMode):
         check_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][0] &
                                                               self.bright_neighbor_check['BOSS'][1]])
         design_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][1]])
-        self.bright_neighbor_check['BOSS_metric'] = [check_tot, design_tot]
+        mag_adj_near_bs = self.bright_neighbor_check['BOSS'][2][~self.bright_neighbor_check['BOSS'][0] &
+                                                                self.bright_neighbor_check['BOSS'][1]]
+        self.bright_neighbor_check['BOSS_metric'] = [check_tot, design_tot, mag_adj_near_bs]
         self.bright_neighbor_check['APOGEE'] = self.bright_neighbors(instrument='APOGEE',
                                                                      check_type='designmode')
         check_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][0] &
                                                                 self.bright_neighbor_check['APOGEE'][1]])
         design_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][1]])
-        self.bright_neighbor_check['APOGEE_metric'] = [check_tot, design_tot]
+        mag_adj_near_bs = self.bright_neighbor_check['APOGEE'][2][~self.bright_neighbor_check['APOGEE'][0] &
+                                                                  self.bright_neighbor_check['APOGEE'][1]]
+        self.bright_neighbor_check['APOGEE_metric'] = [check_tot, design_tot, mag_adj_near_bs]
 
         if verbose:
             verbose_output = ''

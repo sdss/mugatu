@@ -106,11 +106,13 @@ def design_outputs_to_array(des, decolide,
                       ('boss_sky_neighbors_targets', bool),
                       ('boss_sky_neighbors_targets_pass', np.int32),
                       ('boss_sky_neighbors_targets_total', np.int32),
-                      ('boss_sky_neighbors_targets_adj_mags', list),
+                      ('boss_sky_neighbors_targets_adj_mags', float,
+                       (len(des.design_errors['boss_sky_neighbors_targets_metric'][2]),)),
                       ('apogee_sky_neighbors_targets', bool),
                       ('apogee_sky_neighbors_targets_pass', np.int32),
                       ('apogee_sky_neighbors_targets_total', np.int32),
-                      ('apogee_sky_neighbors_targets_adj_mags', list)])
+                      ('apogee_sky_neighbors_targets_adj_mags', float,
+                       (len(des.design_errors['apogee_sky_neighbors_targets_metric'][2]),))])
     valid_arr = np.zeros(1, dtype=dtype)
     valid_arr['file_name'][0] = os.path.split(des.design_file)[-1]
     if des.exp == 0:

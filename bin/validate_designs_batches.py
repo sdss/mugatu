@@ -191,7 +191,7 @@ def design_outputs_to_array(des, decolide,
             valid_arr[c + '_pass'][0] = des.design_errors[k + '_metric'][0]
             valid_arr[c + '_total'][0] = des.design_errors[k + '_metric'][1]
             if len(des.design_errors[k + '_metric']) > 2:
-                valid_arr[c + '_adj_mags'][0] = des.design_errors[k + '_metric'][2]
+                valid_arr[c + '_adj_mags'][0] = list(des.design_errors[k + '_metric'][2])
         else:
             valid_arr[c + '_value'][0] = des.design_errors[k + '_metric']
     return valid_arr

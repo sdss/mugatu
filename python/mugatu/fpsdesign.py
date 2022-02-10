@@ -910,9 +910,9 @@ class FPSDesign(object):
                                db_query_results_boss=db_query_results_boss,
                                db_query_results_apogee=db_query_results_apogee,
                                desmode_manual=desmode_manual)
-        bright_check_boss, hasFiber_boss = mode.bright_neighbors(instrument='BOSS',
+        bright_check_boss, hasFiber_boss, _ = mode.bright_neighbors(instrument='BOSS',
                                                                  check_type='safety')
-        bright_check_apogee, hasFiber_apogee = mode.bright_neighbors(instrument='APOGEE',
+        bright_check_apogee, hasFiber_apogee, _ = mode.bright_neighbors(instrument='APOGEE',
                                                                      check_type='safety')
         if (len(bright_check_boss[~bright_check_boss & hasFiber_boss]) > 0 or
            len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]) > 0):

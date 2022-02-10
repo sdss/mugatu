@@ -1272,6 +1272,8 @@ class DesignModeCheck(DesignMode):
                                                            lunation='dark')
                     neigh_checks[dist < r_exclude[i]] = False
                     mag_adj_robo[dist < r_exclude[i]] = mag_adj[dist < r_exclude[i]]
+        # dont accoutn for places where no fiber
+        mag_adj_robo[~hasFiber] = -9999.
 
         return neigh_checks, hasFiber, mag_adj_robo
 
@@ -1393,16 +1395,14 @@ class DesignModeCheck(DesignMode):
         check_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][0] &
                                                               self.bright_neighbor_check['BOSS'][1]])
         design_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][1]])
-        mag_adj_near_bs = self.bright_neighbor_check['BOSS'][2][~self.bright_neighbor_check['BOSS'][0] &
-                                                                self.bright_neighbor_check['BOSS'][1]]
+        mag_adj_near_bs = self.bright_neighbor_check['BOSS'][2]
         self.bright_neighbor_check['BOSS_metric'] = [check_tot, design_tot, mag_adj_near_bs]
         self.bright_neighbor_check['APOGEE'] = self.bright_neighbors(instrument='APOGEE',
                                                                      check_type='designmode')
         check_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][0] &
                                                                 self.bright_neighbor_check['APOGEE'][1]])
         design_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][1]])
-        mag_adj_near_bs = self.bright_neighbor_check['APOGEE'][2][~self.bright_neighbor_check['APOGEE'][0] &
-                                                                  self.bright_neighbor_check['APOGEE'][1]]
+        mag_adj_near_bs = self.bright_neighbor_check['APOGEE'][2]
         self.bright_neighbor_check['APOGEE_metric'] = [check_tot, design_tot, mag_adj_near_bs]
 
         if verbose:

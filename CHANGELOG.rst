@@ -6,6 +6,10 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* :release:`1.1.1 <2022-02-15>`
+* For bright neighbor check, only fail check when assigned fibers are too near a bright source (i.e. no longer include unassigned fibers).
+* In DesignMode outputs for bright neighbor check, include adjusted magnitudes for fibers near bright sources.
+
 * :release:`1.1.0 <2022-02-03>`
 * Update coordio/kaiju syntax to be compatible with coordio=1.2.1 and kaiju=1.2.2.
 * Add function to calculate assignment_hash for designs. Used to identify identical designs.

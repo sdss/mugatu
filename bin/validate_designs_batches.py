@@ -149,18 +149,22 @@ def design_outputs_to_array(des, decolide,
                                db_query_results_boss=db_query_results_boss,
                                db_query_results_apogee=db_query_results_apogee,
                                desmode_manual=desmode_manual.todict())
-        bright_check_boss, hasFiber_boss, _ = mode.bright_neighbors(instrument='BOSS',
-                                                                 check_type='safety')
+        bright_check_boss, hasFiber_boss, _, isassigned_boss = mode.bright_neighbors(
+            instrument='BOSS', check_type='safety')
         check_tot = len(bright_check_boss[bright_check_boss &
-                                          hasFiber_boss])
-        design_tot = len(bright_check_boss[hasFiber_boss])
+                                          hasFiber_boss &
+                                          isassigned_boss])
+        design_tot = len(bright_check_boss[hasFiber_boss &
+                                           isassigned_boss])
         valid_arr['bright_safety_pass'][0] = check_tot
         valid_arr['bright_safety_total'][0] = design_tot
-        bright_check_apogee, hasFiber_apogee, _ = mode.bright_neighbors(instrument='APOGEE',
-                                                                     check_type='safety')
+        bright_check_apogee, hasFiber_apogee, _, isassigned_apogee = mode.bright_neighbors(
+            instrument='APOGEE', check_type='safety')
         check_tot = len(bright_check_apogee[bright_check_apogee &
-                                            hasFiber_apogee])
-        design_tot = len(bright_check_apogee[hasFiber_apogee])
+                                            hasFiber_apogee &
+                                            isassigned_apogee])
+        design_tot = len(bright_check_apogee[hasFiber_apogee &
+                                             isassigned_apogee])
         valid_arr['bright_safety_pass'][0] += check_tot
         valid_arr['bright_safety_total'][0] += design_tot
     else:

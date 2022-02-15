@@ -880,7 +880,8 @@ class FPSDesign(object):
             warnings.warn(flag, MugatuDesignModeWarning)
 
         self.design_errors['bright_neigh_boss'] = np.all(
-            mode.bright_neighbor_check['BOSS'][0][mode.bright_neighbor_check['BOSS'][1]])
+            mode.bright_neighbor_check['BOSS'][0][mode.bright_neighbor_check['BOSS'][1] &
+                                                  mode.bright_neighbor_check['BOSS'][3]])
         self.design_errors['bright_neigh_boss_metric'] = mode.bright_neighbor_check['BOSS_metric']
         if self.design_errors['bright_neigh_boss'] == False:
             flag = ('Design has BOSS fibers too near '
@@ -888,7 +889,8 @@ class FPSDesign(object):
             warnings.warn(flag, MugatuDesignModeWarning)
 
         self.design_errors['bright_neigh_apogee'] = np.all(
-            mode.bright_neighbor_check['APOGEE'][0][mode.bright_neighbor_check['APOGEE'][1]])
+            mode.bright_neighbor_check['APOGEE'][0][mode.bright_neighbor_check['APOGEE'][1] &
+                                                    mode.bright_neighbor_check['APOGEE'][3]])
         self.design_errors['bright_neigh_apogee_metric'] = (mode
                                                             .bright_neighbor_check
                                                             ['APOGEE_metric'])
@@ -910,16 +912,16 @@ class FPSDesign(object):
                                db_query_results_boss=db_query_results_boss,
                                db_query_results_apogee=db_query_results_apogee,
                                desmode_manual=desmode_manual)
-        bright_check_boss, hasFiber_boss, _ = mode.bright_neighbors(instrument='BOSS',
-                                                                 check_type='safety')
-        bright_check_apogee, hasFiber_apogee, _ = mode.bright_neighbors(instrument='APOGEE',
-                                                                     check_type='safety')
-        if (len(bright_check_boss[~bright_check_boss & hasFiber_boss]) > 0 or
-           len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee]) > 0):
+        bright_check_boss, hasFiber_boss, _, isassigned_boss = mode.bright_neighbors(
+            instrument='BOSS',check_type='safety')
+        bright_check_apogee, hasFiber_apogee, _, isassigned_apogee = mode.bright_neighbors(
+            instrument='APOGEE', check_type='safety')
+        if (len(bright_check_boss[~bright_check_boss & hasFiber_boss & isassigned_boss]) > 0 or
+           len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee & isassigned_apogee]) > 0):
             message = 'Bright Neighbor Safety Checked Failed,'
             message += (' %d BOSS and %d APOGEE fibers near bright sources' %
-                        (len(bright_check_boss[~bright_check_boss & hasFiber_boss]),
-                         len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee])))
+                        (len(bright_check_boss[~bright_check_boss & hasFiber_boss & isassigned_boss]),
+                         len(bright_check_apogee[~bright_check_apogee & hasFiber_apogee & isassigned_apogee])))
             raise MugatuDesignError(message=message)
         return
 

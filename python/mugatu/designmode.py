@@ -1191,11 +1191,17 @@ class DesignModeCheck(DesignMode):
             If neigh_checks_des == False, reports the magntiude of nearby
             bright source at the fiber position. If neigh_checks_des == True,
             then no value reported (where NULL = -9999.).
+
+        isassigned: np.array
+            Array of booleans equal to length of 500, where order
+            is robotID 1 to 500 robotID. True if robotID is assigned in grid
+            and False if it is not.
         """
         # get xPos and yPos from robotGrid
         xrobo = np.zeros(500)
         yrobo = np.zeros(500)
         hasFiber = np.zeros(500, dtype=bool) + True
+        isassigned = np.zeros(500, dtype=bool) + True
         mag_adj_robo = np.zeros(500) - 9999.
         for i, robotID in enumerate(self.rg.robotDict):
             if instrument == 'BOSS':
@@ -1205,6 +1211,7 @@ class DesignModeCheck(DesignMode):
                 hasFiber[i] = self.rg.robotDict[robotID].hasApogee
                 xrobo[i] = self.rg.robotDict[robotID].apWokXYZ[0]
                 yrobo[i] = self.rg.robotDict[robotID].apWokXYZ[1]
+            isassigned[i] = self.rg.robotDict[robotID].isAssigned()
 
         ra_robo, dec_robo, fieldWarn = wokxy2radec(xWok=xrobo,
                                                    yWok=yrobo,
@@ -1275,7 +1282,7 @@ class DesignModeCheck(DesignMode):
         # dont accoutn for places where no fiber
         mag_adj_robo[~hasFiber] = -9999.
 
-        return neigh_checks, hasFiber, mag_adj_robo
+        return neigh_checks, hasFiber, mag_adj_robo, isassigned
 
     def design_mode_check_all(self, verbose=True):
         """
@@ -1393,15 +1400,19 @@ class DesignModeCheck(DesignMode):
         self.bright_neighbor_check['BOSS'] = self.bright_neighbors(instrument='BOSS',
                                                                    check_type='designmode')
         check_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][0] &
-                                                              self.bright_neighbor_check['BOSS'][1]])
-        design_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][1]])
+                                                              self.bright_neighbor_check['BOSS'][1] &
+                                                              self.bright_neighbor_check['BOSS'][3]])
+        design_tot = len(self.bright_neighbor_check['BOSS'][0][self.bright_neighbor_check['BOSS'][1] &
+                                                               self.bright_neighbor_check['BOSS'][3]])
         mag_adj_near_bs = self.bright_neighbor_check['BOSS'][2]
         self.bright_neighbor_check['BOSS_metric'] = [check_tot, design_tot, mag_adj_near_bs]
         self.bright_neighbor_check['APOGEE'] = self.bright_neighbors(instrument='APOGEE',
                                                                      check_type='designmode')
         check_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][0] &
-                                                                self.bright_neighbor_check['APOGEE'][1]])
-        design_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][1]])
+                                                                self.bright_neighbor_check['APOGEE'][1] &
+                                                                self.bright_neighbor_check['APOGEE'][3]])
+        design_tot = len(self.bright_neighbor_check['APOGEE'][0][self.bright_neighbor_check['APOGEE'][1] &
+                                                                 self.bright_neighbor_check['APOGEE'][3]])
         mag_adj_near_bs = self.bright_neighbor_check['APOGEE'][2]
         self.bright_neighbor_check['APOGEE_metric'] = [check_tot, design_tot, mag_adj_near_bs]
 

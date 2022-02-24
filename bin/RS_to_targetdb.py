@@ -8,6 +8,7 @@ import sys
 import argparse
 import os
 import warnings
+import numpy as np
 
 from astropy.io import fits
 

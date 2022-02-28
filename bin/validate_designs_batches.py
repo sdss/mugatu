@@ -15,7 +15,7 @@ import robostrategy.obstime as obstime
 import coordio.time
 
 from mugatu.fpsdesign import FPSDesign
-from mugatu.exceptions import MugatuDesignError
+from mugatu.exceptions import MugatuDesignError, MugatuError
 from mugatu.designmode import DesignModeCheck
 from mugatu.designmode import build_brigh_neigh_query, allDesignModes
 from multiprocessing import Pool
@@ -230,17 +230,22 @@ if __name__ == '__main__':
         description='In a batch, validate a set of designs')
     parser.add_argument('-t', '--type', dest='type',
                         type=str, help='Validating files in directory (dir) or robostrategy (rs)', 
-                        choices=['dir', 'rs'], required=True)
+                        choices=['dir', 'rs', 'rs_replace'], required=True)
     parser.add_argument('-l', '--loc', dest='loc',
                         type=str, help='local or utah',
                         choices=['local', 'utah'], required=True)
     parser.add_argument('-d', '--dir', dest='dir',
-                        type=str, help='directory with design files (for type=dir)', required=False)
+                        type=str, help='directory with design files (for type=dir)',
+                        required=False)
     parser.add_argument('-p', '--plan', dest='plan',
-                        type=str, help='name of plan (for type=rs)', required=False)
+                        type=str, help='name of plan (for type=rs or type=rs_replace)',
+                        required=False)
     parser.add_argument('-o', '--observatory', dest='observatory',
                         type=str, help='apo or lco (for type=rs)',
                         choices=['apo', 'lco'], required=False)
+    parser.add_argument('-f', '--fieldids', dest='fieldids', nargs='+',
+                        help='field_ids to validate (for type=rs_replace)',
+                        type=int, required=False)
     parser.add_argument('-n', '--Ncores', dest='Ncores',
                         type=int, help='number of cores to use. If Ncores=1, then not run in parallal.',
                         default=1, nargs='?')
@@ -251,6 +256,7 @@ if __name__ == '__main__':
     directory = args.dir
     plan = args.plan
     observatory = args.observatory
+    fieldids = args.fieldids
     Ncores = args.Ncores
 
     if loc == 'local':
@@ -269,7 +275,7 @@ if __name__ == '__main__':
                                                   port=5432)
     if vtype == 'dir':
         files = [file for file in glob.glob(directory + '*.fits')]
-    else:
+    elif vtype == 'rs':
         files = []
 
         allocate_file = sdss_path.full('rsAllocationFinal', plan=plan,
@@ -293,10 +299,25 @@ if __name__ == '__main__':
                 field_assigned_file = field_assigned_file[:32] + 'sdss50' + field_assigned_file[44:]
 
             files.append(field_assigned_file)
+    elif vtype == 'rs_replace':
+        replace_path = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                        'target/robostrategy_replacement/{plan}/'.format(
+                            plan=plan))
+        files = []
+        for fid in fieldids:
+            files += [file for file in glob.glob(replace_path +
+                                                 '{plan}_{fid}*.fits'.format(
+                                                     plan=plan,
+                                                     fid=fid))]
+        for f in files:
+            if 'validation' in f:
+                files.remove(f)
+    else:
+        raise MugatuError(message='Improper Validation Type')
 
     if vtype == 'dir':
         file_save = directory + 'design_validation_results.fits'
-    else:
+    elif vtype == 'rs':
         if not os.path.isdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
                               'sandbox/mugatu/rs_plan_validations/{plan}'
                               .format(plan=plan))):
@@ -308,11 +329,21 @@ if __name__ == '__main__':
                      'rs_{plan}_{obs}_design_validation_results.fits'.format(
                          plan=plan,
                          obs=observatory))
+    elif vtype == 'rs_replace':
+        replace_path = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                        'target/robostrategy_replacement/{plan}/'.format(
+                            plan=plan))
+        file_save = []
+        for f in files:
+            file_save.append(f[:-5] + '_validation.fits')
+    else:
+        raise MugatuError(message='Improper Validation Type')
+
     start = time.time()
     # grab all designmodes
     desmodes = allDesignModes()
     # start validaitng designs
-    for file in files:
+    for i, file in enumerate(files):
         # get header info
         head = fits.open(file)[0].header
         racen = head['RACEN']
@@ -412,7 +443,12 @@ if __name__ == '__main__':
                                               valid_arr_des)
                     else:
                         valid_arr = valid_arr_des
+        if vtype == 'rs_replace':
+            valid_arr = Table(valid_arr)
+            valid_arr.write(file_save[i], format='fits')
+            del valid_arr
     # write to fits file
-    valid_arr = Table(valid_arr)
-    valid_arr.write(file_save, format='fits')
+    if vtype == 'dir' or vtype == 'rs':
+        valid_arr = Table(valid_arr)
+        valid_arr.write(file_save, format='fits')
     print('Took %.3f minutes to validate designs' % ((time.time() - start) / 60))

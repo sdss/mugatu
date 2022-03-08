@@ -789,15 +789,15 @@ class DesignModeCheck(DesignMode):
         self.carton_classes['std'] = []
         for cat in np.unique(self.design['category'][self.design['catalogID'] != -1]):
             if 'sky' in cat:
-                self.carton_classes['sky'] += list(self.design['carton_pk'][(self.design['catalogID'] != -1) &
+                self.carton_classes['sky'] += list(self.design['category'][(self.design['catalogID'] != -1) &
                                                                             (self.design['category'] == cat)])
             elif 'standard' in cat:
-                self.carton_classes['std'] += list(self.design['carton_pk'][(self.design['catalogID'] != -1) &
+                self.carton_classes['std'] += list(self.design['category'][(self.design['catalogID'] != -1) &
                                                                             (self.design['category'] == cat)])
             # I think else makes sense here as there are science
             # and open fiber labels?
             else:
-                self.carton_classes['science'] += list(self.design['carton_pk'][(self.design['catalogID'] != -1) &
+                self.carton_classes['science'] += list(self.design['category'][(self.design['catalogID'] != -1) &
                                                                                 (self.design['category'] == cat)])
 
         # collect magntiudes of design
@@ -831,7 +831,7 @@ class DesignModeCheck(DesignMode):
             return_metric=True.
         """
         n_skies = len(self.design['catalogID'][(self.design['catalogID'] != -1) &
-                                                     (np.isin(self.design['carton_pk'],
+                                                     (np.isin(self.design['category'],
                                                               self.carton_classes['sky'])) &
                                                      (self.design['obsWavelength'] == instrument)])
         if return_metric:
@@ -872,7 +872,7 @@ class DesignModeCheck(DesignMode):
             return_metric=True.
         """
         n_stds = len(self.design['catalogID'][(self.design['catalogID'] != -1) &
-                                                    (np.isin(self.design['carton_pk'],
+                                                    (np.isin(self.design['category'],
                                                              self.carton_classes['std'])) &
                                                     (self.design['obsWavelength'] == instrument)])
         if return_metric:
@@ -923,20 +923,20 @@ class DesignModeCheck(DesignMode):
                 return True
         # get x,y of the skies
         x_sky = self.design['x'][(self.design['catalogID'] != -1) &
-                                 (np.isin(self.design['carton_pk'],
+                                 (np.isin(self.design['category'],
                                           self.carton_classes['sky'])) &
                                  (self.design['obsWavelength'] == instrument)]
         y_sky = self.design['y'][(self.design['catalogID'] != -1) &
-                                 (np.isin(self.design['carton_pk'],
+                                 (np.isin(self.design['category'],
                                           self.carton_classes['sky'])) &
                                  (self.design['obsWavelength'] == instrument)]
 
         x_sci = self.design['x'][(self.design['catalogID'] != -1) &
-                                 (~np.isin(self.design['carton_pk'],
+                                 (~np.isin(self.design['category'],
                                            self.carton_classes['sky'])) &
                                  (self.design['obsWavelength'] == instrument)]
         y_sci = self.design['y'][(self.design['catalogID'] != -1) &
-                                 (~np.isin(self.design['carton_pk'],
+                                 (~np.isin(self.design['category'],
                                            self.carton_classes['sky'])) &
                                  (self.design['obsWavelength'] == instrument)]
 
@@ -1020,20 +1020,20 @@ class DesignModeCheck(DesignMode):
                 return True
         # get x,y of the standards
         x_std = self.design['x'][(self.design['catalogID'] != -1) &
-                                 (np.isin(self.design['carton_pk'],
+                                 (np.isin(self.design['category'],
                                           self.carton_classes['std'])) &
                                  (self.design['obsWavelength'] == instrument)]
         y_std = self.design['y'][(self.design['catalogID'] != -1) &
-                                 (np.isin(self.design['carton_pk'],
+                                 (np.isin(self.design['category'],
                                           self.carton_classes['std'])) &
                                  (self.design['obsWavelength'] == instrument)]
 
         x_sci = self.design['x'][(self.design['catalogID'] != -1) &
-                                 (~np.isin(self.design['carton_pk'],
+                                 (~np.isin(self.design['category'],
                                            self.carton_classes['std'])) &
                                  (self.design['obsWavelength'] == instrument)]
         y_sci = self.design['y'][(self.design['catalogID'] != -1) &
-                                 (~np.isin(self.design['carton_pk'],
+                                 (~np.isin(self.design['category'],
                                            self.carton_classes['std'])) &
                                  (self.design['obsWavelength'] == instrument)]
 
@@ -1133,7 +1133,7 @@ class DesignModeCheck(DesignMode):
         # run checks
         for i in range(len(mag_checks)):
             if (self.design['catalogID'][i] != -1 and
-                self.design['carton_pk'][i] in self.carton_classes[carton_class] and
+                self.design['category'][i] in self.carton_classes[carton_class] and
                 self.design['obsWavelength'][i] == instrument):
                 # check in each band that has check defined
                 targ_check = np.zeros(len(check_inds), dtype=bool)
@@ -1362,7 +1362,7 @@ class DesignModeCheck(DesignMode):
                                                        'std')
         check_tot = len(self.stds_mags_check['BOSS'][0][self.stds_mags_check['BOSS'][0]])
         design_tot = len(self.design['x'][(self.design['catalogID'] != -1) &
-                                          (np.isin(self.design['carton_pk'],
+                                          (np.isin(self.design['category'],
                                                    self.carton_classes['std'])) &
                                           (self.design['obsWavelength'] == 'BOSS')])
         self.stds_mags_check['BOSS_metric'] = [check_tot, design_tot]
@@ -1371,7 +1371,7 @@ class DesignModeCheck(DesignMode):
                                                          'std')
         check_tot = len(self.stds_mags_check['APOGEE'][0][self.stds_mags_check['APOGEE'][0]])
         design_tot = len(self.design['x'][(self.design['catalogID'] != -1) &
-                                          (np.isin(self.design['carton_pk'],
+                                          (np.isin(self.design['category'],
                                                    self.carton_classes['std'])) &
                                           (self.design['obsWavelength'] == 'APOGEE')])
         self.stds_mags_check['APOGEE_metric'] = [check_tot, design_tot]
@@ -1382,7 +1382,7 @@ class DesignModeCheck(DesignMode):
                                                                   'science')
         check_tot = len(self.bright_limit_targets_check['BOSS'][0][self.bright_limit_targets_check['BOSS'][0]])
         design_tot = len(self.design['x'][(self.design['catalogID'] != -1) &
-                                          (np.isin(self.design['carton_pk'],
+                                          (np.isin(self.design['category'],
                                                    self.carton_classes['science'])) &
                                           (self.design['obsWavelength'] == 'BOSS')])
         self.bright_limit_targets_check['BOSS_metric'] = [check_tot, design_tot]
@@ -1391,7 +1391,7 @@ class DesignModeCheck(DesignMode):
                                                                     'science')
         check_tot = len(self.bright_limit_targets_check['APOGEE'][0][self.bright_limit_targets_check['APOGEE'][0]])
         design_tot = len(self.design['x'][(self.design['catalogID'] != -1) &
-                                          (np.isin(self.design['carton_pk'],
+                                          (np.isin(self.design['category'],
                                                    self.carton_classes['science'])) &
                                           (self.design['obsWavelength'] == 'APOGEE')])
         self.bright_limit_targets_check['APOGEE_metric'] = [check_tot, design_tot]

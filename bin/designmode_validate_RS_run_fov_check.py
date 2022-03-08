@@ -172,6 +172,69 @@ def stds_fov(instrument, design, carton_classes,
     return perc_dist
 
 
+def skies_fov(instrument, design, carton_classes,
+              min_stds_fovmetric):
+    """
+    Checks if design meets the FOV metric for the standards
+    for some instrument. Returns True FOV metric met,
+    False if not. Also, if no science targets in design
+    returns True, while no standards returns False.
+
+    Parameters
+    ----------
+    instrument: str
+        Instrument to FOV metric.
+        Must be 'BOSS' or 'APOGEE'.
+
+    Returns
+    -------
+    : boolean
+        True FOV metric met,
+        False if not. Also, if no science targets in design
+        returns True, while no standards returns False.
+    """
+    # get x,y of the standards
+    x_std = design['x'][(design['catalogID'] != -1) &
+                        (np.isin(design['carton_pk'],
+                                 carton_classes['sky'])) &
+                        (design['obsWavelength'] == instrument)]
+    y_std = design['y'][(design['catalogID'] != -1) &
+                        (np.isin(design['carton_pk'],
+                                 carton_classes['sky'])) &
+                        (design['obsWavelength'] == instrument)]
+
+    x_sci = design['x'][(design['catalogID'] != -1) &
+                        (np.isin(design['carton_pk'],
+                                 carton_classes['science'])) &
+                        (design['obsWavelength'] == instrument)]
+    y_sci = design['y'][(design['catalogID'] != -1) &
+                        (np.isin(design['carton_pk'],
+                                 carton_classes['science'])) &
+                        (design['obsWavelength'] == instrument)]
+
+    # if no skies, dont do check
+    if len(x_std) == 0:
+        return -1.
+    # if no science in band, doesnt matter?
+    if len(x_sci) == 0:
+        return -2.
+
+    # create KDE tree
+    tree = cKDTree(np.column_stack((x_std, y_std)))
+    # get distances for nearest neighbors
+    dd, ii = tree.query(np.column_stack((x_sci, y_sci)),
+                        k=min_stds_fovmetric[instrument][0])
+    # second column is the nth neighbor distance if k>1
+    if min_stds_fovmetric[instrument][0] == 1:
+        dists = dd
+    else:
+        dists = dd[:, 1]
+    # this assumes percentile is on 0 to 100 scale
+    perc_dist = np.percentile(dists,
+                              min_stds_fovmetric[instrument][1])
+    return perc_dist
+
+
 if __name__ == '__main__':
 
     # grabbed the parser from robostratgey code to keep consistent
@@ -206,45 +269,22 @@ if __name__ == '__main__':
 
     fieldids = rsField[1].data["fieldid"]
 
-    designmodes = pd.read_csv('DesignMode_values.txt', sep=';')
-
-    # setup dict
-    desmode_manuals = {}
-    for ind in range(len(designmodes)):
-        desmode_manual = {}
-        desmode_manual['boss_skies_min'] = designmodes.loc[ind,'BOSS_skies_min']
-        desmode_manual['apogee_skies_min'] = designmodes.loc[ind,'APOGEE_skies_min']
-        desmode_manual['boss_skies_fov'] = arrayify(designmodes.loc[ind,'BOSS_skies_FOV'])
-        desmode_manual['apogee_skies_fov'] = arrayify(designmodes.loc[ind,'APOGEE_skies_FOV'])
-        desmode_manual['boss_stds_min'] = designmodes.loc[ind,'BOSS_stds_min']
-        desmode_manual['apogee_stds_min'] = designmodes.loc[ind,'APOGEE_stds_min']
-        desmode_manual['boss_stds_fov'] = arrayify(designmodes.loc[ind,'BOSS_stds_FOV'])
-        desmode_manual['apogee_stds_fov'] = arrayify(designmodes.loc[ind,'APOGEE_stds_FOV'])
-        desmode_manual['boss_stds_mags'] = np.column_stack((arrayify(designmodes.loc[ind,'BOSS_stds_mags_min']),
-                                                            arrayify(designmodes.loc[ind,'BOSS_stds_mags_max'])))
-        desmode_manual['apogee_stds_mags'] = np.column_stack((arrayify(designmodes.loc[ind,'APOGEE_stds_mags_min']),
-                                                              arrayify(designmodes.loc[ind,'APOGEE_stds_mags_max'])))
-        desmode_manual['boss_bright_limit_targets'] = np.column_stack((arrayify(designmodes.loc[ind,'BOSS_bright_limit_targets_min']),
-                                                                       arrayify(designmodes.loc[ind,'BOSS_bright_limit_targets_max'])))
-        desmode_manual['apogee_bright_limit_targets'] = np.column_stack((arrayify(designmodes.loc[ind,'APOGEE_bright_limit_targets_min']),
-                                                                         arrayify(designmodes.loc[ind,'APOGEE_bright_limit_targets_max'])))
-        desmode_manual['boss_sky_neighbors_targets'] = np.array([5, 5, 5])
-        desmode_manual['apogee_sky_neighbors_targets'] = np.array([5, 5, 5])
-        desmode_manual['apogee_trace_diff_targets'] = None
-        desmode_manuals[designmodes.loc[ind,'pk']] = desmode_manual
-
     start = time.time()
     bad = 0
 
-    with open('rs_%s_%s_designmode_FOV_results_sdssdb_0_4_9_corr_fov_func.txt' % (plan, observatory), 'w') as f:
-        header = ['fieldid',
-                  'exp',
-                  'cadence',
-                  'designmode',
-                  'n_APOGEE_stds',
-                  'APOGGEE_std_FOV_r',
-                  'n_BOSS_stds',
-                  'BOSS_std_FOV_r']
+    with open('rs_%s_%s_designmode_FOV_results.txt' % (plan, observatory), 'w') as f:
+        header =['fieldid',
+                 'exp',
+                 'cadence',
+                 'designmode',
+                 'n_APOGEE_stds',
+                 'APOGGEE_std_FOV_r',
+                 'n_BOSS_stds',
+                 'BOSS_std_FOV_r',
+                 'n_APOGEE_skies',
+                 'APOGGEE_sky_FOV_r',
+                 'n_BOSS_skies',
+                 'BOSS_sky_FOV_r']
         f.write('\t'.join([str(x) for x in header]) + '\n')
 
         for fieldid in fieldids:
@@ -255,6 +295,7 @@ if __name__ == '__main__':
                                                  fieldid=fieldid)
             field_assign_1 = fits.open(field_assigned_file)[1].data
             field_assign_2 = fits.open(field_assigned_file)[2].data
+            desmodes_field = fits.open(field_assigned_file)[3].data
             head = fits.open(field_assigned_file)[0].header
 
             carton_pks = np.zeros(len(field_assign_1['catalogid']), dtype=int)
@@ -306,20 +347,15 @@ if __name__ == '__main__':
                         'n_APOGEE_stds',
                         'APOGGEE_std_FOV_r',
                         'n_BOSS_stds',
-                        'BOSS_std_FOV_r']
+                        'BOSS_std_FOV_r',
+                        'n_APOGEE_skies',
+                        'APOGGEE_sky_FOV_r',
+                        'n_BOSS_skies',
+                        'BOSS_sky_FOV_r']
                 line[0] = fieldid
                 line[1] = i
                 line[2] = head['FCADENCE']
-                if 'bright' in head['FCADENCE']:
-                    line[3] = 'Bright Time'
-                elif head['FCADENCE'] == 'dark_174x8' or head['FCADENCE'] == 'dark_100x8':
-                    line[3] = 'Dark RM'
-                elif head['FCADENCE'] == 'dark_10x4' or head['FCADENCE'] == 'dark_2x4':
-                    line[3] = 'Dark Monitoring'
-                elif head['FCADENCE'] == 'dark_2x2' or head['FCADENCE'] == 'dark_4x1':
-                    line[3] = 'Dark Faint'
-                else:
-                    line[3] = 'Dark Plane'
+                line[3] = head['DESMODE'].split(' ')[i]
 
                 exp_ev = eval("roboid != -1")
 
@@ -358,11 +394,12 @@ if __name__ == '__main__':
                 #     else:
                 #         carton_classes['science'].append(pk)
 
+                des_ind = np.where(desmodes_field['label'] == line[3])[0][0]
                 min_stds_fovmetric = {}
-                min_stds_fovmetric['BOSS'] = desmode_manuals[line[3]]['boss_stds_fov']
-                min_stds_fovmetric['APOGEE'] = desmode_manuals[line[3]]['apogee_stds_fov']
+                min_stds_fovmetric['BOSS'] = desmodes_field['boss_min_stds_fovmetric'][des_ind]
+                min_stds_fovmetric['APOGEE'] = desmodes_field['apogee_min_stds_fovmetric'][des_ind]
 
-                if line[3] != 'Dark RM':
+                if line[3] != 'dark_rm':
                     line[5] = stds_fov('APOGEE',
                                        des.design,
                                        carton_classes,
@@ -385,6 +422,34 @@ if __name__ == '__main__':
                                                               carton_classes['std'])) &
                                                      (des.design['obsWavelength'] == 'BOSS')])
                 line[6] = n_stds
+
+                min_stds_fovmetric = {}
+                min_stds_fovmetric['BOSS'] = desmodes_field['boss_min_skies_fovmetric'][des_ind]
+                min_stds_fovmetric['APOGEE'] = desmodes_field['apogee_min_skies_fovmetric'][des_ind]
+
+                if line[3] != 'dark_rm':
+                    line[9] = skies_fov('APOGEE',
+                                        des.design,
+                                        carton_classes,
+                                        min_stds_fovmetric)
+                    n_stds = len(des.design['catalogID'][(des.design['catalogID'] != -1) &
+                                                         (np.isin(des.design['carton_pk'],
+                                                                  carton_classes['sky'])) &
+                                                         (des.design['obsWavelength'] == 'APOGEE')])
+                    line[8] = n_stds
+                else:
+                    line[9] = -1.
+                    line[8] = -1.
+
+                line[11] = skies_fov('BOSS',
+                                    des.design,
+                                    carton_classes,
+                                    min_stds_fovmetric)
+                n_stds = len(des.design['catalogID'][(des.design['catalogID'] != -1) &
+                                                     (np.isin(des.design['carton_pk'],
+                                                              carton_classes['sky'])) &
+                                                     (des.design['obsWavelength'] == 'BOSS')])
+                line[10] = n_stds
 
                 f.write('\t'.join([str(x) for x in line]) + '\n')
 

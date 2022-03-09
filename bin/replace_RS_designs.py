@@ -249,7 +249,11 @@ if __name__ == '__main__':
         field_arr['date_replaced'][0] = str(datetime.datetime.now())
         if os.path.exists(file_save):
             curr_data = fits.open(file_save)[1].data
-            field_arr = np.append(curr_data, field_arr)
+            curr_data_arr = np.zeros(len(curr_data), dtype=dtype)
+            for i in range(len(curr_data)):
+                for col in curr_data.columns:
+                    curr_data_arr[col.name][i] = curr_data[col.name][i]
+            field_arr = np.append(curr_data_arr, field_arr)
             field_arr = Table(field_arr)
             field_arr.write(file_save, format='fits', overwrite=True)
         else:

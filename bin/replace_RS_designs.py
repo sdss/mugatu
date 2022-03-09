@@ -107,7 +107,7 @@ if __name__ == '__main__':
         valid_data = fits.open(valid)[1].data
 
         # get field info to be replaced
-        fieldid_replace = int(file.split('_')[1])
+        fieldid_replace = int(file.split(replace_path)[1].split('_')[1])
         field_replace = targetdb.Field.get(field_id=fieldid_replace)
         # create replacement field
         # get new field_id only if racen, deccen and PA change

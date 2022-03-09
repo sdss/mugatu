@@ -22,7 +22,8 @@ mugatu_version = mugatu.__version__
 
 def make_design_field_targetdb(cadence, fieldid, plan,
                                racen, deccen, position_angle,
-                               observatory, slots_exposures):
+                               observatory, slots_exposures,
+                               replacement_field=False):
     """
     Create a new field in targetdb. Will return warning
     if the field already exists in targetdb
@@ -55,6 +56,10 @@ def make_design_field_targetdb(cadence, fieldid, plan,
         'apo' or 'lco') or a targetdb.Observatory.get instance
         for the observatory label that can be used to get the
         observatory pk
+
+    replacement_field: boolean
+        If the field is a replacement field. If True then will
+        ignore check for if field exists.
     """
 
     # get the field cadence pk
@@ -78,28 +83,41 @@ def make_design_field_targetdb(cadence, fieldid, plan,
     else:
         verpk = plan.pk
 
-    # check if field exists
-    field_test = (targetdb.Field
-                  .select()
-                  .where((targetdb.Field.field_id == fieldid) &
-                         (targetdb.Field.version == verpk) &
-                         (targetdb.Field.cadence == dbCadence)))
-    # creates new field in database if it doesnt exist
-    if field_test.exists():
-        flag = 'Field already exists in targetdb'
-        warnings.warn(flag, MugatuWarning)
-    else:
+    if replacement_field:
         fieldDB = targetdb.Field.create(
-            field_id=fieldid,
-            racen=racen,
-            deccen=deccen,
-            position_angle=position_angle,
-            slots_exposures=slots_exposures,
-            cadence=dbCadence,
-            observatory=obspk,
-            version=verpk)
-        # save row in database
-        fieldDB.save()
+                field_id=fieldid,
+                racen=racen,
+                deccen=deccen,
+                position_angle=position_angle,
+                slots_exposures=slots_exposures,
+                cadence=dbCadence,
+                observatory=obspk,
+                version=verpk)
+            # save row in database
+            fieldDB.save()
+    else:
+        # check if field exists
+        field_test = (targetdb.Field
+                      .select()
+                      .where((targetdb.Field.field_id == fieldid) &
+                             (targetdb.Field.version == verpk) &
+                             (targetdb.Field.cadence == dbCadence)))
+        # creates new field in database if it doesnt exist
+        if field_test.exists():
+            flag = 'Field already exists in targetdb'
+            warnings.warn(flag, MugatuWarning)
+        else:
+            fieldDB = targetdb.Field.create(
+                field_id=fieldid,
+                racen=racen,
+                deccen=deccen,
+                position_angle=position_angle,
+                slots_exposures=slots_exposures,
+                cadence=dbCadence,
+                observatory=obspk,
+                version=verpk)
+            # save row in database
+            fieldDB.save()
 
 
 def design_status_bitmask(revalidated_design=False,

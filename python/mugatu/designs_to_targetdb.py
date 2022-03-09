@@ -102,6 +102,34 @@ def make_design_field_targetdb(cadence, fieldid, plan,
         fieldDB.save()
 
 
+def design_status_bitmask(revalidated_design=False,
+                          replacement_design=False):
+    """
+    function to create bitmask for design_status in
+    targetdb.DesignModeCheckResults
+
+    Parameters
+    ----------
+    revalidated_design: boolean
+        Has this design been revalidated
+
+    replacement_design: boolean
+        Is this design a replacement design
+        for the robostrategy run
+
+    Returns
+    -------
+    bitmask: int
+        bitmask for the desin
+    """
+    bitmask = 0
+    if revalidated_design:
+        bitmask += int(2 ** 0)
+    if replacement_design:
+        bitmask += int(2 ** 1)
+    return bitmask
+
+
 def make_desigmmode_results_targetdb(design_id, design_pass,
                                      design_valid_file_row=None,
                                      design_status=None,

@@ -178,7 +178,6 @@ def make_desigmmode_results_targetdb(design_id, design_pass,
     add designmode check results to targetdb
     """
     if design_valid_file_row is not None:
-        design_status = None
         boss_skies_min_pass = design_valid_file_row['boss_n_skies_min']
         boss_skies_min_value = design_valid_file_row['boss_n_skies_min_value']
         boss_skies_fov_pass = design_valid_file_row['boss_min_skies_fovmetric']

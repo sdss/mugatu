@@ -93,8 +93,8 @@ def make_design_field_targetdb(cadence, fieldid, plan,
                 cadence=dbCadence,
                 observatory=obspk,
                 version=verpk)
-            # save row in database
-            fieldDB.save()
+        # save row in database
+        fieldDB.save()
     else:
         # check if field exists
         field_test = (targetdb.Field

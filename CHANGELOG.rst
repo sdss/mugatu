@@ -6,6 +6,13 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* :release:`1.1.3 <2022-03-09>`
+* Add function to create design_status bit mask.
+* Allow for replacement fields when creating new fields in targetdb.
+
+* :release:`1.1.2 <2022-03-08>`
+* Change designmode category accounting to use category string and not carton_pk.
+
 * :release:`1.1.1 <2022-02-15>`
 * For bright neighbor check, only fail check when assigned fibers are too near a bright source (i.e. no longer include unassigned fibers).
 * In DesignMode outputs for bright neighbor check, include adjusted magnitudes for fibers near bright sources.

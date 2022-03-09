@@ -116,7 +116,7 @@ if __name__ == '__main__':
             head['PA'] == field_replace.position_angle):
             fieldid_new = fieldid_replace
         else:
-            fieldid_new = targetdb.Field.FieldReservation.requestNext(
+            fieldid_new = targetdb.FieldReservation.requestNext(
                  N=1, commit=True, commissioning=False)[0]
         racen_new = head['RACEN']
         deccen_new = head['DECCEN']

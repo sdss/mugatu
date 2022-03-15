@@ -959,6 +959,7 @@ class FPSDesign(object):
         self.valid_design['epoch'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['x'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['y'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['magnitudes'] = np.zeros((500, 10), dtype=float) - 9999.99
 
         for i, rid in enumerate(self.rg.robotDict):
             self.valid_design['catalogID'][i] = (self.rg.robotDict[rid]
@@ -983,6 +984,7 @@ class FPSDesign(object):
                 self.valid_design['ra_off'][i] = self.design['ra_off'][cond][0]
                 self.valid_design['dec_off'][i] = self.design['dec_off'][cond][0]
                 self.valid_design['epoch'][i] = self.design['epoch'][cond][0]
+                self.valid_design['magnitudes'][i, :] = self.design['magnitudes'][cond][0, :]
             self.valid_design['x'][i] = self.rg.robotDict[rid].xPos
             self.valid_design['y'][i] = self.rg.robotDict[rid].yPos
 

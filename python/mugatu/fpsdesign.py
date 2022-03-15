@@ -434,7 +434,7 @@ class FPSDesign(object):
         self.design['pmdec'] = np.zeros(500, dtype=float) - 9999.99
         self.design['x'] = np.zeros(500, dtype=float) - 9999.99
         self.design['y'] = np.zeros(500, dtype=float) - 9999.99
-        self.design['magnitudes'] = np.zeros((500, 7), dtype=float) - 9999.99
+        self.design['magnitudes'] = np.zeros((500, 10), dtype=float) - 9999.99
 
         # need to add wokHole to query when in db (not there now)
         # I need to test this when v05 is up, im unsure about Joins
@@ -451,10 +451,13 @@ class FPSDesign(object):
                               Magnitude.g,
                               Magnitude.r,
                               Magnitude.i,
+                              Magnitude.z,
                               Magnitude.bp,
                               Magnitude.gaia_g,
                               Magnitude.rp,
+                              Magnitude.j,
                               Magnitude.h,
+                              Magnitude.k,
                               CartonToTarget.delta_ra,
                               CartonToTarget.delta_dec,
                               Target.pmra,
@@ -504,10 +507,13 @@ class FPSDesign(object):
             self.design['magnitudes'][pos_ind][0] = d.g
             self.design['magnitudes'][pos_ind][1] = d.r
             self.design['magnitudes'][pos_ind][2] = d.i
-            self.design['magnitudes'][pos_ind][3] = d.bp
-            self.design['magnitudes'][pos_ind][4] = d.gaia_g
-            self.design['magnitudes'][pos_ind][5] = d.rp
-            self.design['magnitudes'][pos_ind][6] = d.h
+            self.design['magnitudes'][pos_ind][3] = d.z
+            self.design['magnitudes'][pos_ind][4] = d.bp
+            self.design['magnitudes'][pos_ind][5] = d.gaia_g
+            self.design['magnitudes'][pos_ind][6] = d.rp
+            self.design['magnitudes'][pos_ind][7] = d.j
+            self.design['magnitudes'][pos_ind][8] = d.h
+            self.design['magnitudes'][pos_ind][9] = d.k
 
         # set nan pm tp zero
         self.design['pmra'][np.isnan(self.design['pmra'])] = 0.

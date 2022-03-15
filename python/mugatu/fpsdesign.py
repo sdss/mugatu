@@ -642,6 +642,10 @@ class FPSDesign(object):
             self.design['carton_pk'] = design_inst['carton_pk'][roboIDs != -1]
             self.design['category'] = design_inst['category'][roboIDs != -1]
             self.design['magnitudes'] = design_inst['magnitude'][roboIDs != -1]
+        # check magnitudes array size
+        if self.design['magnitudes'].shape[1] != 10:
+            message = 'Magntiude array must have size of Nx10'
+            raise MugatuDesignError(message=message)
 
         # set nan pm tp zero
         self.design['pmra'][np.isnan(self.design['pmra'])] = 0.

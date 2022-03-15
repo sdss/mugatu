@@ -127,8 +127,8 @@ class FPSDesign(object):
         or 'standard_INSTRUMENT'
 
     magnitudes: np.array
-        Magnitudes of the targets. Should be of size (N, 7), where
-        columns correspond to g, r, i, bp, gaia_g, rp and h band
+        Magnitudes of the targets. Should be of size (N, 10), where
+        columns correspond to g, r, i, z, bp, gaia_g, rp, J, H, K band
         magnitudes.
 
     design_file: str

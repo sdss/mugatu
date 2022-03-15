@@ -1234,7 +1234,7 @@ class DesignModeCheck(DesignMode):
                 mag_lim = self.bright_limit_targets['BOSS'][1][0]
         else:
             # grab h 2mass mag for limit
-            mag_lim = self.bright_limit_targets['APOGEE'][6][0]
+            mag_lim = self.bright_limit_targets['APOGEE'][8][0]
         if (self.db_query_results_boss is not None and
            instrument == 'BOSS'):
             db_query = self.db_query_results_boss[check_type]

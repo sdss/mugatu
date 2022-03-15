@@ -1089,8 +1089,8 @@ class DesignModeCheck(DesignMode):
         Parameters
         ----------
         mag_metric: np.array
-            Array of shape (N,M), where N=7 corresponds to
-            magntiudes [g, r, i, bp, gaia_g, rp, h], and M=2
+            Array of shape (N,M), where N=10 corresponds to
+            magntiudes [g, r, i, z, bp, gaia_g, rp, J, H, K], and M=2
             where 0th column is minimum magnitude and 1st column
             is maximum magnitude. If no check in certain band,
             use None as value.

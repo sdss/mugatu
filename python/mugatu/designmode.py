@@ -127,12 +127,12 @@ class DesignMode(object):
     stds_mags: dict
         Dictonary for the min/max magnitude for the standards in a
         design for each instrument ('APOGEE' and 'BOSS'). Indexes
-        correspond to magntidues: [g, r, i, bp, gaia_g, rp, h].
+        correspond to magntidues: [g, r, i, z, bp, gaia_g, rp, J, H, K].
 
     bright_limit_targets: dict
         Dictonary for the min/max magnitude for the science targets
         in adesign for each instrument ('APOGEE' and 'BOSS'). Indexes
-        correspond to magntidues: [g, r, i, bp, gaia_g, rp, h].
+        correspond to magntidues: [g, r, i, z, bp, gaia_g, rp, J, H, K].
 
     sky_neighbors_targets: dict
         Dictonary for the parameters used to check distance between

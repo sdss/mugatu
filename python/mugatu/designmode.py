@@ -127,12 +127,12 @@ class DesignMode(object):
     stds_mags: dict
         Dictonary for the min/max magnitude for the standards in a
         design for each instrument ('APOGEE' and 'BOSS'). Indexes
-        correspond to magntidues: [g, r, i, bp, gaia_g, rp, h].
+        correspond to magntidues: [g, r, i, z, bp, gaia_g, rp, J, H, K].
 
     bright_limit_targets: dict
         Dictonary for the min/max magnitude for the science targets
         in adesign for each instrument ('APOGEE' and 'BOSS'). Indexes
-        correspond to magntidues: [g, r, i, bp, gaia_g, rp, h].
+        correspond to magntidues: [g, r, i, z, bp, gaia_g, rp, J, H, K].
 
     sky_neighbors_targets: dict
         Dictonary for the parameters used to check distance between
@@ -1089,8 +1089,8 @@ class DesignModeCheck(DesignMode):
         Parameters
         ----------
         mag_metric: np.array
-            Array of shape (N,M), where N=7 corresponds to
-            magntiudes [g, r, i, bp, gaia_g, rp, h], and M=2
+            Array of shape (N,M), where N=10 corresponds to
+            magntiudes [g, r, i, z, bp, gaia_g, rp, J, H, K], and M=2
             where 0th column is minimum magnitude and 1st column
             is maximum magnitude. If no check in certain band,
             use None as value.
@@ -1234,7 +1234,7 @@ class DesignModeCheck(DesignMode):
                 mag_lim = self.bright_limit_targets['BOSS'][1][0]
         else:
             # grab h 2mass mag for limit
-            mag_lim = self.bright_limit_targets['APOGEE'][6][0]
+            mag_lim = self.bright_limit_targets['APOGEE'][8][0]
         if (self.db_query_results_boss is not None and
            instrument == 'BOSS'):
             db_query = self.db_query_results_boss[check_type]

@@ -127,8 +127,8 @@ class FPSDesign(object):
         or 'standard_INSTRUMENT'
 
     magnitudes: np.array
-        Magnitudes of the targets. Should be of size (N, 7), where
-        columns correspond to g, r, i, bp, gaia_g, rp and h band
+        Magnitudes of the targets. Should be of size (N, 10), where
+        columns correspond to g, r, i, z, bp, gaia_g, rp, J, H, K band
         magnitudes.
 
     design_file: str
@@ -434,7 +434,7 @@ class FPSDesign(object):
         self.design['pmdec'] = np.zeros(500, dtype=float) - 9999.99
         self.design['x'] = np.zeros(500, dtype=float) - 9999.99
         self.design['y'] = np.zeros(500, dtype=float) - 9999.99
-        self.design['magnitudes'] = np.zeros((500, 7), dtype=float) - 9999.99
+        self.design['magnitudes'] = np.zeros((500, 10), dtype=float) - 9999.99
 
         # need to add wokHole to query when in db (not there now)
         # I need to test this when v05 is up, im unsure about Joins
@@ -451,10 +451,13 @@ class FPSDesign(object):
                               Magnitude.g,
                               Magnitude.r,
                               Magnitude.i,
+                              Magnitude.z,
                               Magnitude.bp,
                               Magnitude.gaia_g,
                               Magnitude.rp,
+                              Magnitude.j,
                               Magnitude.h,
+                              Magnitude.k,
                               CartonToTarget.delta_ra,
                               CartonToTarget.delta_dec,
                               Target.pmra,
@@ -504,10 +507,13 @@ class FPSDesign(object):
             self.design['magnitudes'][pos_ind][0] = d.g
             self.design['magnitudes'][pos_ind][1] = d.r
             self.design['magnitudes'][pos_ind][2] = d.i
-            self.design['magnitudes'][pos_ind][3] = d.bp
-            self.design['magnitudes'][pos_ind][4] = d.gaia_g
-            self.design['magnitudes'][pos_ind][5] = d.rp
-            self.design['magnitudes'][pos_ind][6] = d.h
+            self.design['magnitudes'][pos_ind][3] = d.z
+            self.design['magnitudes'][pos_ind][4] = d.bp
+            self.design['magnitudes'][pos_ind][5] = d.gaia_g
+            self.design['magnitudes'][pos_ind][6] = d.rp
+            self.design['magnitudes'][pos_ind][7] = d.j
+            self.design['magnitudes'][pos_ind][8] = d.h
+            self.design['magnitudes'][pos_ind][9] = d.k
 
         # set nan pm tp zero
         self.design['pmra'][np.isnan(self.design['pmra'])] = 0.
@@ -636,6 +642,10 @@ class FPSDesign(object):
             self.design['carton_pk'] = design_inst['carton_pk'][roboIDs != -1]
             self.design['category'] = design_inst['category'][roboIDs != -1]
             self.design['magnitudes'] = design_inst['magnitude'][roboIDs != -1]
+        # check magnitudes array size
+        if self.design['magnitudes'].shape[1] != 10:
+            message = 'Magntiude array must have size of Nx10'
+            raise MugatuDesignError(message=message)
 
         # set nan pm tp zero
         self.design['pmra'][np.isnan(self.design['pmra'])] = 0.
@@ -953,6 +963,7 @@ class FPSDesign(object):
         self.valid_design['epoch'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['x'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['y'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['magnitudes'] = np.zeros((500, 10), dtype=float) - 9999.99
 
         for i, rid in enumerate(self.rg.robotDict):
             self.valid_design['catalogID'][i] = (self.rg.robotDict[rid]
@@ -977,6 +988,7 @@ class FPSDesign(object):
                 self.valid_design['ra_off'][i] = self.design['ra_off'][cond][0]
                 self.valid_design['dec_off'][i] = self.design['dec_off'][cond][0]
                 self.valid_design['epoch'][i] = self.design['epoch'][cond][0]
+                self.valid_design['magnitudes'][i, :] = self.design['magnitudes'][cond][0, :]
             self.valid_design['x'][i] = self.rg.robotDict[rid].xPos
             self.valid_design['y'][i] = self.rg.robotDict[rid].yPos
 

@@ -24,6 +24,7 @@ scipy = "^1.6.0"
 jupyter = "^1.0.0"
 ortools = "9.1.9490"
 DateTime = "^4.3"
+notebook = "^6.4.10"
 
 [tool.poetry.dev-dependencies]
 

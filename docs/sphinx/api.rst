@@ -9,7 +9,7 @@ mugatu Reference
 Main
 ----
 
-.. automodule:: mugatu.main
+.. automodule:: mugatu.master
    :members:
    :undoc-members:
    :show-inheritance:

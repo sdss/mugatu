@@ -53,7 +53,70 @@ As can be seen, ``mugatu`` provides warnings for when targets either could not b
 
  With these removals, the final validated design is then stored in ``des.valid_design``.
 
-.. _manual-design-example:
+.. _validation-design-example:
 
-Build a design manually
-========================
+Validate Designs with mugatu
+============================
+
+With ``mugatu`` you are able to validate designs in batches using the script ``bin/validate_designs_batches.py``. For validating designs, you can either validate designs in a user specified directory, all of a robostrategy run or a set of designs meant to replace some robostrategy designs.
+
+User Specified Directory
+------------------------
+
+For designs in a user specified directory, one can validate designs like the following:
+
+	>>> python bin/validate_designs_batches.py -t dir -l utah -d path_to_designs/
+
+This will then output validation results in a file called: path_to_designs/design_validation_results.fits.
+
+Robostrategy Plan
+-----------------
+
+To validate an entire robostrategy run for one observatory, one would run the following:
+
+	>>> python bin/validate_designs_batches.py -t rs -l utah -p plan_name -o apo -n 16
+
+In the above call, we have also added ``-n 16`` to run the validaiton in parallel with 16 cores. This will output validation results in a file called: /uufs/chpc.utah.edu/common/home/sdss50/sdsswork/sandbox/mugatu/rs_plan_validations/{plan_name}/rs_{plan_name}_apo_design_validation_results.fits.
+
+Robostrategy Replacement Designs
+--------------------------------
+
+Finally, you can validate designs that will replace an entire robostrategy field that has already been ingested into targetdb. This can be done via to following:
+
+	>>> python bin/validate_designs_batches.py -t rs_replace -l utah -p plan_name -f 1000 1001 - n 16
+
+In the above, ``-f 1000 10001`` indicated that we will validate the deisgns meant to replace the designs in fields 1000 and 1001. This will output validation results in a file called: /uufs/chpc.utah.edu/common/home/sdss50/sdsswork/target/robostrategy_replacement/{plan_name}/{original_file_name}_validation.fits.
+
+.. _ingest-design-example:
+
+Ingest Designs with mugatu
+==========================
+
+With ``mugatu`` you are able to ingest validated designs in targetdb. Similar to the above example, this can be done for designs in a user specified directory, for a robostrategy run or for a set of designs meant to replace some robostrategy designs.
+
+User Specified Directory
+------------------------
+
+For designs in a user specified directory, one can ingest designs like the following:
+
+	>>> python bin/load_manual_designs_batches.py -l utah -d path_to_designs/ -f path_to_designs/design_validation_results.fits.
+
+In addition, this code will out put a file that associates the deisgn files with their design_id in targetdb: path_to_designs/design_ids_for_design_files.fits.
+
+Robostrategy Plan
+-----------------
+
+To load designs for an entire robostrategy, one can ingest all designs like the following:
+
+	>>> python bin/RS_to_targetdb.py -p plan_name -o apo -t example_load
+
+In the above, ``-t example_load`` tags the new version for the plan in targetdb.
+
+Robostrategy Replacement Designs
+--------------------------------
+
+Finally, we can ingest designs that are meant to replace all designs in a field for a current robostrategy plan. This can be done like the following:
+
+	>>> python bin/replace_RS_designs.py -l utah -p plan_name -f 1000 1001
+
+The above will also create/update a change log for the new field_ids that may be created as a result of the design replacement process.

@@ -1306,28 +1306,32 @@ class DesignModeCheck(DesignMode):
                 mag_diff[i][0] = np.nan
                 mag_diff[i][1] = np.nan
             else:
-                fiberi = fibers[self.design['holeID'][i]]
-                # get the holeids for the left/right chip neighbors
                 try:
-                    hole_left = fibers[fibers == fiberi - 1].index[0]
-                except IndexError:
-                    hole_left = -1
-                try:
-                    hole_right = fibers[fibers == fiberi + 1].index[0]
-                except IndexError:
-                    hole_right = -1
-                # get the mag diff if neighbor on left/right
-                try:
-                    idx_left = np.where(self.design['holeID'] == hole_left)[0][0]
-                    mag_diff[i][0] = (self.design['magnitudes'][i][mag_col] -
-                                      self.design['magnitudes'][idx_left][mag_col])
-                except IndexError:
+                    fiberi = fibers[self.design['holeID'][i]]
+                    # get the holeids for the left/right chip neighbors
+                    try:
+                        hole_left = fibers[fibers == fiberi - 1].index[0]
+                    except IndexError:
+                        hole_left = -1
+                    try:
+                        hole_right = fibers[fibers == fiberi + 1].index[0]
+                    except IndexError:
+                        hole_right = -1
+                    # get the mag diff if neighbor on left/right
+                    try:
+                        idx_left = np.where(self.design['holeID'] == hole_left)[0][0]
+                        mag_diff[i][0] = (self.design['magnitudes'][i][mag_col] -
+                                          self.design['magnitudes'][idx_left][mag_col])
+                    except IndexError:
+                        mag_diff[i][0] = np.nan
+                    try:
+                        idx_right = np.where(self.design['holeID'] == hole_right)[0][0]
+                        mag_diff[i][1] = (self.design['magnitudes'][i][mag_col] -
+                                          self.design['magnitudes'][idx_right][mag_col])
+                    except IndexError:
+                        mag_diff[i][1] = np.nan
+                except KeyError:
                     mag_diff[i][0] = np.nan
-                try:
-                    idx_right = np.where(self.design['holeID'] == hole_right)[0][0]
-                    mag_diff[i][1] = (self.design['magnitudes'][i][mag_col] -
-                                      self.design['magnitudes'][idx_right][mag_col])
-                except IndexError:
                     mag_diff[i][1] = np.nan
         return mag_diff
         

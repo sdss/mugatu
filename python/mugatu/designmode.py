@@ -1317,24 +1317,18 @@ class DesignModeCheck(DesignMode):
                 except IndexError:
                     hole_right = -1
                 # get the mag diff if neighbor on left/right
-                if hole_left == -1:
+                try:
+                    idx_left = np.where(self.design['holeID'] == hole_left)[0][0]
+                    mag_diff[i][0] = (self.design['magnitudes'][i][mag_col] -
+                                      self.design['magnitudes'][idx_left][mag_col])
+                except IndexError:
                     mag_diff[i][0] = np.nan
-                else:
-                    try:
-                        idx_left = np.where(self.design['holeID'] == hole_left)[0][0]
-                        mag_diff[i][0] = (self.design['magnitudes'][i][mag_col] -
-                                          self.design['magnitudes'][i][idx_left])
-                    except IndexError:
-                        mag_diff[i][0] = np.nan
-                if hole_right == -1:
+                try:
+                    idx_right = np.where(self.design['holeID'] == hole_right)[0][0]
+                    mag_diff[i][1] = (self.design['magnitudes'][i][mag_col] -
+                                      self.design['magnitudes'][idx_right][mag_col])
+                except IndexError:
                     mag_diff[i][1] = np.nan
-                else:
-                    try:
-                        idx_right = np.where(self.design['holeID'] == hole_right)[0][0]
-                        mag_diff[i][1] = (self.design['magnitudes'][i][mag_col] -
-                                          self.design['magnitudes'][i][idx_right])
-                    except IndexError:
-                        mag_diff[i][1] = np.nan
         return mag_diff
         
 

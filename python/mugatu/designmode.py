@@ -24,6 +24,7 @@ from sdssdb.peewee.sdss5db.targetdb import Carton, Category, Magnitude, CartonTo
 from sdssdb.peewee.sdss5db.targetdb import DesignMode as DesignModeDB
 from sdssdb.peewee.sdss5db import catalogdb
 from sdssdb.peewee.sdss5db import targetdb
+from coordio.calibration import Calibration
 
 
 def ang_sep(ra1, dec1, ra2, dec2):
@@ -1283,6 +1284,55 @@ class DesignModeCheck(DesignMode):
         mag_adj_robo[~hasFiber] = -9999.
 
         return neigh_checks, hasFiber, mag_adj_robo, isassigned
+
+    def on_chip_neigh_check(self, instrument):
+        """
+        check for magntiude diff of on chip neighbors
+        """
+        # set magnitude column depending on instrument
+        if instrument == 'BOSS':
+            # gaia_g for boss
+            mag_col = 5
+        else:
+            #2mass H for apogee
+            mag_col = 8
+        calib = Calibration()
+        fiber_column = instrument + 'Fiber'
+        fibers = calib.fiberAssignments.loc['APO', :].sort_values(by=fiber_column)
+        fibers = fibers[fiber_column][~np.isnan(fibers[fiber_column])]
+        mag_diff = np.zeros((len(self.design['holeID'], 2)))
+        for i in range(len(self.design['holeID'])):
+            fiberi = fibers[self.design['holeID'][i]]
+            # get the holeids for the left/right chip neighbors
+            try:
+                hole_left = fibers[fibers == fiberi - 1].index[0]
+            except IndexError:
+                hole_left = -1
+            try:
+                hole_right = fibers[fibers == fiberi + 1].index[0]
+            except IndexError:
+                hole_right = -1
+            # get the mag diff if neighbor on left/right
+            if hole_left == -1:
+                mag_diff[i][0] = np.nan
+            else:
+                try:
+                    idx_left = np.where(self.design['holeID'] == hole_left)[0][0]
+                    mag_diff[i][0] = (self.design['magnitudes'][i][mag_col] -
+                                      self.design['magnitudes'][i][idx_left])
+                except IndexError:
+                    mag_diff[i][0] = np.nan
+            if hole_right == -1:
+                mag_diff[i][1] = np.nan
+            else:
+                try:
+                    idx_right = np.where(self.design['holeID'] == hole_right)[0][0]
+                    mag_diff[i][1] = (self.design['magnitudes'][i][mag_col] -
+                                      self.design['magnitudes'][i][idx_right])
+                except IndexError:
+                    mag_diff[i][1] = np.nan
+        return mag_diff
+        
 
     def design_mode_check_all(self, verbose=True):
         """

@@ -1302,7 +1302,7 @@ class DesignModeCheck(DesignMode):
         fibers = fibers[fiber_column][~np.isnan(fibers[fiber_column])]
         mag_diff = np.zeros((len(self.design['holeID']), 2))
         for i in range(len(self.design['holeID'])):
-            if self.design['catalogID'][i] == -1:
+            if self.design['catalogID'][i] == -1 or self.design['obsWavelength'][i] != instrument:
                 mag_diff[i][0] = np.nan
                 mag_diff[i][1] = np.nan
             else:

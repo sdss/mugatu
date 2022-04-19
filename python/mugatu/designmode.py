@@ -1306,7 +1306,7 @@ class DesignModeCheck(DesignMode):
                 mag_diff[i][0] = np.nan
                 mag_diff[i][1] = np.nan
             else:
-                try:
+                try:  # needed to add this try here as I was getting key errors
                     fiberi = fibers[self.design['holeID'][i]]
                     # get the holeids for the left/right chip neighbors
                     try:

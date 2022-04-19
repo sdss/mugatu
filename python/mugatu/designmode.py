@@ -1300,7 +1300,7 @@ class DesignModeCheck(DesignMode):
         fiber_column = instrument + 'Fiber'
         fibers = calib.fiberAssignments.loc['APO', :].sort_values(by=fiber_column)
         fibers = fibers[fiber_column][~np.isnan(fibers[fiber_column])]
-        mag_diff = np.zeros((len(self.design['holeID'], 2)))
+        mag_diff = np.zeros((len(self.design['holeID']), 2))
         for i in range(len(self.design['holeID'])):
             fiberi = fibers[self.design['holeID'][i]]
             # get the holeids for the left/right chip neighbors

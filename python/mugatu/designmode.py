@@ -1301,7 +1301,7 @@ class DesignModeCheck(DesignMode):
         fibers = calib.fiberAssignments.loc['APO', :].sort_values(by=fiber_column)
         fibers = fibers[fiber_column][~np.isnan(fibers[fiber_column])]
         mag_diff = np.zeros((len(self.design['holeID']), 2))
-        hole_assign = np.zeros((len(self.design['holeID']), 3), dtype='<U10')
+        # hole_assign = np.zeros((len(self.design['holeID']), 3), dtype='<U10')
         for i in range(len(self.design['holeID'])):
             if self.design['catalogID'][i] == -1 or self.design['obsWavelength'][i] != instrument:
                 mag_diff[i][0] = np.nan
@@ -1309,7 +1309,7 @@ class DesignModeCheck(DesignMode):
             else:
                 try:  # needed to add this try here as I was getting key errors
                     fiberi = fibers[self.design['holeID'][i]]
-                    hole_assign[i][2] = self.design['holeID'][i]
+                    # hole_assign[i][2] = self.design['holeID'][i]
                     # get the holeids for the left/right chip neighbors
                     try:
                         hole_left = fibers[fibers == fiberi - 1].index[0]
@@ -1325,7 +1325,7 @@ class DesignModeCheck(DesignMode):
                                             (self.design['obsWavelength'] == instrument))[0][0]
                         mag_diff[i][0] = (self.design['magnitudes'][i][mag_col] -
                                           self.design['magnitudes'][idx_left][mag_col])
-                        hole_assign[i][0] = self.design['holeID'][idx_left]
+                        # hole_assign[i][0] = self.design['holeID'][idx_left]
                     except IndexError:
                         mag_diff[i][0] = np.nan
                     try:
@@ -1333,13 +1333,13 @@ class DesignModeCheck(DesignMode):
                                              (self.design['obsWavelength'] == instrument))[0][0]
                         mag_diff[i][1] = (self.design['magnitudes'][i][mag_col] -
                                           self.design['magnitudes'][idx_right][mag_col])
-                        hole_assign[i][1] = self.design['holeID'][idx_right]
+                        # hole_assign[i][1] = self.design['holeID'][idx_right]
                     except IndexError:
                         mag_diff[i][1] = np.nan
                 except KeyError:
                     mag_diff[i][0] = np.nan
                     mag_diff[i][1] = np.nan
-        return mag_diff, hole_assign
+        return mag_diff  # , hole_assign
         
 
     def design_mode_check_all(self, verbose=True):

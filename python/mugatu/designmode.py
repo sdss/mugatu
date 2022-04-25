@@ -1321,14 +1321,16 @@ class DesignModeCheck(DesignMode):
                         hole_right = -1
                     # get the mag diff if neighbor on left/right
                     try:
-                        idx_left = np.where(self.design['holeID'] == hole_left)[0][0]
+                        idx_left = np.where((self.design['holeID'] == hole_left) &
+                                            (self.design['obsWavelength'] == instrument))[0][0]
                         mag_diff[i][0] = (self.design['magnitudes'][i][mag_col] -
                                           self.design['magnitudes'][idx_left][mag_col])
                         hole_assign[i][0] = self.design['holeID'][idx_left]
                     except IndexError:
                         mag_diff[i][0] = np.nan
                     try:
-                        idx_right = np.where(self.design['holeID'] == hole_right)[0][0]
+                        idx_right = np.where((self.design['holeID'] == hole_right) &
+                                             (self.design['obsWavelength'] == instrument))[0][0]
                         mag_diff[i][1] = (self.design['magnitudes'][i][mag_col] -
                                           self.design['magnitudes'][idx_right][mag_col])
                         hole_assign[i][1] = self.design['holeID'][idx_right]

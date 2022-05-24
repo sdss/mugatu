@@ -951,7 +951,7 @@ class FPSDesign(object):
         self.valid_design['obsWavelength'] = np.zeros(500, dtype='<U6')
         self.valid_design['priority'] = np.zeros(500, dtype=int) - 1
         self.valid_design['carton_pk'] = np.zeros(500, dtype=int) - 1
-        self.valid_design['category'] = np.zeros(500, dtype='<U10')
+        self.valid_design['category'] = np.zeros(500, dtype='<U20')
         self.valid_design['ra'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['dec'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['pmra'] = np.zeros(500, dtype=float) - 9999.99

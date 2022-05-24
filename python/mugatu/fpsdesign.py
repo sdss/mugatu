@@ -401,12 +401,11 @@ class FPSDesign(object):
         modes = allDesignModes()
         if 'bright' in self.desmode_label:
             boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][0][0]
-            boss_mag_col = 0
             lunation = 'bright'
         else:
             boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][1][0]
-            boss_mag_col = 1
             lunation = 'dark'
+        boss_mag_col = 5
         apogee_mag_lim = modes[self.desmode_label].bright_limit_targets['APOGEE'][8][0]
         apogee_mag_col = 8
 

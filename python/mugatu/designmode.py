@@ -12,7 +12,7 @@ from scipy.spatial import cKDTree
 from astropy.time import Time
 
 from mugatu.exceptions import MugatuError, MugatuWarning
-from coordio.utils import radec2wokxy, wokxy2radec
+from coordio.utils import radec2wokxy, wokxy2radec, offset_definition
 
 try:
     from sdssdb.peewee.sdss5db import database
@@ -432,6 +432,10 @@ def bright_neigh_exclusion_r(mag_bs, mag_limit_r, lunation):
     r_exclude: float or np.array
         exclusion radius in arcseconds around bright star(s)
     """
+    flag = ('mugatu.designmode.bright_neigh_exclusion_r will be depriciated '
+            'in future releases. For the same functionalitiy, please use '
+            'coordio.utils.offset_definition')
+    warnings.warn(flag, MugatuWarning)
     # linear portion in the wings
     r_wings = (mag_limit_r - mag_bs - 8.2) / 0.05
     # linear portion in transition area

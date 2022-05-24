@@ -21,6 +21,9 @@ from mugatu.designs_to_targetdb import (make_design_assignments_targetdb,
                                         make_design_field_targetdb)
 from mugatu.designmode import DesignModeCheck
 
+import robostrategy.obstime as obstime
+import coordio.time
+
 try:
     from sdssdb.peewee.sdss5db import database
     database.set_profile('operations')
@@ -186,7 +189,7 @@ class FPSDesign(object):
         dictonary with errors for design. Created and filled after validation.
     """
 
-    def __init__(self, design_pk, obsTime, racen=None, deccen=None,
+    def __init__(self, design_pk, obsTime=None, racen=None, deccen=None,
                  position_angle=None, observatory=None, desmode_label=None,
                  idtype='carton_to_target', catalogids=None, ra=None, dec=None,
                  pmra=None, pmdec=None, delta_ra=None, delta_dec=None,
@@ -197,7 +200,6 @@ class FPSDesign(object):
             message = 'idtype must be catalogID or carton_to_target'
             raise MugatuError(message=message)
         self.design_pk = design_pk
-        self.obsTime = obsTime
         self.design = {}
         # either set field params or pull from db is design
         # is in targetdb
@@ -255,6 +257,11 @@ class FPSDesign(object):
         self.design_file = design_file
         self.manual_design = manual_design
         self.exp = exp
+        if obsTime is None:
+            ot = obstime.ObsTime(observatory=self.observatory.lower())
+            self.obsTime = coordio.time.Time(ot.nominal(lst=self.racen)).jd
+        else:
+            self.obsTime = obsTime
 
         # set dummy value for collision for now
         # this may want to be a input, not sure the standard here

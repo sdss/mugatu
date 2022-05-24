@@ -6,6 +6,8 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Make obsTime optional argument in mugatu.fspdesign.FPSDesign so it is calculated at LST when not provided.
+
 * :release:`1.2.0 <2022-03-23>`
 * Update code to accommodate new length of magnitude array to N = 10. Now all magnitude inputs need to be of form: [g, r, i, z, BP, G, RP, J, H, K]. Older versions of mugatu will not be compatible with this new format, so some functions will be broken if trying to use older versions.
 

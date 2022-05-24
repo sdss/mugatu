@@ -465,6 +465,7 @@ class FPSDesign(object):
         self.design['dec'] = np.zeros(500, dtype=float) - 9999.99
         self.design['delta_ra'] = np.zeros(500, dtype=float) - 9999.99
         self.design['delta_dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['offset'] = np.zeros(500, dtype=bool)
         self.design['epoch'] = np.zeros(500, dtype=float) - 9999.99
         self.design['ra_off'] = np.zeros(500, dtype=float) - 9999.99
         self.design['dec_off'] = np.zeros(500, dtype=float) - 9999.99
@@ -498,6 +499,7 @@ class FPSDesign(object):
                               Magnitude.k,
                               CartonToTarget.delta_ra,
                               CartonToTarget.delta_dec,
+                              CartonToTarget.offset,
                               Target.pmra,
                               Target.pmdec,
                               Target.epoch,
@@ -539,6 +541,7 @@ class FPSDesign(object):
             self.design['dec'][pos_ind] = d.dec
             self.design['delta_ra'][pos_ind] = d.delta_ra
             self.design['delta_dec'][pos_ind] = d.delta_dec
+            self.design['offset'][pos_ind] = d.offset
             self.design['pmra'][pos_ind] = d.pmra
             self.design['pmdec'][pos_ind] = d.pmdec
             self.design['epoch'][pos_ind] = d.epoch
@@ -556,6 +559,8 @@ class FPSDesign(object):
         # set nan pm tp zero
         self.design['pmra'][np.isnan(self.design['pmra'])] = 0.
         self.design['pmdec'][np.isnan(self.design['pmdec'])] = 0.
+        # calculate offsets for targets that request algorithm offsets
+        self.calculate_offsets()
         # here convert ra/dec to x/y based on field/time of observation
         # I think I need to add inertial in here at some point,
         # dont see this in targetdb though

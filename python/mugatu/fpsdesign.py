@@ -15,11 +15,11 @@ import kaiju.robotGrid
 from mugatu.exceptions import (MugatuError, MugatuWarning,
                                MugatuDesignError, MugatuDesignWarning,
                                MugatuDesignModeWarning)
-from coordio.utils import radec2wokxy
+from coordio.utils import radec2wokxy, object_offset
 from coordio.defaults import POSITIONER_HEIGHT
 from mugatu.designs_to_targetdb import (make_design_assignments_targetdb,
                                         make_design_field_targetdb)
-from mugatu.designmode import DesignModeCheck
+from mugatu.designmode import DesignModeCheck, allDesignModes
 
 import robostrategy.obstime as obstime
 import coordio.time
@@ -342,6 +342,37 @@ class FPSDesign(object):
         decoff = np.arcsin(zoff) / deg2rad
         raoff = ((np.arctan2(yoff, xoff) / deg2rad) + 360.) % 360.
         return(raoff, decoff)
+
+    def calculate_offsets(self):
+        """
+        Calculate the offsets for which an algorithmic
+        offset value was requested
+        """
+        modes = allDesignModes()
+        if 'bright' in self.desmode_label:
+            boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][0][0]
+            boss_mag_col = 0
+            lunation = 'bright'
+        else:
+            boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][1][0]
+            boss_mag_col = 1
+            lunation = 'dark'
+        apogee_mag_lim = modes[self.desmode_label].bright_limit_targets['APOGEE'][8][0]
+        apogee_mag_col = 8
+
+        ev_boss = (self.design['offset']) & (self.design['obsWavelength'] == 'BOSS')
+        res = object_offset(self.design['magnitudes'][:, boss_mag_col][ev_boss],
+                            boss_mag_lim,
+                            lunation)
+        self.design['delta_ra'][ev_boss] = res[0]
+        self.design['delta_dec'][ev_boss] = res[1]
+
+        ev_apogee = (self.design['offset']) & (self.design['obsWavelength'] == 'APOGEE')
+        res = object_offset(self.design['magnitudes'][:, apogee_mag_col][ev_apogee],
+                            apogee_mag_lim,
+                            lunation)
+        self.design['delta_ra'][ev_apogee] = res[0]
+        self.design['delta_dec'][ev_apogee] = res[1]
 
     def radec_to_xy(self, ev):
         """

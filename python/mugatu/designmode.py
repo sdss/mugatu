@@ -1139,17 +1139,21 @@ class DesignModeCheck(DesignMode):
             if (self.design['catalogID'][i] != -1 and
                 self.design['category'][i] in self.carton_classes[carton_class] and
                 self.design['obsWavelength'][i] == instrument):
-                # check in each band that has check defined
-                targ_check = np.zeros(len(check_inds), dtype=bool)
-                for j, ind in enumerate(check_inds):
-                    # check the magntiude for this assignment
-                    targ_check[j], complete_check[i] = check_assign_mag_limit(
-                                                            mag_metric[ind][0],
-                                                            mag_metric[ind][1],
-                                                            self.mags[i][ind])
-                # if all True, then passes
-                if np.all(targ_check):
+                # don't do check and make true if offset target
+                if self.design['offset'][i]:
                     mag_checks[i] = True
+                else:
+                    # check in each band that has check defined
+                    targ_check = np.zeros(len(check_inds), dtype=bool)
+                    for j, ind in enumerate(check_inds):
+                        # check the magntiude for this assignment
+                        targ_check[j], complete_check[i] = check_assign_mag_limit(
+                                                                mag_metric[ind][0],
+                                                                mag_metric[ind][1],
+                                                                self.mags[i][ind])
+                    # if all True, then passes
+                    if np.all(targ_check):
+                        mag_checks[i] = True
             else:
                 complete_check[i] = 'INCOMPLETE'
         return mag_checks, complete_check

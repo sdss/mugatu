@@ -422,7 +422,7 @@ class FPSDesign(object):
         self.design['obsWavelength'] = np.zeros(500, dtype='<U6')
         self.design['priority'] = np.zeros(500, dtype=int) - 1
         self.design['carton_pk'] = np.zeros(500, dtype=int) - 1
-        self.design['category'] = np.zeros(500, dtype='<U10')
+        self.design['category'] = np.zeros(500, dtype='<U20')
         self.design['ra'] = np.zeros(500, dtype=float) - 9999.99
         self.design['dec'] = np.zeros(500, dtype=float) - 9999.99
         self.design['delta_ra'] = np.zeros(500, dtype=float) - 9999.99

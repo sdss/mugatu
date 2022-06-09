@@ -67,7 +67,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'mugatu'
-copyright = '{0}, {1}'.format('2020', 'Ilija Medan')
+copyright = '{0}, {1}'.format('2022', 'Ilija Medan')
 author = 'Ilija Medan'
 
 # The version info for the project you're documenting, acts as replacement for

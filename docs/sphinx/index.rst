@@ -35,7 +35,6 @@ Examples
    :maxdepth: 1
 
    Examples with mugatu <example>
-   commissioning_design_example_all_skies.ipynb
 
 
 Indices and tables

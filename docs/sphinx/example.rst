@@ -128,3 +128,10 @@ Finally, we can ingest designs that are meant to replace all designs in a field 
 	>>> python bin/replace_RS_designs.py -l utah -p plan_name -f 1000 1001
 
 The above will also create/update a change log for the new field_ids that may be created as a result of the design replacement process.
+
+.. _comm-design-example:
+
+Commisioning Design Example
+===========================
+
+.. include:: ../../examples/commissioning_design_example_all_skies.ipynb

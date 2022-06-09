@@ -69,6 +69,7 @@ For designs in a user specified directory, one can validate designs like the fol
 
 This will then output validation results in a file called:
 
+.. code-block:: none
 	path_to_designs/design_validation_results.fits
 
 Robostrategy Plan

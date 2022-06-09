@@ -35,7 +35,7 @@ Examples
    :maxdepth: 2
 
    example.rst
-   ../../examples/commissioning_design_example_all_skies.ipynb
+   commissioning_design_example_all_skies.ipynb
 
 
 Indices and tables

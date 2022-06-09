@@ -123,8 +123,10 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3.6', None),
                        'astropy': ('http://docs.astropy.org/en/latest', None),
                        'numpy': ('http://docs.scipy.org/doc/numpy/', None)}
 
-autodoc_mock_imports = ['_tkinter', 'sdssdb']
+autodoc_mock_imports = ['_tkinter', 'sdssdb', 'robostrategy']
 autodoc_member_order = 'groupwise'
+
+nbsphinx_execute = 'never'
 
 napoleon_use_rtype = False
 napoleon_use_ivar = True

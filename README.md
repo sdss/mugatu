@@ -1,6 +1,6 @@
 # mugatu
 
-![Versions](https://img.shields.io/badge/python->3.7-blue)
+![Versions](https://img.shields.io/badge/python->3.8-blue)
 [![Documentation Status](https://readthedocs.org/projects/mugatu/badge/?version=latest)](https://mugatu.readthedocs.io/en/latest/#)
 <!---
 [![Travis (.org)](https://img.shields.io/travis/sdss/mugatu)](https://travis-ci.org/sdss/mugatu)

@@ -67,9 +67,12 @@ For designs in a user specified directory, one can validate designs like the fol
 
 	>>> python bin/validate_designs_batches.py -t dir -l utah -d path_to_designs/
 
-This will then output validation results in a file called:::
+This will then output validation results in a file called:
+
+::
 
 	path_to_designs/design_validation_results.fits
+
 
 Robostrategy Plan
 -----------------
@@ -78,9 +81,12 @@ To validate an entire robostrategy run for one observatory, one would run the fo
 
 	>>> python bin/validate_designs_batches.py -t rs -l utah -p plan_name -o apo -n 16
 
-In the above call, we have also added ``-n 16`` to run the validaiton in parallel with 16 cores. This will output validation results in a file called:::
+In the above call, we have also added ``-n 16`` to run the validaiton in parallel with 16 cores. This will output validation results in a file called:
+
+::
 
 	/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/sandbox/mugatu/rs_plan_validations/{plan_name}/rs_{plan_name}_apo_design_validation_results.fits
+
 
 Robostrategy Replacement Designs
 --------------------------------
@@ -89,9 +95,12 @@ Finally, you can validate designs that will replace an entire robostrategy field
 
 	>>> python bin/validate_designs_batches.py -t rs_replace -l utah -p plan_name -f 1000 1001 - n 16
 
-In the above, ``-f 1000 10001`` indicated that we will validate the deisgns meant to replace the designs in fields 1000 and 1001. This will output validation results in a file called:::
+In the above, ``-f 1000 10001`` indicated that we will validate the deisgns meant to replace the designs in fields 1000 and 1001. This will output validation results in a file called:
+
+::
 
 	/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/target/robostrategy_replacement/{plan_name}/{original_file_name}_validation.fits
+
 
 .. _ingest-design-example:
 
@@ -107,9 +116,12 @@ For designs in a user specified directory, one can ingest designs like the follo
 
 	>>> python bin/load_manual_designs_batches.py -l utah -d path_to_designs/ -f path_to_designs/design_validation_results.fits.
 
-In addition, this code will out put a file that associates the deisgn files with their design_id in targetdb:::
+In addition, this code will out put a file that associates the deisgn files with their design_id in targetdb:
+
+::
 
 	path_to_designs/design_ids_for_design_files.fits
+
 
 Robostrategy Plan
 -----------------

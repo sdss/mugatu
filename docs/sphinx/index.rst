@@ -34,8 +34,8 @@ Examples
 .. toctree::
    :maxdepth: 2
 
-   example.rst
-   commissioning_design_example_all_skies
+   Mugatu examples <example>
+   Commissioning design Examples <commissioning_design_example_all_skies>
 
 
 Indices and tables

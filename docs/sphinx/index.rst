@@ -32,7 +32,7 @@ Examples
 --------
 
 .. toctree::
-   :maxdepth: 10
+   :maxdepth: 15
 
    Mugatu examples <example>
    Commissioning design Examples <commissioning_design_example_all_skies>

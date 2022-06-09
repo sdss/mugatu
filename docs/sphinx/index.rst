@@ -34,7 +34,7 @@ Examples
 .. toctree::
    :maxdepth: 2
 
-   Examples with mugatu <example>
+   example.rst
    ../../examples/commissioning_design_example_all_skies.ipynb
 
 

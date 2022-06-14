@@ -258,7 +258,7 @@ def assignment_hash(ids, holeIDs):
     return assign_hash
 
 
-def make_design_assignments_targetdb(plan, fieldid, exposure,
+def make_design_assignments_targetdb(plan, fieldid, exposure, field_exposure,
                                      desmode_label,
                                      design_ids, robotID, holeID,
                                      obsWavelength,
@@ -282,6 +282,10 @@ def make_design_assignments_targetdb(plan, fieldid, exposure,
 
     exposure: int
         The exposure of this set of designs. 0th indexed
+
+    field_exposure: int
+        The exposure of this set of designs as listed in the
+        robostrategy design file. 0th indexed
 
     desmode_label: str
         DesignMode labe for the design.
@@ -382,7 +386,8 @@ def make_design_assignments_targetdb(plan, fieldid, exposure,
                                       design_mode=desmode_label,
                                       mugatu_version=mugatu_version,
                                       run_on=datetime.datetime.now(),
-                                      assignment_hash=assign_hash)
+                                      assignment_hash=assign_hash,
+                                      field_exposure=field_exposure)
     # save row
     designDB.save()
 

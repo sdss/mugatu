@@ -1131,6 +1131,7 @@ class FPSDesign(object):
             plan='manual',
             fieldid=fieldid,
             exposure=exposure,
+            field_exposure=field_exposure,
             desmode_label=self.desmode_label,
             catalogID=self.valid_design['catalogID'][self.valid_design['catalogID'] != -1],
             robotID=self.valid_design['robotID'][self.valid_design['catalogID'] != -1],

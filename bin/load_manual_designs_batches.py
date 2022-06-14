@@ -132,6 +132,7 @@ if __name__ == '__main__':
             design_id = make_design_assignments_targetdb(plan=ver_inst,
                                                          fieldid=fieldid_inst,
                                                          exposure=i,
+                                                         field_exposure=i,  # assume same for manual designs
                                                          desmode_label=desmode_label,
                                                          design_ids=design_inst['carton_to_target_pk'],
                                                          robotID=roboIDs,

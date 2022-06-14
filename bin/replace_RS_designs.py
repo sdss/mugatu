@@ -170,6 +170,7 @@ if __name__ == '__main__':
                     plan=ver_inst,
                     fieldid=fieldid_inst,
                     exposure=i,
+                    field_exposure=i,  # safe to assume same for these?
                     desmode_label=desmode_label,
                     design_ids=design_inst['carton_to_target_pk'],
                     robotID=roboIDs,
@@ -199,6 +200,7 @@ if __name__ == '__main__':
                     plan=ver_inst,
                     fieldid=fieldid_inst,
                     exposure=i,
+                    field_exposure=i,  # safe to assume same for these?
                     desmode_label=desmode_label,
                     design_ids=design_inst['carton_to_target_pk'],
                     robotID=roboIDs,

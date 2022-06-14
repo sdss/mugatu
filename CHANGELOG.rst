@@ -6,6 +6,7 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Add field_exposure to designs added to targetdb.
 * Make obsTime optional argument in mugatu.fspdesign.FPSDesign so it is calculated at LST when not provided.
 
 * :release:`1.2.0 <2022-03-23>`

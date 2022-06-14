@@ -150,7 +150,8 @@ if __name__ == '__main__':
             design_id = make_design_assignments_targetdb(
                 plan=ver_inst,
                 fieldid=fieldid_inst,
-                exposure=i,
+                exposure=i - allo['iexpst'],  # subtract off the min so it is 0-indexed
+                field_exposure=i,
                 desmode_label=desmode_label,
                 design_ids=design_inst['carton_to_target_pk'],
                 robotID=roboIDs,

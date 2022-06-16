@@ -669,6 +669,8 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
             ras = np.array(ras)
             decs = np.array(decs)
             mags = np.array(mags)
+            catalogids = np.array(catalogids,
+                                  dtype=int)
             pmras = np.array(pmras)
             pmdecs = np.array(pmdecs)
             db_query_results = (ras, decs, mags, catalogids, pmras, pmdecs)

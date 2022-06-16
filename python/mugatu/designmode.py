@@ -567,6 +567,8 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
             rasg = np.array(rasg)
             decsg = np.array(decsg)
             magsg = np.array(magsg)
+            catalogidsg = np.array(catalogidsg,
+                                   dtype=int)
             pmrasg = np.array(pmrasg)
             pmdecsg = np.array(pmdecsg)
 
@@ -600,6 +602,8 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
             decst = np.array(decst)
             magsbt = np.array(magsbt)
             magsvt = np.array(magsvt)
+            catalogidst = np.array(catalogidst,
+                                   dtype=int)
             pmrast = np.array(pmrast)
             pmdecst = np.array(pmdecst)
             magsg_tych = np.zeros(len(magsbt))
@@ -611,13 +615,30 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                          0.05937 * (magsbt[magsbt != None] -
                                                     magsvt[magsbt != None]) ** 3)
             magsg_tych[magsbt == None] = magsvt[magsbt == None] - 1
-            ras = np.append(rasg, rast)
-            decs = np.append(decsg, decst)
-            mags = np.append(magsg, magsg_tych)
-            catalogids = catalogidsg + catalogidst
-            mags = np.append(magsg, magsg_tych)
-            pmras = np.append(pmrasg, pmrast)
-            pmdecs = np.append(pmdecsg, pmdecst)
+            # set up the logic to only include bright tycho
+            # or no matches
+            tych_in_gaia = np.isin(catalogidst, catalogidsg)
+            tych_bright_lim = 7.
+            tych_bright = magsvt < tych_bright_lim
+            gaia_in_br_tych = np.isin(catalogidsg, catalogidst[tych_bright])
+            br_tych_in_gaia = np.isin(catalogidst[tych_bright], catalogidsg)
+            # evals for each now
+            tych_eval = (br_tych_in_gaia) | (~tych_in_gaia)
+            gaia_eval = (~gaia_in_br_tych)
+            ras = np.append(rasg[gaia_eval],
+                            rast[tych_eval])
+            decs = np.append(decsg[gaia_eval],
+                             decst[tych_eval])
+            mags = np.append(magsg[gaia_eval],
+                             magsg_tych[tych_eval])
+            catalogids = np.append(catalogidsg[gaia_eval],
+                                   catalogidst[tych_eval])
+            mags = np.append(magsg[gaia_eval],
+                             magsg_tych[tych_eval])
+            pmras = np.append(pmrasg[gaia_eval],
+                              pmrast[tych_eval])
+            pmdecs = np.append(pmdecsg[gaia_eval],
+                               pmdecst[tych_eval])
             db_query_results = (ras, decs, mags, catalogids, pmras, pmdecs)
 
         else:

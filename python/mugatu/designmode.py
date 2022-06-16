@@ -621,9 +621,8 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
             tych_bright_lim = 7.
             tych_bright = magsvt < tych_bright_lim
             gaia_in_br_tych = np.isin(catalogidsg, catalogidst[tych_bright])
-            br_tych_in_gaia = np.isin(catalogidst[tych_bright], catalogidsg)
             # evals for each now
-            tych_eval = (br_tych_in_gaia) | (~tych_in_gaia)
+            tych_eval = (tych_bright) | (~tych_in_gaia)
             gaia_eval = (~gaia_in_br_tych)
             ras = np.append(rasg[gaia_eval],
                             rast[tych_eval])

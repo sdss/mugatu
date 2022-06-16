@@ -531,7 +531,7 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
     Outputs
     -------
     db_query_results: tuple
-        Tuple of (ra, dec, mag, catalogid) for the
+        Tuple of (ra, dec, mag, catalogid, pmra, pmdec) for the
         appropriate database query
     """
     # return empty tuple if no mag limit

@@ -499,7 +499,7 @@ def adjusted_brigh_neigh_mag(mag_bs, r, lunation):
 
 
 def build_brigh_neigh_query(check_type, instrument, mag_lim,
-                            racen, deccen):
+                            racen, deccen, version_catdb=25):
     """
     Builds the database query needed to run bright
     neighbor check
@@ -524,6 +524,9 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
 
     deccen: float
         Feild center in declination
+
+    version_catdb: int
+        catalogdb.Version.id to use for the query
 
     Outputs
     -------
@@ -558,7 +561,8 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                         1.5,
                                         ra_col=ra_col_str,
                                         dec_col=dec_col_str)) &
-                       (mag_col < mag_lim)))
+                       (mag_col < mag_lim) &
+                       (catalogdb.Catalog.version == version_catdb)))
             rasg, decsg, magsg, catalogidsg, pmrasg, pmdecsg = map(list, zip(*list(db_query_gaia.tuples())))
             rasg = np.array(rasg)
             decsg = np.array(decsg)
@@ -589,7 +593,8 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                         1.5,
                                         ra_col=ra_col_str,
                                         dec_col=dec_col_str)) &
-                       (mag_colvt < mag_lim)))
+                       (mag_colvt < mag_lim) &
+                       (catalogdb.Catalog.version == version_catdb)))
             rast, decst, magsbt, magsvt, catalogidst, pmrast, pmdecst = map(list, zip(*list(db_query_tych.tuples())))
             rast = np.array(rast)
             decst = np.array(decst)
@@ -638,7 +643,8 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                         1.5,
                                         ra_col=ra_col_str,
                                         dec_col=dec_col_str)) &
-                       (mag_col < mag_lim)))
+                       (mag_col < mag_lim) &
+                       (catalogdb.Catalog.version == version_catdb)))
             ras, decs, mags, catalogids, pmras, pmdecs = map(list, zip(*list(db_query.tuples())))
             ras = np.array(ras)
             decs = np.array(decs)

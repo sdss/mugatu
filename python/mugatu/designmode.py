@@ -539,9 +539,9 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
         return ()
     if check_type == 'designmode':
         if instrument == 'BOSS':
-            cat = catalogdb.Gaia_DR2
-            ra_col = catalogdb.Gaia_DR2.ra
-            dec_col = catalogdb.Gaia_DR2.dec
+            cat = catalogdb.Catalog
+            ra_col = catalogdb.Catalog.ra
+            dec_col = catalogdb.Catalog.dec
             ra_col_str = 'ra'
             dec_col_str = 'dec'
             mag_col = catalogdb.Gaia_DR2.phot_g_mean_mag
@@ -572,11 +572,11 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
             pmrasg = np.array(pmrasg)
             pmdecsg = np.array(pmdecsg)
 
-            cat = catalogdb.Tycho2
-            ra_col = catalogdb.Tycho2.radeg
-            dec_col = catalogdb.Tycho2.dedeg
-            ra_col_str = 'radeg'
-            dec_col_str = 'dedeg'
+            cat = catalogdb.Catalog
+            ra_col = catalogdb.Catalog.ra
+            dec_col = catalogdb.Catalog.dec
+            ra_col_str = 'ra'
+            dec_col_str = 'dec'
             mag_colbt = catalogdb.Tycho2.btmag
             mag_colvt = catalogdb.Tycho2.vtmag
             # run the query
@@ -641,11 +641,11 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
             db_query_results = (ras, decs, mags, catalogids, pmras, pmdecs)
 
         else:
-            cat = catalogdb.TwoMassPSC
-            ra_col = catalogdb.TwoMassPSC.ra
-            dec_col = catalogdb.TwoMassPSC.decl
+            cat = catalogdb.Catalog
+            ra_col = catalogdb.Catalog.ra
+            dec_col = catalogdb.Catalog.dec
             ra_col_str = 'ra'
-            dec_col_str = 'decl'
+            dec_col_str = 'dec'
             mag_col = catalogdb.TwoMassPSC.h_m
             # run the query
             db_query = (catalogdb.Catalog.select(

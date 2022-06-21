@@ -565,13 +565,13 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                        (mag_col < mag_lim) &
                        (catalogdb.Catalog.version == version_catdb)))
             rasg, decsg, magsg, catalogidsg, pmrasg, pmdecsg = map(list, zip(*list(db_query_gaia.tuples())))
-            rasg = np.array(rasg)
-            decsg = np.array(decsg)
-            magsg = np.array(magsg)
+            rasg = np.array(rasg, dtype=np.float64)
+            decsg = np.array(decsg, dtype=np.float64)
+            magsg = np.array(magsg, dtype=np.float64)
             catalogidsg = np.array(catalogidsg,
                                    dtype=int)
-            pmrasg = np.array(pmrasg)
-            pmdecsg = np.array(pmdecsg)
+            pmrasg = np.array(pmrasg, dtype=np.float64)
+            pmdecsg = np.array(pmdecsg, dtype=np.float64)
 
             cat = catalogdb.Tycho2
             ra_col = catalogdb.Catalog.ra
@@ -599,14 +599,14 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                        (mag_colvt < mag_lim) &
                        (catalogdb.Catalog.version == version_catdb)))
             rast, decst, magsbt, magsvt, catalogidst, pmrast, pmdecst = map(list, zip(*list(db_query_tych.tuples())))
-            rast = np.array(rast)
-            decst = np.array(decst)
-            magsbt = np.array(magsbt)
-            magsvt = np.array(magsvt)
+            rast = np.array(rast, dtype=np.float64)
+            decst = np.array(decst, dtype=np.float64)
+            magsbt = np.array(magsbt, dtype=np.float64)
+            magsvt = np.array(magsvt, dtype=np.float64)
             catalogidst = np.array(catalogidst,
                                    dtype=int)
-            pmrast = np.array(pmrast)
-            pmdecst = np.array(pmdecst)
+            pmrast = np.array(pmrast, dtype=np.float64)
+            pmdecst = np.array(pmdecst, dtype=np.float64)
             magsg_tych = np.zeros(len(magsbt))
             magsg_tych[magsbt != None] = (magsvt[magsbt != None] - 0.02051 -
                                          0.2706 * (magsbt[magsbt != None] -
@@ -667,13 +667,13 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                        (mag_col < mag_lim) &
                        (catalogdb.Catalog.version == version_catdb)))
             ras, decs, mags, catalogids, pmras, pmdecs = map(list, zip(*list(db_query.tuples())))
-            ras = np.array(ras)
-            decs = np.array(decs)
-            mags = np.array(mags)
+            ras = np.array(ras, dtype=np.float64)
+            decs = np.array(decs, dtype=np.float64)
+            mags = np.array(mags, dtype=np.float64)
             catalogids = np.array(catalogids,
                                   dtype=int)
-            pmras = np.array(pmras)
-            pmdecs = np.array(pmdecs)
+            pmras = np.array(pmras, dtype=np.float64)
+            pmdecs = np.array(pmdecs, dtype=np.float64)
             db_query_results = (ras, decs, mags, catalogids, pmras, pmdecs)
     else:
         if instrument == 'BOSS':
@@ -700,13 +700,13 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                                                                1.5)) &
                                                   (targetdb.Carton.carton.in_(carts))))
         ras, decs, mags, catalogids, pmras, pmdecs = map(list, zip(*list(db_query.tuples())))
-        ras = np.array(ras)
-        decs = np.array(decs)
-        mags = np.array(mags)
+        ras = np.array(ras, dtype=np.float64)
+        decs = np.array(decs, dtype=np.float64)
+        mags = np.array(mags, dtype=np.float64)
         catalogids = np.array(catalogids,
                               dtype=int)
-        pmras = np.array(pmras)
-        pmdecs = np.array(pmdecs)
+        pmras = np.array(pmras, dtype=np.float64)
+        pmdecs = np.array(pmdecs, dtype=np.float64)
         db_query_results = (ras, decs, mags, catalogids, pmras, pmdecs)
     return db_query_results
 

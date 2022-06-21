@@ -9,6 +9,7 @@ import warnings
 import fitsio
 import collections
 from scipy.spatial import cKDTree
+from astropy.time import Time
 
 from mugatu.exceptions import MugatuError, MugatuWarning
 from coordio.utils import radec2wokxy, wokxy2radec
@@ -1301,9 +1302,43 @@ class DesignModeCheck(DesignMode):
         # only do check if any stars returned
         if len(db_query) > 0:
             if isinstance(db_query, tuple):
-                ras, decs, mags, catalogids = db_query
+                ras, decs, mags, catalogids, pmras, pmdecs = db_query
             else:
-                ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
+                ras, decs, mags, catalogids, pmras, pmdecs = map(list, zip(*list(db_query.tuples())))
+
+            # set nan pms to 0
+            pmras[np.isnan(pmras)] = 0.
+            pmdecs[np.isnan(pmdecs)] = 0.
+            # convert to x,y
+            radVel = (np.zeros(len(ras),
+                               dtype=np.float64) + 1.e-4)
+            parallax = (np.zeros(len(ras),
+                                 dtype=np.float64) + 1.e-4)
+            res = radec2wokxy(
+                ra=ras,
+                dec=decs,
+                coordEpoch=Time(np.array([2015.5] * len(ras)),
+                                format='decimalyear').jd,
+                waveName=instrument.title(),
+                raCen=self.racen,
+                decCen=self.deccen,
+                obsAngle=self.position_angle,
+                obsSite=self.observatory,
+                obsTime=self.obsTime,
+                pmra=pmras,
+                pmdec=pmdecs,
+                parallax=parallax,
+                radVel=radVel)
+            # now convert back to ra,dec
+            ras, decs, fieldWarn = wokxy2radec(xWok=res[0],
+                                               yWok=res[1],
+                                               waveName=instrument.title(),
+                                               raCen=self.racen,
+                                               decCen=self.deccen,
+                                               obsAngle=self.position_angle,
+                                               obsSite=self.observatory,
+                                               obsTime=self.obsTime)
+
 
             if 'bright' in self.desmode_label:
                 r_exclude = bright_neigh_exclusion_r(mags,

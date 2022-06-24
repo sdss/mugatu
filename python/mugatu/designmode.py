@@ -616,28 +616,22 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                          0.05937 * (magsbt[magsbt != None] -
                                                     magsvt[magsbt != None]) ** 3)
             magsg_tych[magsbt == None] = magsvt[magsbt == None] - 1
-            # set up the logic to only include bright tycho
-            # or no matches
+            # set up the logic to only include tycho
+            # stars not found in Gaia
             tych_in_gaia = np.isin(catalogidst, catalogidsg)
-            tych_bright_lim = 7.
-            tych_bright = magsvt < tych_bright_lim
-            gaia_in_br_tych = np.isin(catalogidsg, catalogidst[tych_bright])
             # evals for each now
-            tych_eval = (tych_bright) | (~tych_in_gaia)
-            gaia_eval = (~gaia_in_br_tych)
-            ras = np.append(rasg[gaia_eval],
+            tych_eval = (~tych_in_gaia)
+            ras = np.append(rasg,
                             rast[tych_eval])
-            decs = np.append(decsg[gaia_eval],
+            decs = np.append(decsg,
                              decst[tych_eval])
-            mags = np.append(magsg[gaia_eval],
+            mags = np.append(magsg,
                              magsg_tych[tych_eval])
-            catalogids = np.append(catalogidsg[gaia_eval],
+            catalogids = np.append(catalogidsg,
                                    catalogidst[tych_eval])
-            mags = np.append(magsg[gaia_eval],
-                             magsg_tych[tych_eval])
-            pmras = np.append(pmrasg[gaia_eval],
+            pmras = np.append(pmrasg,
                               pmrast[tych_eval])
-            pmdecs = np.append(pmdecsg[gaia_eval],
+            pmdecs = np.append(pmdecsg,
                                pmdecst[tych_eval])
             db_query_results = (ras, decs, mags, catalogids, pmras, pmdecs)
 

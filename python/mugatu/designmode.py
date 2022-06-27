@@ -1140,7 +1140,7 @@ class DesignModeCheck(DesignMode):
                 self.design['category'][i] in self.carton_classes[carton_class] and
                 self.design['obsWavelength'][i] == instrument):
                 # don't do check and make true if offset target
-                if self.design['offset'][i]:
+                if self.design['offset'][i] and self.design['offset_flag'][i] == 0:
                     mag_checks[i] = True
                 else:
                     # check in each band that has check defined

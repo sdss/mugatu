@@ -500,7 +500,7 @@ def adjusted_brigh_neigh_mag(mag_bs, r, lunation):
 
 
 def build_brigh_neigh_query(check_type, instrument, mag_lim,
-                            racen, deccen, version_catdb=25):
+                            racen, deccen, version_catdb='0.5.0'):
     """
     Builds the database query needed to run bright
     neighbor check
@@ -526,8 +526,8 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
     deccen: float
         Feild center in declination
 
-    version_catdb: int
-        catalogdb.Version.id to use for the query
+    version_catdb: str
+        catalogdb.Version.plan to use for the query
 
     Outputs
     -------
@@ -554,6 +554,8 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                 catalogdb.Catalog.catalogid,
                 catalogdb.Catalog.pmra,
                 catalogdb.Catalog.pmdec)
+                .join(catalogdb.Version)
+                .switch(catalogdb.Catalog)
                 .join(catalogdb.CatalogToTIC_v8)
                 .join(catalogdb.TIC_v8)
                 .join(catalogdb.Gaia_DR2)
@@ -563,7 +565,7 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                         ra_col=ra_col_str,
                                         dec_col=dec_col_str)) &
                        (mag_col < mag_lim) &
-                       (catalogdb.Catalog.version == version_catdb)))
+                       (catalogdb.Version.plan == version_catdb)))
             rasg, decsg, magsg, catalogidsg, pmrasg, pmdecsg = map(list, zip(*list(db_query_gaia.tuples())))
             rasg = np.array(rasg, dtype=np.float64)
             decsg = np.array(decsg, dtype=np.float64)
@@ -589,6 +591,8 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                 catalogdb.Catalog.catalogid,
                 catalogdb.Catalog.pmra,
                 catalogdb.Catalog.pmdec)
+                .join(catalogdb.Version)
+                .switch(catalogdb.Catalog)
                 .join(catalogdb.CatalogToTycho2)
                 .join(catalogdb.Tycho2)
                 .where((cat.cone_search(racen,
@@ -597,7 +601,7 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                         ra_col=ra_col_str,
                                         dec_col=dec_col_str)) &
                        (mag_colvt < mag_lim) &
-                       (catalogdb.Catalog.version == version_catdb)))
+                       (catalogdb.Version.plan == version_catdb)))
             rast, decst, magsbt, magsvt, catalogidst, pmrast, pmdecst = map(list, zip(*list(db_query_tych.tuples())))
             rast = np.array(rast, dtype=np.float64)
             decst = np.array(decst, dtype=np.float64)
@@ -650,6 +654,8 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                 catalogdb.Catalog.catalogid,
                 catalogdb.Catalog.pmra,
                 catalogdb.Catalog.pmdec)
+                .join(catalogdb.Version)
+                .switch(catalogdb.Catalog)
                 .join(catalogdb.CatalogToTIC_v8)
                 .join(catalogdb.TIC_v8)
                 .join(cat)
@@ -659,7 +665,7 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                         ra_col=ra_col_str,
                                         dec_col=dec_col_str)) &
                        (mag_col < mag_lim) &
-                       (catalogdb.Catalog.version == version_catdb)))
+                       (catalogdb.Version.plan == version_catdb)))
             ras, decs, mags, catalogids, pmras, pmdecs = map(list, zip(*list(db_query.tuples())))
             ras = np.array(ras, dtype=np.float64)
             decs = np.array(decs, dtype=np.float64)

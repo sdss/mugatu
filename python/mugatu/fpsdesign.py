@@ -362,14 +362,16 @@ class FPSDesign(object):
         ev_boss = (self.design['offset']) & (self.design['obsWavelength'] == 'BOSS')
         res = object_offset(self.design['magnitudes'][:, boss_mag_col][ev_boss],
                             boss_mag_lim,
-                            lunation)
+                            lunation,
+                            'BOSS')
         self.design['delta_ra'][ev_boss] = res[0]
         self.design['delta_dec'][ev_boss] = res[1]
 
         ev_apogee = (self.design['offset']) & (self.design['obsWavelength'] == 'APOGEE')
         res = object_offset(self.design['magnitudes'][:, apogee_mag_col][ev_apogee],
                             apogee_mag_lim,
-                            lunation)
+                            lunation,
+                            'APOGEE')
         self.design['delta_ra'][ev_apogee] = res[0]
         self.design['delta_dec'][ev_apogee] = res[1]
 

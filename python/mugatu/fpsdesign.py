@@ -469,6 +469,7 @@ class FPSDesign(object):
         self.design['delta_ra'] = np.zeros(500, dtype=float) - 9999.99
         self.design['delta_dec'] = np.zeros(500, dtype=float) - 9999.99
         self.design['offset'] = np.zeros(500, dtype=bool)
+        self.design['offset_flag'] = np.zeros(500, dtype=int)
         self.design['epoch'] = np.zeros(500, dtype=float) - 9999.99
         self.design['ra_off'] = np.zeros(500, dtype=float) - 9999.99
         self.design['dec_off'] = np.zeros(500, dtype=float) - 9999.99
@@ -709,6 +710,8 @@ class FPSDesign(object):
         self.design['dec_off'] = (np.zeros(len(self.design['catalogID']),
                                   dtype=float) -
                                   9999.99)
+        self.design['offset_flag'] = np.zeros(len(self.design['catalogID']),
+                                              dtype=int)
 
         # here convert ra/dec to x/y based on field/time of observation
         ev = eval("(self.design['ra'] != -9999.99)")
@@ -1004,6 +1007,8 @@ class FPSDesign(object):
         self.valid_design['pmdec'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['delta_ra'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['delta_dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['offset'] = np.zeros(500, dtype=bool)
+        self.valid_design['offset_flag'] = np.zeros(500, dtype=int)
         self.valid_design['ra_off'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['dec_off'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['epoch'] = np.zeros(500, dtype=float) - 9999.99
@@ -1031,6 +1036,8 @@ class FPSDesign(object):
                 self.valid_design['pmdec'][i] = self.design['pmdec'][cond][0]
                 self.valid_design['delta_ra'][i] = self.design['delta_ra'][cond][0]
                 self.valid_design['delta_dec'][i] = self.design['delta_dec'][cond][0]
+                self.valid_design['offset'][i] = self.design['offset'][cond][0]
+                self.valid_design['offset_flag'][i] = self.design['offset_flag'][cond][0]
                 self.valid_design['ra_off'][i] = self.design['ra_off'][cond][0]
                 self.valid_design['dec_off'][i] = self.design['dec_off'][cond][0]
                 self.valid_design['epoch'][i] = self.design['epoch'][cond][0]

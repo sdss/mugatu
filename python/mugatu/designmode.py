@@ -1262,15 +1262,15 @@ class DesignModeCheck(DesignMode):
                 ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
 
             if 'bright' in self.desmode_label:
-                r_exclude = offset_definition(mags,
-                                              mag_lim,
-                                              lunation='bright',
-                                              instrument=instrument)
+                r_exclude, _ = offset_definition(mags,
+                                                 mag_lim,
+                                                 lunation='bright',
+                                                 instrument=instrument)
             else:
-                r_exclude = offset_definition(mags,
-                                              mag_lim,
-                                              lunation='dark',
-                                              instrument=instrument)
+                r_exclude, _ = offset_definition(mags,
+                                                 mag_lim,
+                                                 lunation='dark',
+                                                 instrument=instrument)
 
             # check if fibers too close to bright neighbors
             for i in range(len(r_exclude)):

@@ -258,6 +258,47 @@ def assignment_hash(ids, holeIDs):
     return assign_hash
 
 
+def designToField_exists(design_id, field_id, plan):
+    """
+    Check if designToField entry already exists to
+    to ensure unique entries (i.e. one unqiue
+    combo of design_id, field_id and version)
+
+    Parameters
+    ----------
+    design_id: int
+        design_id for the design
+
+    field_id: int
+        field_id for the design
+
+    plan: str or targetdb.Version instance
+        Either robostratgegy plan as a str or a targetdb.Version.get
+        instance for the plan that can be used to get the version pk
+
+    Returns
+    -------
+    exists: boolean
+        whether or not the combo of design_id, field_id and version
+        already exists in targetdb
+    """
+    # get the version pk based on the plan
+    if isinstance(plan, str):
+        versionDB = targetdb.Version()
+        verpk = versionDB.get(plan=plan).pk
+    else:
+        verpk = plan.pk
+
+    # create the query
+    check_designToField = (targetdb.DesignToField.select()
+                                                 .join(targetdb.Field)
+                                                 .where((targetdb.DesignToField.design == design_id) &
+                                                        (targetdb.Field.field_id == field_id) &
+                                                        (targetdb.Field.version == verpk)))
+    exists = check_designToField.exists()
+    return exists
+
+
 def make_design_assignments_targetdb(plan, fieldid, exposure, field_exposure,
                                      desmode_label,
                                      design_ids, robotID, holeID,

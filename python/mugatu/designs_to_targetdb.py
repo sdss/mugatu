@@ -381,8 +381,7 @@ def make_design_assignments_targetdb(plan, fieldid, exposure, field_exposure,
     assign_hash = assignment_hash(design_ids[robotID != -1],
                                   holeID[robotID != -1])
 
-    designDB = targetdb.Design.create(field=fieldpk,
-                                      exposure=exposure,
+    designDB = targetdb.Design.create(exposure=exposure,
                                       design_mode=desmode_label,
                                       mugatu_version=mugatu_version,
                                       run_on=datetime.datetime.now(),
@@ -390,6 +389,13 @@ def make_design_assignments_targetdb(plan, fieldid, exposure, field_exposure,
                                       field_exposure=field_exposure)
     # save row
     designDB.save()
+
+    # add the designToField entry
+    designToFieldDB = targetdb.DesignToField.create(design=designDB.design_id,
+                                                    field=fieldpk,
+                                                    exposure=exposure,
+                                                    field_exposure=field_exposure)
+    designToFieldDB.save()
 
     # add the assignments for the design to the assignment database
     rows = []

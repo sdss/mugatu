@@ -34,7 +34,7 @@ except:
 from sdssdb.peewee.sdss5db.targetdb import (Design, Field, Observatory,
                                             Assignment, Instrument, Target,
                                             Hole, CartonToTarget, Carton,
-                                            Magnitude, Category)
+                                            Magnitude, Category, DesignToField)
 
 
 class FPSDesign(object):
@@ -226,8 +226,10 @@ class FPSDesign(object):
                               Field.deccen,
                               Field.position_angle,
                               Observatory.label)
+                      .join(DesignToField,
+                            on=(Design.design_id == DesignToField.design))
                       .join(Field,
-                            on=(Design.field_pk == Field.pk))
+                            on=(DesignToField.field == Field.pk))
                       .join(Observatory,
                             on=(Field.observatory == Observatory.pk))
                       .where(Design.design_id == self.design_pk))

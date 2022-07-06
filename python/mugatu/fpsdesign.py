@@ -363,7 +363,7 @@ class FPSDesign(object):
         res = object_offset(self.design['magnitudes'][:, boss_mag_col][ev_boss],
                             boss_mag_lim,
                             lunation,
-                            'BOSS')
+                            'Boss')
         self.design['delta_ra'][ev_boss] = res[0]
         self.design['delta_dec'][ev_boss] = res[1]
         self.design['offset_flag'][ev_boss] = res[2]
@@ -372,7 +372,7 @@ class FPSDesign(object):
         res = object_offset(self.design['magnitudes'][:, apogee_mag_col][ev_apogee],
                             apogee_mag_lim,
                             lunation,
-                            'APOGEE')
+                            'Apogee')
         self.design['delta_ra'][ev_apogee] = res[0]
         self.design['delta_dec'][ev_apogee] = res[1]
         self.design['offset_flag'][ev_apogee] = res[2]

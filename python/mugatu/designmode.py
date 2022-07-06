@@ -1265,12 +1265,12 @@ class DesignModeCheck(DesignMode):
                 r_exclude, _ = offset_definition(mags,
                                                  mag_lim,
                                                  lunation='bright',
-                                                 instrument=instrument)
+                                                 waveName=instrument.title())
             else:
                 r_exclude, _ = offset_definition(mags,
                                                  mag_lim,
                                                  lunation='dark',
-                                                 instrument=instrument)
+                                                 waveName=instrument.title())
 
             # check if fibers too close to bright neighbors
             for i in range(len(r_exclude)):

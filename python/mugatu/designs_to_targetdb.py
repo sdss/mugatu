@@ -299,6 +299,48 @@ def designToField_exists(design_id, field_id, plan):
     return exists
 
 
+def make_designToField(design, fieldid, exposure, field_exposure):
+    """
+    Create a new designToField entry
+
+    Parameters
+    ----------
+    design: int or targetdb.Design instance
+        The design_id for the design (can be int or peewee
+        instance)
+
+    fieldid: int or targetdb.Field instance
+        The fieldid for the field (int) or a targetdb.Field
+        instance for the field that can be used to get the field pk
+
+    exposure: int
+        The exposure of this set of designs. 0th indexed
+
+    field_exposure: int
+        The exposure of this set of designs as listed in the
+        robostrategy design file. 0th indexed
+    """
+    # get the fieldpk
+    if isinstance(design, int):
+        design_id = design
+    else:
+        design_id = design.design_id
+
+    if isinstance(fieldid, int):
+        field = (targetdb.Field.select()
+                               .where((targetdb.Field.field_id == fieldid) &
+                                      (targetdb.Field.version == verpk)))
+        fieldpk = field[0].pk
+    else:
+        fieldpk = fieldid[0].pk
+
+    designToFieldDB = targetdb.DesignToField.create(design=design_id,
+                                                    field=fieldpk,
+                                                    exposure=exposure,
+                                                    field_exposure=field_exposure)
+    designToFieldDB.save()
+
+
 def make_design_assignments_targetdb(plan, fieldid, exposure, field_exposure,
                                      desmode_label,
                                      design_ids, robotID, holeID,
@@ -432,11 +474,7 @@ def make_design_assignments_targetdb(plan, fieldid, exposure, field_exposure,
     designDB.save()
 
     # add the designToField entry
-    designToFieldDB = targetdb.DesignToField.create(design=designDB.design_id,
-                                                    field=fieldpk,
-                                                    exposure=exposure,
-                                                    field_exposure=field_exposure)
-    designToFieldDB.save()
+    make_designToField(designDB.design_id, fieldid, exposure, field_exposure)
 
     # add the assignments for the design to the assignment database
     rows = []

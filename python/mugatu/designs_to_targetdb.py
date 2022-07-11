@@ -464,12 +464,10 @@ def make_design_assignments_targetdb(plan, fieldid, exposure, field_exposure,
     assign_hash = assignment_hash(design_ids[robotID != -1],
                                   holeID[robotID != -1])
 
-    designDB = targetdb.Design.create(exposure=exposure,
-                                      design_mode=desmode_label,
+    designDB = targetdb.Design.create(design_mode=desmode_label,
                                       mugatu_version=mugatu_version,
                                       run_on=datetime.datetime.now(),
-                                      assignment_hash=assign_hash,
-                                      field_exposure=field_exposure)
+                                      assignment_hash=assign_hash)
     # save row
     designDB.save()
 

@@ -111,6 +111,8 @@ if __name__ == '__main__':
         design_inst = fits.open(field_assigned_file)[1].data
         # catalogid assignment for each fiber
         design = fits.open(field_assigned_file)[2].data
+        # here will need to grab another HDU with design_ids
+        design_ids = fits.open(field_assigned_file)[].data  # dont know HDU yet
         # get list of designmodes
         desmode_labels = head['DESMODE'].split(' ')
 
@@ -146,34 +148,40 @@ if __name__ == '__main__':
                 roboIDs = design['robotID'][:, i]
                 holeIDs = design['holeID'][:, i]
                 desmode_label = desmode_labels[i]
-            # write exposure to targetdb
-            design_id = make_design_assignments_targetdb(
-                plan=ver_inst,
-                fieldid=fieldid_inst,
-                exposure=i - allo['iexpst'],  # subtract off the min so it is 0-indexed
-                field_exposure=i,
-                desmode_label=desmode_label,
-                design_ids=design_inst['carton_to_target_pk'],
-                robotID=roboIDs,
-                holeID=holeIDs,
-                obsWavelength=design_inst['fiberType'],
-                carton=design_inst['carton'],
-                observatory=obs_inst,
-                targetdb_ver=None,
-                instr_pks=instr_pks,
-                cart_pks=design_inst['carton_pk'],
-                fiber_pks=fiber_pks,
-                idtype='carton_to_target',
-                return_design_id=True)
+            # write exposure to targetdb if not previous design
+            if design_ids[i] is None:
+              design_id = make_design_assignments_targetdb(
+                  plan=ver_inst,
+                  fieldid=fieldid_inst,
+                  exposure=i - allo['iexpst'],  # subtract off the min so it is 0-indexed
+                  field_exposure=i,
+                  desmode_label=desmode_label,
+                  design_ids=design_inst['carton_to_target_pk'],
+                  robotID=roboIDs,
+                  holeID=holeIDs,
+                  obsWavelength=design_inst['fiberType'],
+                  carton=design_inst['carton'],
+                  observatory=obs_inst,
+                  targetdb_ver=None,
+                  instr_pks=instr_pks,
+                  cart_pks=design_inst['carton_pk'],
+                  fiber_pks=fiber_pks,
+                  idtype='carton_to_target',
+                  return_design_id=True)
 
-            file = sdss_path.full('rsFieldAssignmentsFinal',
-                                  plan=plan,
-                                  observatory=observatory,
-                                  fieldid=fieldid).split('/')[-1]
+              file = sdss_path.full('rsFieldAssignmentsFinal',
+                                    plan=plan,
+                                    observatory=observatory,
+                                    fieldid=fieldid).split('/')[-1]
 
-            ind = np.where((valid_results['file_name'] == file) &
-                           (valid_results['exp'] == i))[0][0]
-            make_desigmmode_results_targetdb(
-                design_id=design_id,
-                design_pass=True,
-                design_valid_file_row=valid_results[ind])
+              ind = np.where((valid_results['file_name'] == file) &
+                             (valid_results['exp'] == i))[0][0]
+              make_desigmmode_results_targetdb(
+                  design_id=design_id,
+                  design_pass=True,
+                  design_valid_file_row=valid_results[ind])
+            else:
+              make_designToField(design=design_ids[i],
+                                 fieldid=fieldid_inst,
+                                 exposure=i - allo['iexpst'],
+                                 field_exposure=i)

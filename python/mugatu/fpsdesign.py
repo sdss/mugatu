@@ -6,6 +6,7 @@
 
 import numpy as np
 import warnings
+import os
 from astropy.io import fits
 from astropy.time import Time
 from peewee import JOIN
@@ -34,7 +35,8 @@ except:
 from sdssdb.peewee.sdss5db.targetdb import (Design, Field, Observatory,
                                             Assignment, Instrument, Target,
                                             Hole, CartonToTarget, Carton,
-                                            Magnitude, Category, DesignToField)
+                                            Magnitude, Category, DesignToField,
+                                            Version)
 
 
 class FPSDesign(object):
@@ -147,6 +149,11 @@ class FPSDesign(object):
         only 1 exposure in the design file. if exp>0, then will
         choose exposure exp = 1 to N.
 
+    RS_VERSION: str
+        The version of targetdb to get designs from. If None will
+        look for RS_VERSION enviornment variable, and if None exists
+        will default to first entry.
+
     Attributes
     ----------
     design: dict
@@ -195,12 +202,13 @@ class FPSDesign(object):
                  pmra=None, pmdec=None, delta_ra=None, delta_dec=None,
                  epoch=None, holeID=None, obsWavelength=None,
                  priority=None, carton_pk=None, category=None, magnitudes=None,
-                 design_file=None, manual_design=False, exp=0):
+                 design_file=None, manual_design=False, exp=0, RS_VERSION=None):
         if idtype != 'catalogID' and idtype != 'carton_to_target':
             message = 'idtype must be catalogID or carton_to_target'
             raise MugatuError(message=message)
         self.design_pk = design_pk
         self.design = {}
+        self.RS_VERSION = RS_VERSION
         # either set field params or pull from db is design
         # is in targetdb
         if manual_design:
@@ -219,20 +227,42 @@ class FPSDesign(object):
                 self.observatory = head['obs'].strip().upper()
                 self.desmode_label = desmode_labels[exp - 1]
         else:
-            design_field_db = (
-                Design.select(Design.design_id,
-                              Design.design_mode,
-                              Field.racen,
-                              Field.deccen,
-                              Field.position_angle,
-                              Observatory.label)
-                      .join(DesignToField,
-                            on=(Design.design_id == DesignToField.design))
-                      .join(Field,
-                            on=(DesignToField.field == Field.pk))
-                      .join(Observatory,
-                            on=(Field.observatory == Observatory.pk))
-                      .where(Design.design_id == self.design_pk))
+            if self.RS_VERSION is None:
+                self.RS_VERSION = os.getenv('RS_VERSION')
+                if self.RS_VERSION is None:
+                    design_field_db = (
+                        Design.select(Design.design_id,
+                                      Design.design_mode,
+                                      Field.racen,
+                                      Field.deccen,
+                                      Field.position_angle,
+                                      Observatory.label)
+                              .join(DesignToField,
+                                    on=(Design.design_id == DesignToField.design))
+                              .join(Field,
+                                    on=(DesignToField.field == Field.pk))
+                              .join(Observatory,
+                                    on=(Field.observatory == Observatory.pk))
+                              .where(Design.design_id == self.design_pk))
+                else:
+                    design_field_db = (
+                        Design.select(Design.design_id,
+                                      Design.design_mode,
+                                      Field.racen,
+                                      Field.deccen,
+                                      Field.position_angle,
+                                      Observatory.label)
+                              .join(DesignToField,
+                                    on=(Design.design_id == DesignToField.design))
+                              .join(Field,
+                                    on=(DesignToField.field == Field.pk))
+                              .join(Observatory,
+                                    on=(Field.observatory == Observatory.pk))
+                              .switch(Field)
+                              .join(Version,
+                                    on=(Field.version == Version.pk))
+                              .where((Design.design_id == self.design_pk) &
+                                     (Version.plan == self.RS_VERSION)))
 
             self.racen = design_field_db.objects()[0].racen
             self.deccen = design_field_db.objects()[0].deccen

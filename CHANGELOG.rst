@@ -6,6 +6,8 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Add optional argument to FPSDesign for RS_VERSION (needed to be used with new DesignToField schema).
+* Make changes to queries to include new DesignToField table.
 * Add field_exposure to designs added to targetdb.
 * Make obsTime optional argument in mugatu.fspdesign.FPSDesign so it is calculated at LST when not provided.
 

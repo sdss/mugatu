@@ -152,7 +152,8 @@ class FPSDesign(object):
     RS_VERSION: str
         The version of targetdb to get designs from. If None will
         look for RS_VERSION enviornment variable, and if None exists
-        will default to first entry.
+        will default to first entry in DesignToField for that
+        design_id.
 
     Attributes
     ----------

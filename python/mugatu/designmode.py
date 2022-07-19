@@ -779,6 +779,7 @@ class DesignModeCheck(DesignMode):
         self.desmode_label = desmode_label
         self.db_query_results_boss = db_query_results_boss
         self.db_query_results_apogee = db_query_results_apogee
+        self.manual_design = FPSDesign.manual_design
 
         # grab the design mode params
         if desmode_manual is None:
@@ -1083,6 +1084,46 @@ class DesignModeCheck(DesignMode):
                 return True
             else:
                 return False
+
+    def zones_filled(self, instrument, category):
+        """
+        check zones of the assingments for some category and instrument
+
+        Parameters
+        ----------
+        instrument: str
+            Instrument to check zone assignments.
+            Must be 'BOSS' or 'APOGEE'.
+
+        category: str
+            Category to check zone assignments.
+            Must be 'sky', 'std' or 'science'.
+
+        Returns
+        -------
+        zone_frac: float
+            Fraction of zones that have at least 1 assignment
+
+        zone_med_counts: float
+            Median number of assignments per zone for zones that
+            have assignments.
+        """
+        if not self.manual_design:
+            flag = ('Design not manual design. Zone check only'
+                    'implemented for manual designs.')
+            warnings.warn(flag, MugatuWarning)
+            return None
+        zones = self.design['zone'][(self.design['catalogID'] != -1) &
+                                    (np.isin(self.design['category'],
+                                             self.carton_classes[category])) &
+                                    (self.design['obsWavelength'] == instrument)]
+        zones_assign, zone_counts = np.unique(zones, return_counts=True)
+        # get fraction of zones filled
+        zones_max = 8
+        zone_frac = len(zones_assign) / zones_max
+        # get median number of assignments per zone
+        zone_med_counts = np.median(zone_counts)
+        return zone_frac, zone_med_counts
 
     def mag_limits(self, mag_metric,
                    instrument, carton_class):

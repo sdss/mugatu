@@ -6,6 +6,7 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Update mugatu.designmode.build_brigh_neigh_query to include proper motions, only query on the current version of catalogdb and remove Tycho/Gaia duplicates.
 * Add optional argument to FPSDesign for RS_VERSION (needed to be used with new DesignToField schema).
 * Make changes to queries to include new DesignToField table.
 * Add field_exposure to designs added to targetdb.

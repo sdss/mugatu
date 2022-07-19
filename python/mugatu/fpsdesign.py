@@ -264,6 +264,23 @@ class FPSDesign(object):
                                     on=(Field.version == Version.pk))
                               .where((Design.design_id == self.design_pk) &
                                      (Version.plan == self.RS_VERSION)))
+                    if len(design_field_db) == 0:
+                        flag = 'Design not in set RS_VERSION.'
+                        warnings.warn(flag, MugatuWarning)
+                        design_field_db = (
+                            Design.select(Design.design_id,
+                                          Design.design_mode,
+                                          Field.racen,
+                                          Field.deccen,
+                                          Field.position_angle,
+                                          Observatory.label)
+                                  .join(DesignToField,
+                                        on=(Design.design_id == DesignToField.design))
+                                  .join(Field,
+                                        on=(DesignToField.field == Field.pk))
+                                  .join(Observatory,
+                                        on=(Field.observatory == Observatory.pk))
+                                  .where(Design.design_id == self.design_pk))
 
             self.racen = design_field_db.objects()[0].racen
             self.deccen = design_field_db.objects()[0].deccen

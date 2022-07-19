@@ -503,7 +503,7 @@ class FPSDesign(object):
                               Magnitude.k,
                               CartonToTarget.delta_ra,
                               CartonToTarget.delta_dec,
-                              CartonToTarget.offset,
+                              CartonToTarget.can_offset,
                               Target.pmra,
                               Target.pmdec,
                               Target.epoch,
@@ -545,7 +545,7 @@ class FPSDesign(object):
             self.design['dec'][pos_ind] = d.dec
             self.design['delta_ra'][pos_ind] = d.delta_ra
             self.design['delta_dec'][pos_ind] = d.delta_dec
-            self.design['offset'][pos_ind] = d.offset
+            self.design['offset'][pos_ind] = d.can_offset
             self.design['pmra'][pos_ind] = d.pmra
             self.design['pmdec'][pos_ind] = d.pmdec
             self.design['epoch'][pos_ind] = d.epoch

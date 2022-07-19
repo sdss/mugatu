@@ -9,6 +9,7 @@ import warnings
 import fitsio
 import collections
 from scipy.spatial import cKDTree
+from astropy.time import Time
 
 from mugatu.exceptions import MugatuError, MugatuWarning
 from coordio.utils import radec2wokxy, wokxy2radec
@@ -499,7 +500,7 @@ def adjusted_brigh_neigh_mag(mag_bs, r, lunation):
 
 
 def build_brigh_neigh_query(check_type, instrument, mag_lim,
-                            racen, deccen):
+                            racen, deccen, version_catdb='0.5.0'):
     """
     Builds the database query needed to run bright
     neighbor check
@@ -525,10 +526,13 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
     deccen: float
         Feild center in declination
 
+    version_catdb: str
+        catalogdb.Version.plan to use for the query
+
     Outputs
     -------
     db_query_results: tuple
-        Tuple of (ra, dec, mag, catalogid) for the
+        Tuple of (ra, dec, mag, catalogid, pmra, pmdec) for the
         appropriate database query
     """
     # return empty tuple if no mag limit
@@ -537,17 +541,22 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
     if check_type == 'designmode':
         if instrument == 'BOSS':
             cat = catalogdb.Gaia_DR2
-            ra_col = catalogdb.Gaia_DR2.ra
-            dec_col = catalogdb.Gaia_DR2.dec
+            ra_col = catalogdb.Catalog.ra
+            dec_col = catalogdb.Catalog.dec
             ra_col_str = 'ra'
             dec_col_str = 'dec'
             mag_col = catalogdb.Gaia_DR2.phot_g_mean_mag
             # run the query
-            db_query_gaia = (catalogdb.CatalogToTIC_v8.select(
+            db_query_gaia = (catalogdb.Catalog.select(
                 ra_col,
                 dec_col,
                 mag_col,
-                catalogdb.CatalogToTIC_v8.catalogid)
+                catalogdb.Catalog.catalogid,
+                catalogdb.Catalog.pmra,
+                catalogdb.Catalog.pmdec)
+                .join(catalogdb.Version)
+                .switch(catalogdb.Catalog)
+                .join(catalogdb.CatalogToTIC_v8)
                 .join(catalogdb.TIC_v8)
                 .join(catalogdb.Gaia_DR2)
                 .where((cat.cone_search(racen,
@@ -555,38 +564,53 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                         1.5,
                                         ra_col=ra_col_str,
                                         dec_col=dec_col_str)) &
-                       (mag_col < mag_lim)))
-            rasg, decsg, magsg, catalogidsg = map(list, zip(*list(db_query_gaia.tuples())))
-            rasg = np.array(rasg)
-            decsg = np.array(decsg)
-            magsg = np.array(magsg)
+                       (mag_col < mag_lim) &
+                       (catalogdb.Version.plan == version_catdb)))
+            rasg, decsg, magsg, catalogidsg, pmrasg, pmdecsg = map(list, zip(*list(db_query_gaia.tuples())))
+            rasg = np.array(rasg, dtype=np.float64)
+            decsg = np.array(decsg, dtype=np.float64)
+            magsg = np.array(magsg, dtype=np.float64)
+            catalogidsg = np.array(catalogidsg,
+                                   dtype=int)
+            pmrasg = np.array(pmrasg, dtype=np.float64)
+            pmdecsg = np.array(pmdecsg, dtype=np.float64)
 
             cat = catalogdb.Tycho2
-            ra_col = catalogdb.Tycho2.radeg
-            dec_col = catalogdb.Tycho2.dedeg
+            ra_col = catalogdb.Catalog.ra
+            dec_col = catalogdb.Catalog.dec
             ra_col_str = 'radeg'
             dec_col_str = 'dedeg'
             mag_colbt = catalogdb.Tycho2.btmag
             mag_colvt = catalogdb.Tycho2.vtmag
             # run the query
-            db_query_tych = (catalogdb.CatalogToTycho2.select(
+            db_query_tych = (catalogdb.Catalog.select(
                 ra_col,
                 dec_col,
                 mag_colbt,
                 mag_colvt,
-                catalogdb.CatalogToTycho2.catalogid)
+                catalogdb.Catalog.catalogid,
+                catalogdb.Catalog.pmra,
+                catalogdb.Catalog.pmdec)
+                .join(catalogdb.Version)
+                .switch(catalogdb.Catalog)
+                .join(catalogdb.CatalogToTycho2)
                 .join(catalogdb.Tycho2)
                 .where((cat.cone_search(racen,
                                         deccen,
                                         1.5,
                                         ra_col=ra_col_str,
                                         dec_col=dec_col_str)) &
-                       (mag_colvt < mag_lim)))
-            rast, decst, magsbt, magsvt, catalogidst = map(list, zip(*list(db_query_tych.tuples())))
-            rast = np.array(rast)
-            decst = np.array(decst)
-            magsbt = np.array(magsbt)
-            magsvt = np.array(magsvt)
+                       (mag_colvt < mag_lim) &
+                       (catalogdb.Version.plan == version_catdb)))
+            rast, decst, magsbt, magsvt, catalogidst, pmrast, pmdecst = map(list, zip(*list(db_query_tych.tuples())))
+            rast = np.array(rast, dtype=np.float64)
+            decst = np.array(decst, dtype=np.float64)
+            magsbt = np.array(magsbt, dtype=np.float64)
+            magsvt = np.array(magsvt, dtype=np.float64)
+            catalogidst = np.array(catalogidst,
+                                   dtype=int)
+            pmrast = np.array(pmrast, dtype=np.float64)
+            pmdecst = np.array(pmdecst, dtype=np.float64)
             magsg_tych = np.zeros(len(magsbt))
             magsg_tych[magsbt != None] = (magsvt[magsbt != None] - 0.02051 -
                                          0.2706 * (magsbt[magsbt != None] -
@@ -596,25 +620,43 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                          0.05937 * (magsbt[magsbt != None] -
                                                     magsvt[magsbt != None]) ** 3)
             magsg_tych[magsbt == None] = magsvt[magsbt == None] - 1
-            ras = np.append(rasg, rast)
-            decs = np.append(decsg, decst)
-            mags = np.append(magsg, magsg_tych)
-            catalogids = catalogidsg + catalogidst
-            db_query_results = (ras, decs, mags, catalogids)
+            # set up the logic to only include tycho
+            # stars not found in Gaia
+            tych_in_gaia = np.isin(catalogidst, catalogidsg)
+            # evals for each now
+            tych_eval = (~tych_in_gaia)
+            ras = np.append(rasg,
+                            rast[tych_eval])
+            decs = np.append(decsg,
+                             decst[tych_eval])
+            mags = np.append(magsg,
+                             magsg_tych[tych_eval])
+            catalogids = np.append(catalogidsg,
+                                   catalogidst[tych_eval])
+            pmras = np.append(pmrasg,
+                              pmrast[tych_eval])
+            pmdecs = np.append(pmdecsg,
+                               pmdecst[tych_eval])
+            db_query_results = (ras, decs, mags, catalogids, pmras, pmdecs)
 
         else:
             cat = catalogdb.TwoMassPSC
-            ra_col = catalogdb.TwoMassPSC.ra
-            dec_col = catalogdb.TwoMassPSC.decl
+            ra_col = catalogdb.Catalog.ra
+            dec_col = catalogdb.Catalog.dec
             ra_col_str = 'ra'
             dec_col_str = 'decl'
             mag_col = catalogdb.TwoMassPSC.h_m
             # run the query
-            db_query = (catalogdb.CatalogToTIC_v8.select(
+            db_query = (catalogdb.Catalog.select(
                 ra_col,
                 dec_col,
                 mag_col,
-                catalogdb.CatalogToTIC_v8.catalogid)
+                catalogdb.Catalog.catalogid,
+                catalogdb.Catalog.pmra,
+                catalogdb.Catalog.pmdec)
+                .join(catalogdb.Version)
+                .switch(catalogdb.Catalog)
+                .join(catalogdb.CatalogToTIC_v8)
                 .join(catalogdb.TIC_v8)
                 .join(cat)
                 .where((cat.cone_search(racen,
@@ -622,12 +664,17 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                         1.5,
                                         ra_col=ra_col_str,
                                         dec_col=dec_col_str)) &
-                       (mag_col < mag_lim)))
-            ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
-            ras = np.array(ras)
-            decs = np.array(decs)
-            mags = np.array(mags)
-            db_query_results = (ras, decs, mags, catalogids)
+                       (mag_col < mag_lim) &
+                       (catalogdb.Version.plan == version_catdb)))
+            ras, decs, mags, catalogids, pmras, pmdecs = map(list, zip(*list(db_query.tuples())))
+            ras = np.array(ras, dtype=np.float64)
+            decs = np.array(decs, dtype=np.float64)
+            mags = np.array(mags, dtype=np.float64)
+            catalogids = np.array(catalogids,
+                                  dtype=int)
+            pmras = np.array(pmras, dtype=np.float64)
+            pmdecs = np.array(pmdecs, dtype=np.float64)
+            db_query_results = (ras, decs, mags, catalogids, pmras, pmdecs)
     else:
         if instrument == 'BOSS':
             carts = ['ops_tycho2_brightneighbors',
@@ -640,7 +687,9 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
         db_query = (targetdb.CartonToTarget.select(targetdb.Target.ra,
                                                    targetdb.Target.dec,
                                                    mag_col,
-                                                   targetdb.CartonToTarget.pk)
+                                                   targetdb.CartonToTarget.pk,
+                                                   targetdb.Target.pmra,
+                                                   targetdb.Target.pmdec)
                                            .join(targetdb.Target)
                                            .switch(targetdb.CartonToTarget)
                                            .join(targetdb.Magnitude)
@@ -650,11 +699,15 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                                                                deccen,
                                                                                1.5)) &
                                                   (targetdb.Carton.carton.in_(carts))))
-        ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
-        ras = np.array(ras)
-        decs = np.array(decs)
-        mags = np.array(mags)
-        db_query_results = (ras, decs, mags, catalogids)
+        ras, decs, mags, catalogids, pmras, pmdecs = map(list, zip(*list(db_query.tuples())))
+        ras = np.array(ras, dtype=np.float64)
+        decs = np.array(decs, dtype=np.float64)
+        mags = np.array(mags, dtype=np.float64)
+        catalogids = np.array(catalogids,
+                              dtype=int)
+        pmras = np.array(pmras, dtype=np.float64)
+        pmdecs = np.array(pmdecs, dtype=np.float64)
+        db_query_results = (ras, decs, mags, catalogids, pmras, pmdecs)
     return db_query_results
 
 
@@ -1249,9 +1302,43 @@ class DesignModeCheck(DesignMode):
         # only do check if any stars returned
         if len(db_query) > 0:
             if isinstance(db_query, tuple):
-                ras, decs, mags, catalogids = db_query
+                ras, decs, mags, catalogids, pmras, pmdecs = db_query
             else:
-                ras, decs, mags, catalogids = map(list, zip(*list(db_query.tuples())))
+                ras, decs, mags, catalogids, pmras, pmdecs = map(list, zip(*list(db_query.tuples())))
+
+            # set nan pms to 0
+            pmras[np.isnan(pmras)] = 0.
+            pmdecs[np.isnan(pmdecs)] = 0.
+            # convert to x,y
+            radVel = (np.zeros(len(ras),
+                               dtype=np.float64) + 1.e-4)
+            parallax = (np.zeros(len(ras),
+                                 dtype=np.float64) + 1.e-4)
+            res = radec2wokxy(
+                ra=ras,
+                dec=decs,
+                coordEpoch=Time(np.array([2015.5] * len(ras)),
+                                format='decimalyear').jd,
+                waveName=instrument.title(),
+                raCen=self.racen,
+                decCen=self.deccen,
+                obsAngle=self.position_angle,
+                obsSite=self.observatory,
+                obsTime=self.obsTime,
+                pmra=pmras,
+                pmdec=pmdecs,
+                parallax=parallax,
+                radVel=radVel)
+            # now convert back to ra,dec
+            ras, decs, fieldWarn = wokxy2radec(xWok=res[0],
+                                               yWok=res[1],
+                                               waveName=instrument.title(),
+                                               raCen=self.racen,
+                                               decCen=self.deccen,
+                                               obsAngle=self.position_angle,
+                                               obsSite=self.observatory,
+                                               obsTime=self.obsTime)
+
 
             if 'bright' in self.desmode_label:
                 r_exclude = bright_neigh_exclusion_r(mags,

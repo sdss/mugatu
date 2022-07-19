@@ -689,6 +689,9 @@ class FPSDesign(object):
             self.design['carton_pk'] = design_inst['carton_pk'][roboIDs != -1]
             self.design['category'] = design_inst['category'][roboIDs != -1]
             self.design['magnitudes'] = design_inst['magnitude'][roboIDs != -1]
+            # check zones for rs designs
+            self.design['zone'] = design_inst['zone'][roboIDs != -1]
+
         # check magnitudes array size
         if self.design['magnitudes'].shape[1] != 10:
             message = 'Magntiude array must have size of Nx10'

@@ -906,8 +906,6 @@ class FPSDesign(object):
         categories = ['science', 'sky', 'std']
         for category in categories:
             for instrument in instruments:
-                result = self.zones_filled(instrument=instrument,
-                                           category=category)
                 self.design_errors['zone_frac_%s_%s' % (instrument, category)] = (mode.
                                                                                   zones_check
                                                                                   ['%s_%s_frac' % (instrument, category)])

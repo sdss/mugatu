@@ -902,6 +902,22 @@ class FPSDesign(object):
                     'for APOGEE standards for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
 
+        instruments = ['BOSS', 'APOGEE']
+        categories = ['science', 'sky', 'std']
+        for category in categories:
+            for instrument in instruments:
+                result = self.zones_filled(instrument=instrument,
+                                           category=category)
+                self.design_errors['zone_frac_%s_%s' % (instrument, category)] = (mode.
+                                                                                  zones_check
+                                                                                  ['%s_%s_frac' % (instrument, category)])
+                self.design_errors['zone_med_counts_%s_%s' % (instrument, category)] = (mode.
+                                                                                        zones_check
+                                                                                        ['%s_%s_med_counts' % (instrument, category)])
+                if self.design_errors['zone_frac_%s_%s' % (instrument, category)] < 1:
+                    flag = 'Design does not have %s %s targets in all zones' % (instrument, category)
+                    warnings.warn(flag, MugatuDesignModeWarning)
+
         self.design_errors['stds_mag_boss'] = np.all(
             mode.stds_mags_check['BOSS'][0][(self.design['catalogID'] != -1) &
                                             (self.design['category'] == 'standard_boss')])

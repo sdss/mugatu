@@ -1112,7 +1112,7 @@ class DesignModeCheck(DesignMode):
             flag = ('Design not manual design. Zone check only'
                     'implemented for manual designs.')
             warnings.warn(flag, MugatuWarning)
-            return None
+            return None, None
         zones = self.design['zone'][(self.design['catalogID'] != -1) &
                                     (np.isin(self.design['category'],
                                              self.carton_classes[category])) &
@@ -1406,6 +1406,16 @@ class DesignModeCheck(DesignMode):
                                return_metric=True)
         self.min_stds_fovmetric_check['APOGEE'] = result[0]
         self.min_stds_fovmetric_check['APOGEE_metric'] = result[1]
+
+        self.zones_check = {}
+        instruments = ['BOSS', 'APOGEE']
+        categories = ['science', 'sky', 'std']
+        for category in categories:
+            for instrument in instruments:
+                result = self.zones_filled(instrument=instrument,
+                                           category=category)
+                self.zones_check['%s_%s_frac' % (instrument, category)] = result[0]
+                self.zones_check['%s_%s_med_counts' % (instrument, category)] = result[1]
 
         self.stds_mags_check = {}
         self.stds_mags_check['BOSS'] = self.mag_limits(self.stds_mags['BOSS'],

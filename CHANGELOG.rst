@@ -6,6 +6,8 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* :release:`1.3.1 <2022-08-01>`
+* Write design_version_pk for new design entries.
 * :release:`1.3.0 <2022-07-19>`
 * Update mugatu.designmode.build_brigh_neigh_query to include proper motions, only query on the current version of catalogdb and remove Tycho/Gaia duplicates.
 * Add optional argument to FPSDesign for RS_VERSION (needed to be used with new DesignToField schema).

@@ -680,33 +680,107 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
             carts = ['ops_tycho2_brightneighbors',
                      'ops_gaia_brightneighbors']
             mag_col = targetdb.Magnitude.gaia_g
+            # tycho query
+            db_queryt = (targetdb.CartonToTarget.select(targetdb.Target.ra,
+                                                        targetdb.Target.dec,
+                                                        mag_col,
+                                                        targetdb.Target.catalogid,
+                                                        targetdb.Target.pmra,
+                                                        targetdb.Target.pmdec)
+                                                .join(targetdb.Target)
+                                                .switch(targetdb.CartonToTarget)
+                                                .join(targetdb.Magnitude)
+                                                .switch(targetdb.CartonToTarget)
+                                                .join(targetdb.Carton)
+                                                .join(targetdb.Version)
+                                                .where((targetdb.Target.cone_search(racen,
+                                                                                    deccen,
+                                                                                    1.5)) &
+                                                       (targetdb.Carton.carton == carts[0]) &
+                                                       (targetdb.Version.plan >= version_catdb) &
+                                                       (~(targetdb.Version.plan % '%-test'))))
+            rast, decst, magst, catalogidst, pmrast, pmdecst = map(list, zip(*list(db_queryt.tuples())))
+            rast = np.array(rast, dtype=np.float64)
+            decst = np.array(decst, dtype=np.float64)
+            magst = np.array(magst, dtype=np.float64)
+            catalogidst = np.array(catalogidst,
+                                  dtype=int)
+            pmrast = np.array(pmrast, dtype=np.float64)
+            pmdecst = np.array(pmdecst, dtype=np.float64)
+
+            # gaia query
+            db_queryg = (targetdb.CartonToTarget.select(targetdb.Target.ra,
+                                                        targetdb.Target.dec,
+                                                        mag_col,
+                                                        targetdb.Target.catalogid,
+                                                        targetdb.Target.pmra,
+                                                        targetdb.Target.pmdec)
+                                                .join(targetdb.Target)
+                                                .switch(targetdb.CartonToTarget)
+                                                .join(targetdb.Magnitude)
+                                                .switch(targetdb.CartonToTarget)
+                                                .join(targetdb.Carton)
+                                                .join(targetdb.Version)
+                                                .where((targetdb.Target.cone_search(racen,
+                                                                                    deccen,
+                                                                                    1.5)) &
+                                                       (targetdb.Carton.carton == carts[1]) &
+                                                       (targetdb.Version.plan >= version_catdb) &
+                                                       (~(targetdb.Version.plan % '%-test'))))
+            rasg, decsg, magsg, catalogidsg, pmrasg, pmdecsg = map(list, zip(*list(db_queryg.tuples())))
+            rasg = np.array(rasg, dtype=np.float64)
+            decsg = np.array(decsg, dtype=np.float64)
+            magsg = np.array(magsg, dtype=np.float64)
+            catalogidsg = np.array(catalogidsg,
+                                  dtype=int)
+            pmrasg = np.array(pmrasg, dtype=np.float64)
+            pmdecsg = np.array(pmdecsg, dtype=np.float64)
+
+            # remove tycho objects in gaia
+            tych_in_gaia = np.isin(catalogidst, catalogidsg)
+            tych_eval = (~tych_in_gaia)
+            ras = np.append(rasg,
+                            rast[tych_eval])
+            decs = np.append(decsg,
+                             decst[tych_eval])
+            mags = np.append(magsg,
+                             magst[tych_eval])
+            catalogids = np.append(catalogidsg,
+                                   catalogidst[tych_eval])
+            pmras = np.append(pmrasg,
+                              pmrast[tych_eval])
+            pmdecs = np.append(pmdecsg,
+                               pmdecst[tych_eval])
         else:
             carts = ['ops_2mass_psc_brightneighbors']
             mag_col = targetdb.Magnitude.h
-        # run the query
-        db_query = (targetdb.CartonToTarget.select(targetdb.Target.ra,
-                                                   targetdb.Target.dec,
-                                                   mag_col,
-                                                   targetdb.CartonToTarget.pk,
-                                                   targetdb.Target.pmra,
-                                                   targetdb.Target.pmdec)
-                                           .join(targetdb.Target)
-                                           .switch(targetdb.CartonToTarget)
-                                           .join(targetdb.Magnitude)
-                                           .switch(targetdb.CartonToTarget)
-                                           .join(targetdb.Carton)
-                                           .where((targetdb.Target.cone_search(racen,
-                                                                               deccen,
-                                                                               1.5)) &
-                                                  (targetdb.Carton.carton.in_(carts))))
-        ras, decs, mags, catalogids, pmras, pmdecs = map(list, zip(*list(db_query.tuples())))
-        ras = np.array(ras, dtype=np.float64)
-        decs = np.array(decs, dtype=np.float64)
-        mags = np.array(mags, dtype=np.float64)
-        catalogids = np.array(catalogids,
-                              dtype=int)
-        pmras = np.array(pmras, dtype=np.float64)
-        pmdecs = np.array(pmdecs, dtype=np.float64)
+            # run the query
+            db_query = (targetdb.CartonToTarget.select(targetdb.Target.ra,
+                                                       targetdb.Target.dec,
+                                                       mag_col,
+                                                       targetdb.Target.catalogid,
+                                                       targetdb.Target.pmra,
+                                                       targetdb.Target.pmdec)
+                                               .join(targetdb.Target)
+                                               .switch(targetdb.CartonToTarget)
+                                               .join(targetdb.Magnitude)
+                                               .switch(targetdb.CartonToTarget)
+                                               .join(targetdb.Carton)
+                                               .join(targetdb.Version)
+                                               .where((targetdb.Target.cone_search(racen,
+                                                                                   deccen,
+                                                                                   1.5)) &
+                                                      (targetdb.Carton.carton == carts[0]) &
+                                                      (targetdb.Version.plan >= version_catdb) &
+                                                      (~(targetdb.Version.plan % '%-test'))))
+            ras, decs, mags, catalogids, pmras, pmdecs = map(list, zip(*list(db_query.tuples())))
+            ras = np.array(ras, dtype=np.float64)
+            decs = np.array(decs, dtype=np.float64)
+            mags = np.array(mags, dtype=np.float64)
+            catalogids = np.array(catalogids,
+                                  dtype=int)
+            pmras = np.array(pmras, dtype=np.float64)
+            pmdecs = np.array(pmdecs, dtype=np.float64)
         db_query_results = (ras, decs, mags, catalogids, pmras, pmdecs)
     return db_query_results
 

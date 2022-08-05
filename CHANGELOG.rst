@@ -6,6 +6,8 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* :release:`1.3.2 <2022-08-05>`
+* Change bright safety query to exclude Tycho catalogids in Gaia
 * :release:`1.3.1 <2022-08-01>`
 * Write design_version_pk for new design entries.
 * :release:`1.3.0 <2022-07-19>`

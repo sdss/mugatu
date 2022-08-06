@@ -368,23 +368,27 @@ if __name__ == '__main__':
                                                                         'BOSS',
                                                                         mag_lim,
                                                                         racen,
-                                                                        deccen)
+                                                                        deccen,
+                                                                        head['obs'].strip().upper())
             db_results_boss[dm]['safety'] = build_brigh_neigh_query('safety',
                                                                     'BOSS',
                                                                     mag_lim,
                                                                     racen,
-                                                                    deccen)
+                                                                    deccen,
+                                                                    head['obs'].strip().upper())
             mag_lim = desmodes[dm].bright_limit_targets['APOGEE'][-1][0]
             db_results_apogee[dm]['designmode'] = build_brigh_neigh_query('designmode',
                                                                           'APOGEE',
                                                                           mag_lim,
                                                                           racen,
-                                                                          deccen)
+                                                                          deccen,
+                                                                          head['obs'].strip().upper())
             db_results_apogee[dm]['safety'] = build_brigh_neigh_query('safety',
                                                                       'APOGEE',
                                                                       mag_lim,
                                                                       racen,
-                                                                      deccen)
+                                                                      deccen,
+                                                                      head['obs'].strip().upper())
         if n_exp == 1:
             exp = 0
             dm = field_desmodes[exp]

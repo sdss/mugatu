@@ -546,7 +546,7 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
     if observatory == 'APO':
         r_search = 1.5
     else:
-        r_search = 0.5
+        r_search = 1.0
     if check_type == 'designmode':
         if instrument == 'BOSS':
             cat = catalogdb.Gaia_DR2

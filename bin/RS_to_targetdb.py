@@ -182,7 +182,7 @@ if __name__ == '__main__':
                     design_pass=True,
                     design_valid_file_row=valid_results[ind])
             else:
-                make_designToField(design=design_ids['designid'][i],
+                make_designToField(design=int(design_ids['designid'][i]),
                                    fieldid=fieldid_inst,
                                    exposure=i - allo['iexpst'],
                                    field_exposure=i)

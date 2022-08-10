@@ -113,7 +113,7 @@ if __name__ == '__main__':
         # catalogid assignment for each fiber
         design = fits.open(field_assigned_file)[2].data
         # here will need to grab another HDU with design_ids
-        design_ids = fits.open(field_assigned_file)[-1].data
+        design_ids = fits.open(field_assigned_file)['STATUS'].data
         # get list of designmodes
         desmode_labels = head['DESMODE'].split(' ')
 

@@ -16,7 +16,10 @@ import kaiju.robotGrid
 from mugatu.exceptions import (MugatuError, MugatuWarning,
                                MugatuDesignError, MugatuDesignWarning,
                                MugatuDesignModeWarning)
-from coordio.utils import radec2wokxy, object_offset
+from coordio.utils import radec2wokxy, object_offset, Moffat2dInterp
+
+fmagloss = Moffat2dInterp()
+
 from coordio.defaults import POSITIONER_HEIGHT
 from mugatu.designs_to_targetdb import (make_design_assignments_targetdb,
                                         make_design_field_targetdb)
@@ -37,6 +40,8 @@ from sdssdb.peewee.sdss5db.targetdb import (Design, Field, Observatory,
                                             Hole, CartonToTarget, Carton,
                                             Magnitude, Category, DesignToField,
                                             Version)
+
+modes = allDesignModes()
 
 
 class FPSDesign(object):
@@ -398,22 +403,22 @@ class FPSDesign(object):
         Calculate the offsets for which an algorithmic
         offset value was requested
         """
-        modes = allDesignModes()
         if 'bright' in self.desmode_label:
-            boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][0][0]
+            boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][:, 0]
             lunation = 'bright'
         else:
-            boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][1][0]
+            boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][:, 0]
             lunation = 'dark'
         boss_mag_col = 5
-        apogee_mag_lim = modes[self.desmode_label].bright_limit_targets['APOGEE'][8][0]
+        apogee_mag_lim = modes[self.desmode_label].bright_limit_targets['APOGEE'][:, 0]
         apogee_mag_col = 8
 
         ev_boss = (self.design['offset']) & (self.design['obsWavelength'] == 'BOSS')
         res = object_offset(self.design['magnitudes'][:, boss_mag_col][ev_boss],
                             boss_mag_lim,
                             lunation,
-                            'Boss')
+                            'Boss',
+                            fmagloss=fmagloss)
         self.design['delta_ra'][ev_boss] = res[0]
         self.design['delta_dec'][ev_boss] = res[1]
         self.design['offset_flag'][ev_boss] = res[2]
@@ -422,7 +427,8 @@ class FPSDesign(object):
         res = object_offset(self.design['magnitudes'][:, apogee_mag_col][ev_apogee],
                             apogee_mag_lim,
                             lunation,
-                            'Apogee')
+                            'Apogee',
+                            fmagloss=fmagloss)
         self.design['delta_ra'][ev_apogee] = res[0]
         self.design['delta_dec'][ev_apogee] = res[1]
         self.design['offset_flag'][ev_apogee] = res[2]

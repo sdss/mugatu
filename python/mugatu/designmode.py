@@ -12,7 +12,10 @@ from scipy.spatial import cKDTree
 from astropy.time import Time
 
 from mugatu.exceptions import MugatuError, MugatuWarning
-from coordio.utils import radec2wokxy, wokxy2radec, offset_definition
+from coordio.utils import (radec2wokxy, wokxy2radec,
+                           offset_definition, Moffat2dInterp)
+
+fmagloss = Moffat2dInterp()
 
 try:
     from sdssdb.peewee.sdss5db import database
@@ -1358,18 +1361,18 @@ class DesignModeCheck(DesignMode):
                                                    obsTime=self.obsTime)
 
         neigh_checks = np.zeros(500, dtype=bool) + True
-        # run query for field if not supplied
-        if instrument == 'BOSS':
-             # grab r_sdss limit for boss
-            if 'bright' in self.desmode_label:
-                # no r_sdss for bright so do g band
-                # this is hacky and needs to be fixed!!!
-                mag_lim = self.bright_limit_targets['BOSS'][0][0]
-            else:
-                mag_lim = self.bright_limit_targets['BOSS'][1][0]
+        mag_limits = self.bright_limit_targets[instrument][:, 0]
+        # set magntiude limit for instrument and lunation
+        if instrument == 'Apogee':
+            # 2MASS H
+            mag_lim = mag_limits[8]
+        elif 'bright' in self.desmode_label:
+            # Gaia G
+            mag_lim = mag_limits[5]
         else:
-            # grab h 2mass mag for limit
-            mag_lim = self.bright_limit_targets['APOGEE'][8][0]
+            # SDSS r
+            mag_lim = mag_limits[1]
+        # run query for field if not supplied
         if (self.db_query_results_boss is not None and
            instrument == 'BOSS'):
             db_query = self.db_query_results_boss[check_type]
@@ -1424,14 +1427,16 @@ class DesignModeCheck(DesignMode):
 
             if 'bright' in self.desmode_label:
                 r_exclude, _ = offset_definition(mags,
-                                                 mag_lim,
+                                                 mag_limits,
                                                  lunation='bright',
-                                                 waveName=instrument.title())
+                                                 waveName=instrument.title(),
+                                                 fmagloss=fmagloss)
             else:
                 r_exclude, _ = offset_definition(mags,
-                                                 mag_lim,
+                                                 mag_limits,
                                                  lunation='dark',
-                                                 waveName=instrument.title())
+                                                 waveName=instrument.title(),
+                                                 fmagloss=fmagloss)
 
             # check if fibers too close to bright neighbors
             for i in range(len(r_exclude)):

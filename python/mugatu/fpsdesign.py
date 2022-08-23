@@ -754,8 +754,6 @@ class FPSDesign(object):
         # set nan pm tp zero
         self.design['pmra'][np.isnan(self.design['pmra'])] = 0.
         self.design['pmdec'][np.isnan(self.design['pmdec'])] = 0.
-        # calculate offsets for targets that request algorithm offsets
-        self.calculate_offsets()
         # make empty x,y arrays
         self.design['x'] = (np.zeros(len(self.design['catalogID']),
                             dtype=float) -
@@ -771,7 +769,8 @@ class FPSDesign(object):
                                   9999.99)
         self.design['offset_flag'] = np.zeros(len(self.design['catalogID']),
                                               dtype=int)
-
+        # calculate offsets for targets that request algorithm offsets
+        self.calculate_offsets()
         # here convert ra/dec to x/y based on field/time of observation
         ev = eval("(self.design['ra'] != -9999.99)")
         res = self._offset_radec(ra=self.design['ra'][ev],

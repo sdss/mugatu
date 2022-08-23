@@ -729,6 +729,7 @@ class FPSDesign(object):
             self.design['dec'] = design_inst['dec'][roboIDs != -1]
             self.design['delta_ra'] = design_inst['delta_ra'][roboIDs != -1]
             self.design['delta_dec'] = design_inst['delta_dec'][roboIDs != -1]
+            self.design['offset'] = design_inst['can_offset'][roboIDs != -1]
             self.design['pmra'] = design_inst['pmra'][roboIDs != -1]
             self.design['pmdec'] = design_inst['pmdec'][roboIDs != -1]
             self.design['epoch'] = design_inst['epoch'][roboIDs != -1]

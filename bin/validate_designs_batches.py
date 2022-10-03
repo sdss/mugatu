@@ -8,8 +8,6 @@ import time
 from astropy.io import fits
 from astropy.table import Table
 
-from sdssdb.peewee.sdss5db import targetdb
-from sdssdb.peewee.sdss5db import catalogdb
 import sdss_access.path
 import robostrategy.obstime as obstime
 import coordio.time
@@ -344,16 +342,6 @@ if __name__ == '__main__':
     observatory = args.observatory
     fieldids = args.fieldids
     Ncores = args.Ncores
-
-    if loc == 'local':
-        targetdb.database.connect_from_parameters(user='sdss_user',
-                                                  host='localhost',
-                                                  port=7502)
-        catalogdb.database.connect_from_parameters(user='sdss_user',
-                                                  host='localhost',
-                                                  port=7502)
-    else:
-        pass
 
     if vtype == 'dir':
         files = [file for file in glob.glob(directory + '*.fits')]

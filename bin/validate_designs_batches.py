@@ -226,7 +226,12 @@ def valid_design_func(file, exp, obsTime, field_desmodes,
 
 def valid_field(file, desmodes):
     # need import here for create new connection
-    database.set_profile('operations')
+    targetdb.database.connect_from_parameters(user='sdss_user',
+                                              host='operations.sdss.utah.edu',
+                                              port=5432)
+    catalogdb.database.connect_from_parameters(user='sdss_user',
+                                              host='operations.sdss.utah.edu',
+                                              port=5432)
 
     head = fits.open(file)[0].header
     racen = head['RACEN']

@@ -16,13 +16,13 @@ import coordio.time
 
 from mugatu.fpsdesign import FPSDesign
 from mugatu.exceptions import MugatuDesignError, MugatuError
-from mugatu.designmode import DesignModeCheck
-from mugatu.designmode import allDesignModes
+from mugatu.designmode import (build_brigh_neigh_query,
+                               DesignModeCheck,
+                               allDesignModes)
 from multiprocessing import Pool
 from itertools import repeat
 
 from sdssdb.peewee.sdss5db import database
-database.close()
 
 
 def validate_design(design_file, exp, obsTime,
@@ -226,7 +226,7 @@ def valid_design_func(file, exp, obsTime, field_desmodes,
 
 def valid_field(file, desmodes):
     # need import here for create new connection
-    from mugatu.designmode import build_brigh_neigh_query
+    database.set_profile('operations')
 
     head = fits.open(file)[0].header
     racen = head['RACEN']
@@ -305,6 +305,7 @@ def valid_field(file, desmodes):
             else:
                 valid_arr = np.append(valid_arr,
                                       valid_arr_des)
+    database.close()
     return valid_arr
 
 
@@ -426,6 +427,8 @@ if __name__ == '__main__':
     start = time.time()
     # grab all designmodes
     desmodes = allDesignModes()
+    # close db connection
+    database.close()
     # start validaitng designs
     with Pool(processes=Ncores) as pool:
         res = pool.starmap(valid_field, zip(files,

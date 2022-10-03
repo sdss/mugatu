@@ -428,114 +428,18 @@ if __name__ == '__main__':
     # grab all designmodes
     desmodes = allDesignModes()
     # start validaitng designs
-    for i, file in enumerate(files):
-        # get header info
-        head = fits.open(file)[0].header
-        racen = head['RACEN']
-        deccen = head['DECCEN']
-        ot = obstime.ObsTime(observatory=head['obs'].strip())
-        obsTime = coordio.time.Time(ot.nominal(lst=racen)).jd
-        n_exp = head['NEXP']
-        field_desmodes = head['DESMODE'].split(' ')
-        # do db query results for each desmode in field
-        db_results_boss = {}
-        db_results_apogee = {}
-        for dm in np.unique(field_desmodes):
-            db_results_boss[dm] = {}
-            db_results_apogee[dm] = {}
-            if 'bright' in dm:
-                # no r_sdss for bright so do g band
-                # this is hacky and needs to be fixed!!!
-                mag_lim = desmodes[dm].bright_limit_targets['BOSS'][0][0]
-            else:
-                mag_lim = desmodes[dm].bright_limit_targets['BOSS'][1][0]
-            db_results_boss[dm]['designmode'] = build_brigh_neigh_query('designmode',
-                                                                        'BOSS',
-                                                                        mag_lim,
-                                                                        racen,
-                                                                        deccen,
-                                                                        head['obs'].strip().upper())
-            db_results_boss[dm]['safety'] = build_brigh_neigh_query('safety',
-                                                                    'BOSS',
-                                                                    mag_lim,
-                                                                    racen,
-                                                                    deccen,
-                                                                    head['obs'].strip().upper())
-            mag_lim = desmodes[dm].bright_limit_targets['APOGEE'][-1][0]
-            db_results_apogee[dm]['designmode'] = build_brigh_neigh_query('designmode',
-                                                                          'APOGEE',
-                                                                          mag_lim,
-                                                                          racen,
-                                                                          deccen,
-                                                                          head['obs'].strip().upper())
-            db_results_apogee[dm]['safety'] = build_brigh_neigh_query('safety',
-                                                                      'APOGEE',
-                                                                      mag_lim,
-                                                                      racen,
-                                                                      deccen,
-                                                                      head['obs'].strip().upper())
-        if n_exp == 1:
-            exp = 0
-            dm = field_desmodes[exp]
-            des, decolide, bright_safety = validate_design(file,
-                                                           exp,
-                                                           obsTime,
-                                                           db_results_boss[dm],
-                                                           db_results_apogee[dm],
-                                                           desmodes[dm])
-            valid_arr_des = design_outputs_to_array(des, decolide,
-                                                    bright_safety,
-                                                    db_results_boss[dm],
-                                                    db_results_apogee[dm],
-                                                    desmodes[dm])
-            if 'valid_arr' in locals():
-                valid_arr = np.append(valid_arr,
-                                      valid_arr_des)
-            else:
-                valid_arr = valid_arr_des
-        else:
-            if Ncores > 1:
-                if n_exp > Ncores:
-                    nPool = Ncores
-                else:
-                    nPool = n_exp
-                with Pool(processes=nPool) as pool:
-                    res = pool.starmap(valid_design_func, zip(repeat(file),
-                                                              range(n_exp),
-                                                              repeat(obsTime),
-                                                              repeat(field_desmodes),
-                                                              repeat(db_results_boss),
-                                                              repeat(db_results_apogee),
-                                                              repeat(desmodes)))
-                for valid_arr_des in res:
-                    if 'valid_arr' in locals():
-                        valid_arr = np.append(valid_arr,
-                                              valid_arr_des)
-                    else:
-                        valid_arr = valid_arr_des
-            else:
-                for exp in range(n_exp):
-                    dm = field_desmodes[exp]
-                    des, decolide, bright_safety = validate_design(file,
-                                                                   exp + 1,
-                                                                   obsTime,
-                                                                   db_results_boss[dm],
-                                                                   db_results_apogee[dm],
-                                                                   desmodes[dm])
-                    valid_arr_des = design_outputs_to_array(des, decolide,
-                                                            bright_safety,
-                                                            db_results_boss[dm],
-                                                            db_results_apogee[dm],
-                                                            desmodes[dm])
-                    if 'valid_arr' in locals():
-                        valid_arr = np.append(valid_arr,
-                                              valid_arr_des)
-                    else:
-                        valid_arr = valid_arr_des
+    with Pool(processes=Ncores) as pool:
+        res = pool.starmap(valid_field, zip(files,
+                                            repeat(desmodes)))
+    for i, r in enumerate(res):
         if vtype == 'rs_replace':
-            valid_arr = Table(valid_arr)
+            valid_arr = Table(r)
             valid_arr.write(file_save[i], format='fits')
-            del valid_arr
+        elif i == 0:
+            valid_arr = r
+        else:
+            valid_arr = np.append(valid_arr,
+                                  r)
     # write to fits file
     if vtype == 'dir' or vtype == 'rs':
         valid_arr = Table(valid_arr)

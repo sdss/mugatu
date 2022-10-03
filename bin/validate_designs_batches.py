@@ -21,6 +21,9 @@ from mugatu.designmode import allDesignModes
 from multiprocessing import Pool
 from itertools import repeat
 
+from sdssdb.peewee.sdss5db import database
+database.close()
+
 
 def validate_design(design_file, exp, obsTime,
                     db_query_results_boss, db_query_results_apogee,

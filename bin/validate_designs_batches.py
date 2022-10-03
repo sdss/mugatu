@@ -16,6 +16,25 @@ from mugatu.exceptions import MugatuDesignError, MugatuError
 from multiprocessing import Pool
 from itertools import repeat
 
+import mugatu
+mugatu_ver = mugatu.__version__
+
+import kaiju
+kaiju_ver = kaiju.__version__
+
+import coordio
+coordio_ver = coordio.__version__
+
+import fps_calibrations
+fps_calib_ver = fps_calibrations.get_version()
+
+primary_hdu = fits.PrimaryHDU()
+
+primary_hdu.header['mugatu_version'] = mugatu_ver
+primary_hdu.header['kaiju_version'] = kaiju_ver
+primary_hdu.header['coordio_version'] = coordio_ver
+primary_hdu.header['fps_calibrations_version'] = fps_calib_ver
+
 
 def valid_field(file):
     # need import here for create new connection
@@ -416,7 +435,9 @@ if __name__ == '__main__':
     for i, r in enumerate(res):
         if vtype == 'rs_replace':
             valid_arr = Table(r)
-            valid_arr.write(file_save[i], format='fits')
+            bin_fits = fits.BinTableHDU(valid_arr)
+            hdu = fits.HDUList([primary_hdu, bin_fits])
+            hdu.writeto(file_save[i])
         elif i == 0:
             valid_arr = r
         else:
@@ -425,5 +446,7 @@ if __name__ == '__main__':
     # write to fits file
     if vtype == 'dir' or vtype == 'rs':
         valid_arr = Table(valid_arr)
-        valid_arr.write(file_save, format='fits')
+        bin_fits = fits.BinTableHDU(valid_arr)
+        hdu = fits.HDUList([primary_hdu, bin_fits])
+        hdu.writeto(file_save)
     print('Took %.3f minutes to validate designs' % ((time.time() - start) / 60))

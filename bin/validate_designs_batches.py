@@ -309,122 +309,122 @@ def valid_field(file):
 sdss_path = sdss_access.path.Path(release='sdss5',
                                   preserve_envvars=True)
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        prog=os.path.basename(sys.argv[0]),
-        description='In a batch, validate a set of designs')
-    parser.add_argument('-t', '--type', dest='type',
-                        type=str, help='Validating files in directory (dir) or robostrategy (rs)', 
-                        choices=['dir', 'rs', 'rs_replace'], required=True)
-    parser.add_argument('-l', '--loc', dest='loc',
-                        type=str, help='local or utah',
-                        choices=['local', 'utah'], required=True)
-    parser.add_argument('-d', '--dir', dest='dir',
-                        type=str, help='directory with design files (for type=dir)',
-                        required=False)
-    parser.add_argument('-p', '--plan', dest='plan',
-                        type=str, help='name of plan (for type=rs or type=rs_replace)',
-                        required=False)
-    parser.add_argument('-o', '--observatory', dest='observatory',
-                        type=str, help='apo or lco (for type=rs)',
-                        choices=['apo', 'lco'], required=False)
-    parser.add_argument('-f', '--fieldids', dest='fieldids', nargs='+',
-                        help='field_ids to validate (for type=rs_replace)',
-                        type=int, required=False)
-    parser.add_argument('-n', '--Ncores', dest='Ncores',
-                        type=int, help='number of cores to use. If Ncores=1, then not run in parallal.',
-                        default=1, nargs='?')
 
-    args = parser.parse_args()
-    vtype = args.type
-    loc = args.loc
-    directory = args.dir
-    plan = args.plan
-    observatory = args.observatory
-    fieldids = args.fieldids
-    Ncores = args.Ncores
+parser = argparse.ArgumentParser(
+    prog=os.path.basename(sys.argv[0]),
+    description='In a batch, validate a set of designs')
+parser.add_argument('-t', '--type', dest='type',
+                    type=str, help='Validating files in directory (dir) or robostrategy (rs)', 
+                    choices=['dir', 'rs', 'rs_replace'], required=True)
+parser.add_argument('-l', '--loc', dest='loc',
+                    type=str, help='local or utah',
+                    choices=['local', 'utah'], required=True)
+parser.add_argument('-d', '--dir', dest='dir',
+                    type=str, help='directory with design files (for type=dir)',
+                    required=False)
+parser.add_argument('-p', '--plan', dest='plan',
+                    type=str, help='name of plan (for type=rs or type=rs_replace)',
+                    required=False)
+parser.add_argument('-o', '--observatory', dest='observatory',
+                    type=str, help='apo or lco (for type=rs)',
+                    choices=['apo', 'lco'], required=False)
+parser.add_argument('-f', '--fieldids', dest='fieldids', nargs='+',
+                    help='field_ids to validate (for type=rs_replace)',
+                    type=int, required=False)
+parser.add_argument('-n', '--Ncores', dest='Ncores',
+                    type=int, help='number of cores to use. If Ncores=1, then not run in parallal.',
+                    default=1, nargs='?')
 
-    if vtype == 'dir':
-        files = [file for file in glob.glob(directory + '*.fits')]
-    elif vtype == 'rs':
-        files = []
+args = parser.parse_args()
+vtype = args.type
+loc = args.loc
+directory = args.dir
+plan = args.plan
+observatory = args.observatory
+fieldids = args.fieldids
+Ncores = args.Ncores
 
-        allocate_file = sdss_path.full('rsAllocationFinal', plan=plan,
-                                       observatory=observatory)
-        if 'sas' in allocate_file:
-            allocate_file = allocate_file[:32] + 'sdss50' + allocate_file[44:]
+if vtype == 'dir':
+    files = [file for file in glob.glob(directory + '*.fits')]
+elif vtype == 'rs':
+    files = []
 
-        # only grab unique fields for this
-        rsAllocation1 = fits.open(allocate_file)[1].data
+    allocate_file = sdss_path.full('rsAllocationFinal', plan=plan,
+                                   observatory=observatory)
+    if 'sas' in allocate_file:
+        allocate_file = allocate_file[:32] + 'sdss50' + allocate_file[44:]
 
-        fieldids = np.unique(rsAllocation1["fieldid"])
+    # only grab unique fields for this
+    rsAllocation1 = fits.open(allocate_file)[1].data
 
-        for fieldid in fieldids:
-            # now grab the assignment file for this field
-            field_assigned_file = sdss_path.full('rsFieldAssignmentsFinal',
+    fieldids = np.unique(rsAllocation1["fieldid"])
+
+    for fieldid in fieldids:
+        # now grab the assignment file for this field
+        field_assigned_file = sdss_path.full('rsFieldAssignmentsFinal',
+                                             plan=plan,
+                                             observatory=observatory,
+                                             fieldid=fieldid)
+
+        if 'sas' in field_assigned_file:
+            field_assigned_file = field_assigned_file[:32] + 'sdss50' + field_assigned_file[44:]
+
+        files.append(field_assigned_file)
+elif vtype == 'rs_replace':
+    replace_path = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                    'target/robostrategy_replacement/{plan}/'.format(
+                        plan=plan))
+    files = []
+    for fid in fieldids:
+        files += [file for file in glob.glob(replace_path +
+                                             '{plan}_{fid}*.fits'.format(
                                                  plan=plan,
-                                                 observatory=observatory,
-                                                 fieldid=fieldid)
+                                                 fid=fid))]
+    for f in files:
+        if 'validation' in f:
+            files.remove(f)
+else:
+    raise MugatuError(message='Improper Validation Type')
 
-            if 'sas' in field_assigned_file:
-                field_assigned_file = field_assigned_file[:32] + 'sdss50' + field_assigned_file[44:]
+if vtype == 'dir':
+    file_save = directory + 'design_validation_results.fits'
+elif vtype == 'rs':
+    if not os.path.isdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                          'sandbox/mugatu/rs_plan_validations/{plan}'
+                          .format(plan=plan))):
+        os.mkdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                  'sandbox/mugatu/rs_plan_validations/{plan}'
+                  .format(plan=plan)))
+    file_save = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                 'sandbox/mugatu/rs_plan_validations/{plan}/'
+                 'rs_{plan}_{obs}_design_validation_results.fits'.format(
+                     plan=plan,
+                     obs=observatory))
+elif vtype == 'rs_replace':
+    replace_path = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                    'target/robostrategy_replacement/{plan}/'.format(
+                        plan=plan))
+    file_save = []
+    for f in files:
+        file_save.append(f[:-5] + '_validation.fits')
+else:
+    raise MugatuError(message='Improper Validation Type')
 
-            files.append(field_assigned_file)
-    elif vtype == 'rs_replace':
-        replace_path = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                        'target/robostrategy_replacement/{plan}/'.format(
-                            plan=plan))
-        files = []
-        for fid in fieldids:
-            files += [file for file in glob.glob(replace_path +
-                                                 '{plan}_{fid}*.fits'.format(
-                                                     plan=plan,
-                                                     fid=fid))]
-        for f in files:
-            if 'validation' in f:
-                files.remove(f)
+start = time.time()
+# start validaitng designs
+with Pool(processes=Ncores) as pool:
+    res = pool.map(valid_field, files)
+for i, r in enumerate(res):
+    if vtype == 'rs_replace':
+        valid_arr = Table(r)
+        valid_arr.write(file_save[i], format='fits')
+    elif i == 0:
+        valid_arr = r
     else:
-        raise MugatuError(message='Improper Validation Type')
-
-    if vtype == 'dir':
-        file_save = directory + 'design_validation_results.fits'
-    elif vtype == 'rs':
-        if not os.path.isdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                              'sandbox/mugatu/rs_plan_validations/{plan}'
-                              .format(plan=plan))):
-            os.mkdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                      'sandbox/mugatu/rs_plan_validations/{plan}'
-                      .format(plan=plan)))
-        file_save = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                     'sandbox/mugatu/rs_plan_validations/{plan}/'
-                     'rs_{plan}_{obs}_design_validation_results.fits'.format(
-                         plan=plan,
-                         obs=observatory))
-    elif vtype == 'rs_replace':
-        replace_path = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                        'target/robostrategy_replacement/{plan}/'.format(
-                            plan=plan))
-        file_save = []
-        for f in files:
-            file_save.append(f[:-5] + '_validation.fits')
-    else:
-        raise MugatuError(message='Improper Validation Type')
-
-    start = time.time()
-    # start validaitng designs
-    with Pool(processes=Ncores) as pool:
-        res = pool.map(valid_field, files)
-    for i, r in enumerate(res):
-        if vtype == 'rs_replace':
-            valid_arr = Table(r)
-            valid_arr.write(file_save[i], format='fits')
-        elif i == 0:
-            valid_arr = r
-        else:
-            valid_arr = np.append(valid_arr,
-                                  r)
-    # write to fits file
-    if vtype == 'dir' or vtype == 'rs':
-        valid_arr = Table(valid_arr)
-        valid_arr.write(file_save, format='fits')
-    print('Took %.3f minutes to validate designs' % ((time.time() - start) / 60))
+        valid_arr = np.append(valid_arr,
+                              r)
+# write to fits file
+if vtype == 'dir' or vtype == 'rs':
+    valid_arr = Table(valid_arr)
+    valid_arr.write(file_save, format='fits')
+print('Took %.3f minutes to validate designs' % ((time.time() - start) / 60))

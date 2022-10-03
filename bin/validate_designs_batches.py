@@ -352,12 +352,8 @@ if __name__ == '__main__':
                                                   host='localhost',
                                                   port=7502)
     else:
-        targetdb.database.connect_from_parameters(user='sdss_user',
-                                                  host='operations.sdss.utah.edu',
-                                                  port=5432)
-        catalogdb.database.connect_from_parameters(user='sdss_user',
-                                                  host='operations.sdss.utah.edu',
-                                                  port=5432)
+        pass
+
     if vtype == 'dir':
         files = [file for file in glob.glob(directory + '*.fits')]
     elif vtype == 'rs':

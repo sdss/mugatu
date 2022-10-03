@@ -19,7 +19,7 @@ from multiprocessing import Pool
 from itertools import repeat
 
 
-def valid_field(file, desmodes):
+def valid_field(file):
     # need import here for create new connection
     from mugatu.fpsdesign import FPSDesign
     from mugatu.designmode import (build_brigh_neigh_query,

@@ -15,18 +15,16 @@ import robostrategy.obstime as obstime
 import coordio.time
 
 from mugatu.exceptions import MugatuDesignError, MugatuError
-from mugatu.designmode import allDesignModes
 from multiprocessing import Pool
 from itertools import repeat
-
-from sdssdb.peewee.sdss5db import database
 
 
 def valid_field(file, desmodes):
     # need import here for create new connection
     from mugatu.fpsdesign import FPSDesign
     from mugatu.designmode import (build_brigh_neigh_query,
-                                   DesignModeCheck)
+                                   DesignModeCheck,
+                                   allDesignModes)
 
     def validate_design(design_file, exp, obsTime,
                         db_query_results_boss, db_query_results_apogee,
@@ -226,6 +224,8 @@ def valid_field(file, desmodes):
                                                 desmodes[dm])
         return valid_arr_des
 
+    desmodes = allDesignModes()
+
     head = fits.open(file)[0].header
     racen = head['RACEN']
     deccen = head['DECCEN']
@@ -422,14 +422,9 @@ if __name__ == '__main__':
         raise MugatuError(message='Improper Validation Type')
 
     start = time.time()
-    # grab all designmodes
-    desmodes = allDesignModes()
-    # close db connection
-    database.close()
     # start validaitng designs
     with Pool(processes=Ncores) as pool:
-        res = pool.starmap(valid_field, zip(files,
-                                            repeat(desmodes)))
+        res = pool.map(valid_field, files)
     for i, r in enumerate(res):
         if vtype == 'rs_replace':
             valid_arr = Table(r)

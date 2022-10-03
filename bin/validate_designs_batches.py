@@ -17,7 +17,7 @@ import coordio.time
 from mugatu.fpsdesign import FPSDesign
 from mugatu.exceptions import MugatuDesignError, MugatuError
 from mugatu.designmode import DesignModeCheck
-from mugatu.designmode import build_brigh_neigh_query, allDesignModes
+from mugatu.designmode import allDesignModes
 from multiprocessing import Pool
 from itertools import repeat
 
@@ -219,6 +219,91 @@ def valid_design_func(file, exp, obsTime, field_desmodes,
                                             db_results_apogee[dm],
                                             desmodes[dm])
     return valid_arr_des
+
+
+def valid_field(file, desmodes):
+    # need import here for create new connection
+    from mugatu.designmode import build_brigh_neigh_query
+
+    head = fits.open(file)[0].header
+    racen = head['RACEN']
+    deccen = head['DECCEN']
+    ot = obstime.ObsTime(observatory=head['obs'].strip())
+    obsTime = coordio.time.Time(ot.nominal(lst=racen)).jd
+    n_exp = head['NEXP']
+    field_desmodes = head['DESMODE'].split(' ')
+    # do db query results for each desmode in field
+    db_results_boss = {}
+    db_results_apogee = {}
+    for dm in np.unique(field_desmodes):
+        db_results_boss[dm] = {}
+        db_results_apogee[dm] = {}
+        if 'bright' in dm:
+            # no r_sdss for bright so do g band
+            # this is hacky and needs to be fixed!!!
+            mag_lim = desmodes[dm].bright_limit_targets['BOSS'][0][0]
+        else:
+            mag_lim = desmodes[dm].bright_limit_targets['BOSS'][1][0]
+        db_results_boss[dm]['designmode'] = build_brigh_neigh_query('designmode',
+                                                                    'BOSS',
+                                                                    mag_lim,
+                                                                    racen,
+                                                                    deccen,
+                                                                    head['obs'].strip().upper())
+        db_results_boss[dm]['safety'] = build_brigh_neigh_query('safety',
+                                                                'BOSS',
+                                                                mag_lim,
+                                                                racen,
+                                                                deccen,
+                                                                head['obs'].strip().upper())
+        mag_lim = desmodes[dm].bright_limit_targets['APOGEE'][-1][0]
+        db_results_apogee[dm]['designmode'] = build_brigh_neigh_query('designmode',
+                                                                      'APOGEE',
+                                                                      mag_lim,
+                                                                      racen,
+                                                                      deccen,
+                                                                      head['obs'].strip().upper())
+        db_results_apogee[dm]['safety'] = build_brigh_neigh_query('safety',
+                                                                  'APOGEE',
+                                                                  mag_lim,
+                                                                  racen,
+                                                                  deccen,
+                                                                  head['obs'].strip().upper())
+    if n_exp == 1:
+        exp = 0
+        dm = field_desmodes[exp]
+        des, decolide, bright_safety = validate_design(file,
+                                                       exp,
+                                                       obsTime,
+                                                       db_results_boss[dm],
+                                                       db_results_apogee[dm],
+                                                       desmodes[dm])
+        valid_arr = design_outputs_to_array(des, decolide,
+                                            bright_safety,
+                                            db_results_boss[dm],
+                                            db_results_apogee[dm],
+                                            desmodes[dm])
+    else:
+        for exp in range(n_exp):
+            dm = field_desmodes[exp]
+            des, decolide, bright_safety = validate_design(file,
+                                                           exp + 1,
+                                                           obsTime,
+                                                           db_results_boss[dm],
+                                                           db_results_apogee[dm],
+                                                           desmodes[dm])
+            valid_arr_des = design_outputs_to_array(des, decolide,
+                                                    bright_safety,
+                                                    db_results_boss[dm],
+                                                    db_results_apogee[dm],
+                                                    desmodes[dm])
+            if exp == 0:
+                valid_arr = valid_arr_des
+            else:
+                valid_arr = np.append(valid_arr,
+                                      valid_arr_des)
+    return valid_arr
+
 
 
 sdss_path = sdss_access.path.Path(release='sdss5',

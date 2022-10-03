@@ -334,9 +334,6 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--type', dest='type',
                         type=str, help='Validating files in directory (dir) or robostrategy (rs)', 
                         choices=['dir', 'rs', 'rs_replace'], required=True)
-    parser.add_argument('-l', '--loc', dest='loc',
-                        type=str, help='local or utah',
-                        choices=['local', 'utah'], required=True)
     parser.add_argument('-d', '--dir', dest='dir',
                         type=str, help='directory with design files (for type=dir)',
                         required=False)

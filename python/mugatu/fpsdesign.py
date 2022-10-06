@@ -16,7 +16,8 @@ import kaiju.robotGrid
 from mugatu.exceptions import (MugatuError, MugatuWarning,
                                MugatuDesignError, MugatuDesignWarning,
                                MugatuDesignModeWarning)
-from coordio.utils import radec2wokxy, object_offset, Moffat2dInterp
+from coordio.utils import (radec2wokxy, object_offset, Moffat2dInterp,
+                           _offset_radec)
 
 fmagloss = Moffat2dInterp()
 
@@ -345,59 +346,6 @@ class FPSDesign(object):
 
         self.design_built = False
 
-    def _offset_radec(self, ra=None, dec=None, delta_ra=0., delta_dec=0.):
-        """Offsets ra and dec according to specified amount. From Mike's
-        robostrategy.Field object
-
-        Parameters
-        ----------
-        ra : np.float64 or ndarray of np.float64
-        right ascension, deg
-        dec : np.float64 or ndarray of np.float64
-            declination, deg
-        delta_ra : np.float64 or ndarray of np.float64
-            right ascension direction offset, arcsec
-        delta_dec : np.float64 or ndarray of np.float64
-            declination direction offset, arcsec
-
-        Returns
-        -------
-        offset_ra : np.float64 or ndarray of np.float64
-            offset right ascension, deg
-        offset_dec : np.float64 or ndarray of np.float64
-            offset declination, deg
-
-        Notes
-        -----
-        Assumes that delta_ra, delta_dec are in proper coordinates; i.e.
-        an offset of delta_ra=1 arcsec represents the same angular separation
-        on the sky at any declination.
-        Carefully offsets in the local directions of ra, dec based on
-        the local tangent plane (i.e. does not just scale delta_ra by
-        1/cos(dec))
-        """
-        deg2rad = np.pi / 180.
-        arcsec2rad = np.pi / 180. / 3600.
-        x = np.cos(dec * deg2rad) * np.cos(ra * deg2rad)
-        y = np.cos(dec * deg2rad) * np.sin(ra * deg2rad)
-        z = np.sin(dec * deg2rad)
-        ra_x = - np.sin(ra * deg2rad)
-        ra_y = np.cos(ra * deg2rad)
-        ra_z = 0.
-        dec_x = - np.sin(dec * deg2rad) * np.cos(ra * deg2rad)
-        dec_y = - np.sin(dec * deg2rad) * np.sin(ra * deg2rad)
-        dec_z = np.cos(dec * deg2rad)
-        xoff = x + (ra_x * delta_ra + dec_x * delta_dec) * arcsec2rad
-        yoff = y + (ra_y * delta_ra + dec_y * delta_dec) * arcsec2rad
-        zoff = z + (ra_z * delta_ra + dec_z * delta_dec) * arcsec2rad
-        offnorm = np.sqrt(xoff**2 + yoff**2 + zoff**2)
-        xoff = xoff / offnorm
-        yoff = yoff / offnorm
-        zoff = zoff / offnorm
-        decoff = np.arcsin(zoff) / deg2rad
-        raoff = ((np.arctan2(yoff, xoff) / deg2rad) + 360.) % 360.
-        return(raoff, decoff)
-
     def calculate_offsets(self):
         """
         Calculate the offsets for which an algorithmic
@@ -627,10 +575,10 @@ class FPSDesign(object):
         # I think I need to add inertial in here at some point,
         # dont see this in targetdb though
         ev = eval("(self.design['ra'] != -9999.99)")
-        res = self._offset_radec(ra=self.design['ra'][ev],
-                                 dec=self.design['dec'][ev],
-                                 delta_ra=self.design['delta_ra'][ev],
-                                 delta_dec=self.design['delta_dec'][ev])
+        res = _offset_radec(ra=self.design['ra'][ev],
+                            dec=self.design['dec'][ev],
+                            delta_ra=self.design['delta_ra'][ev],
+                            delta_dec=self.design['delta_dec'][ev])
         self.design['ra_off'][ev], self.design['dec_off'][ev] = res
         fieldWarn = self.radec_to_xy(ev)
 
@@ -775,10 +723,10 @@ class FPSDesign(object):
         self.calculate_offsets()
         # here convert ra/dec to x/y based on field/time of observation
         ev = eval("(self.design['ra'] != -9999.99)")
-        res = self._offset_radec(ra=self.design['ra'][ev],
-                                 dec=self.design['dec'][ev],
-                                 delta_ra=self.design['delta_ra'][ev],
-                                 delta_dec=self.design['delta_dec'][ev])
+        res = _offset_radec(ra=self.design['ra'][ev],
+                            dec=self.design['dec'][ev],
+                            delta_ra=self.design['delta_ra'][ev],
+                            delta_dec=self.design['delta_dec'][ev])
         self.design['ra_off'][ev], self.design['dec_off'][ev] = res
         fieldWarn = self.radec_to_xy(ev)
 

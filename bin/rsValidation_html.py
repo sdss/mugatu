@@ -221,7 +221,7 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                         maxx = maxx_lco
                     else:
                         maxx = maxx_apo
-                elif valid_apo in not None:
+                elif valid_apo is not None:
                     minn = minn_apo
                     maxx = maxx_apo
                 else:
@@ -289,12 +289,12 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                         maxx_lco = np.max(xval_lco)
                     except ValueError:
                         maxx_lco = 0
-                if valid_apo in not None and valid_lco is not Not:
+                if valid_apo is not None and valid_lco is not Not:
                     if maxx_lco > maxx_apo:
                         maxx = maxx_lco
                     else:
                         maxx = maxx_apo
-                elif valid_apo in not None:
+                elif valid_apo is not None:
                     maxx = maxx_apo
                 else:
                     maxx = maxx_lco

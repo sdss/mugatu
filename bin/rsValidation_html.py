@@ -52,7 +52,7 @@ def get_healpix_N_dmode(valid_file, designmode, Hpix_num_obs,
     return N_obs
 
 
-def get healpix_N(valid_file, nside):
+def get_healpix_N(valid_file, nside):
     """
     get healpix N
     """

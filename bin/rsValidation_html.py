@@ -361,7 +361,11 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
     sky_files = [f for f in listdir(mypath_sky) if isfile(join(mypath_sky, f))]
     sky_files.sort()
     sky_files = np.array(sky_files)
-    for col, ty in zip(valid_apo.columns.names, valid_apo.columns.formats):
+    if valid_apo is not None:
+        valid_file = valid_apo
+    else:
+        valid_file = valid_lco
+    for col, ty in zip(valid_file.columns.names, valid_file.columns.formats):
         if ty == 'L' and 'apogee' not in col:
             html_dict = {}
             if 'boss' in col:
@@ -374,7 +378,7 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
 
                 for h in designmode.columns.names:
                     if valid_check in h:
-                        for m in np.unique(valid_apo['designmode']):
+                        for m in np.unique(valid_file['designmode']):
                             val = designmode[h][designmode.label == m][0]
                             if 'boss' in h:
                                 html_dict[m + '_boss'] = '%s' % val
@@ -389,8 +393,8 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
             html_dict['valid_check'] = valid_check
 
             for o, col in zip(obs, cols):
-                for m in np.unique(valid_apo['designmode']):
-                    if o == 'APO':
+                for m in np.unique(valid_file['designmode']):
+                    if o == 'APO' and valid_apo is not None:
                         try:
                             value = (100 *
                                      len(valid_apo[col][(valid_apo[col]) & (valid_apo['designmode'] == m)]) /
@@ -398,7 +402,7 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
                             val = '%.2f' % value + '%'
                         except ZeroDivisionError:
                             val = 'NA'
-                    else:
+                    elif o == 'LCO' and valid_lco is not None:
                         try:
                             value = (100 *
                                      len(valid_lco[col][(valid_lco[col]) & (valid_lco['designmode'] == m)]) /
@@ -406,6 +410,9 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
                             val = '%.2f' % value + '%'
                         except ZeroDivisionError:
                             val = 'NA'
+                    else:
+                        pass
+
                     if 'boss' in col:
                         html_dict[o + '_boss_' + m] = val
                     elif 'apogee' in col:

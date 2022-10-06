@@ -170,77 +170,99 @@ def plot_hist(ax, values, cumulative, density, bins, title,
                    label='DesignMode Value')
 
 
+def get_hist_values(valid_file, i, dmode, designmode):
+    """
+    get the histogram values
+    """
+    ev = eval("(valid_file['designmode'] == dmode) & (valid_file[valid_file.columns.names[i]] >= 0)")
+    evd = eval("designmode['label'] == dmode")
+    dmode_val = designmode[valid_file.columns.names[i-1]][evd][0]
+    xval = valid_file[valid_file.columns.names[i]][ev]
+    try:
+        maxx = np.max(xval) * 1.1
+        minn = np.min(xval) * 0.9
+    except ValueError:
+        maxx = 1
+        minn = 0
+    if minn < 0:
+        minn = 0
+    if maxx < 0:
+        maxx = 1
+    return xval, minn, maxx, dmode_val
+
+
 def create_summary_dist_plots(valid_apo, valid_lco, designmode):
     """
     Create the summary distribution plots
     """
-    for i in range(len(valid_apo.columns.names)):
-        if 'value' in valid_apo.columns.names[i]:
-            for dmode in np.unique(valid_apo['designmode']):
+    if valid_apo is not None:
+        column_names = valid_apo.columns.names
+        valid_file = valid_apo
+    if valid_lco is not None:
+        column_names = valid_lco.columns.names
+        valid_file = valid_lco
+    for i in range(len(column_names)):
+        if 'value' in column_names[i]:
+            for dmode in np.unique(valid_file['designmode']):
                 f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(40,10))
 
-                ev = eval("(valid_apo['designmode'] == dmode) & (valid_apo[valid_apo.columns.names[i]] >= 0)")
-                evd = eval("designmode['label'] == dmode")
-                dmode_val = designmode[valid_apo.columns.names[i-1]][evd][0]
-                xval_apo = valid_apo[valid_apo.columns.names[i]][ev]
-                try:
-                    maxx = np.max(xval_apo) * 1.1
-                    minn = np.min(xval_apo) * 0.9
-                except ValueError:
-                    maxx = 1
-                    minn = 0
-                if minn < 0:
-                    minn = 0
-                if maxx < 0:
-                    maxx = 1
-                ev = eval("(valid_lco['designmode'] == dmode) & (valid_lco[valid_lco.columns.names[i]] >= 0)")
-                xval_lco = valid_lco[valid_lco.columns.names[i]][ev]
-                try:
-                    maxx_lco = np.max(xval_lco) * 1.1
-                    minn_lco = np.min(xval_lco) * 0.9
-                except ValueError:
-                    maxx_lco = 1
-                    minn_lco = 0
-                if minn_lco < 0:
-                    minn_lco = 0
-                if maxx_lco < 0:
-                    maxx_lco = 1
-                if minn_lco < minn:
+                if valid_apo is not None:
+                    xval_apo, minn_apo, maxx_apo, dmode_val = get_hist_values(valid_apo, i, dmode, designmode)
+
+                if valid_lco is not None:
+                    xval_lco, minn_lco, maxx_lco, dmode_val = get_hist_values(valid_lco, i, dmode, designmode)
+
+                if valid_apo in not None and valid_lco is not Not:
+                    if minn_lco < minn_apo:
+                        minn = minn_lco
+                    else:
+                        minn = minn_apo
+                    if maxx_lco > maxx_apo:
+                        maxx = maxx_lco
+                    else:
+                        maxx = maxx_apo
+                elif valid_apo in not None:
+                    minn = minn_apo
+                    maxx = maxx_apo
+                else:
                     minn = minn_lco
-                if maxx_lco > maxx:
                     maxx = maxx_lco
-                plot_hist(ax1, xval_apo,
-                          True, True,
-                          np.linspace(minn,
-                                      maxx,
-                                      50),
-                          '%s: %s' % (dmode, 'APO'),
-                          'APO', valid_apo.columns.names[i - 1],
-                          'Cumulative Fraction', dmode_val)
-                plot_hist(ax2, xval_apo,
-                          False, False,
-                          np.linspace(minn,
-                                      maxx,
-                                      50),
-                          '%s: %s' % (dmode, 'APO'),
-                          'APO', valid_apo.columns.names[i - 1],
-                          'N', dmode_val)
-                plot_hist(ax3, xval_lco,
-                          True, True,
-                          np.linspace(minn,
-                                      maxx,
-                                      50),
-                          '%s: %s' % (dmode, 'LCO'),
-                          'LCO', valid_apo.columns.names[i - 1],
-                          'Cumulative Fraction', dmode_val)
-                plot_hist(ax4, xval_lco,
-                          False, False,
-                          np.linspace(minn,
-                                      maxx,
-                                      50),
-                          '%s: %s' % (dmode, 'LCO'),
-                          'LCO', valid_apo.columns.names[i - 1],
-                          'N', dmode_val)
+
+                if valid_apo is not None:
+                    plot_hist(ax1, xval_apo,
+                              True, True,
+                              np.linspace(minn,
+                                          maxx,
+                                          50),
+                              '%s: %s' % (dmode, 'APO'),
+                              'APO', valid_apo.columns.names[i - 1],
+                              'Cumulative Fraction', dmode_val)
+                    plot_hist(ax2, xval_apo,
+                              False, False,
+                              np.linspace(minn,
+                                          maxx,
+                                          50),
+                              '%s: %s' % (dmode, 'APO'),
+                              'APO', valid_apo.columns.names[i - 1],
+                              'N', dmode_val)
+                if valid_lco is not None:
+                    plot_hist(ax3, xval_lco,
+                              True, True,
+                              np.linspace(minn,
+                                          maxx,
+                                          50),
+                              '%s: %s' % (dmode, 'LCO'),
+                              'LCO', valid_apo.columns.names[i - 1],
+                              'Cumulative Fraction', dmode_val)
+                    plot_hist(ax4, xval_lco,
+                              False, False,
+                              np.linspace(minn,
+                                          maxx,
+                                          50),
+                              '%s: %s' % (dmode, 'LCO'),
+                              'LCO', valid_apo.columns.names[i - 1],
+                              'N', dmode_val)
+
                 plt.savefig(path + '/dist_plots/%s_%s.png' % (valid_apo.columns.names[i-1],
                                                       dmode),
                             bbox_inches='tight', dpi=150)
@@ -249,48 +271,59 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                 plt.cla()
                 plt.clf()
                 plt.close(f)
-        if 'pass' in valid_apo.columns.names[i]:
+        if 'pass' in column_names[i]:
             for dmode in np.unique(valid_apo['designmode']):
                 f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(40,10))
 
-                ev = eval("valid_apo['designmode'] == dmode")
-                xval_apo = valid_apo[valid_apo.columns.names[i+1]][ev] - valid_apo[valid_apo.columns.names[i]][ev]
-                try:
-                    maxx = np.max(xval_apo)
-                except ValueError:
-                    maxx = 0
-                ev = eval("valid_lco['designmode'] == dmode")
-                xval_lco = valid_lco[valid_lco.columns.names[i+1]][ev] - valid_lco[valid_lco.columns.names[i]][ev]
-                try:
-                    maxx_lco = np.max(xval_lco)
-                except ValueError:
-                    maxx_lco = 0
-                if maxx_lco > maxx:
+                if valid_apo is not None:
+                    ev = eval("valid_apo['designmode'] == dmode")
+                    xval_apo = valid_apo[valid_apo.columns.names[i+1]][ev] - valid_apo[valid_apo.columns.names[i]][ev]
+                    try:
+                        maxx_apo = np.max(xval_apo)
+                    except ValueError:
+                        maxx_apo = 0
+                if valid_lco is not None:
+                    ev = eval("valid_lco['designmode'] == dmode")
+                    xval_lco = valid_lco[valid_lco.columns.names[i+1]][ev] - valid_lco[valid_lco.columns.names[i]][ev]
+                    try:
+                        maxx_lco = np.max(xval_lco)
+                    except ValueError:
+                        maxx_lco = 0
+                if valid_apo in not None and valid_lco is not Not:
+                    if maxx_lco > maxx_apo:
+                        maxx = maxx_lco
+                    else:
+                        maxx = maxx_apo
+                elif valid_apo in not None:
+                    maxx = maxx_apo
+                else:
                     maxx = maxx_lco
-                plot_hist(ax1, xval_apo,
-                          True, True,
-                          np.arange(0, maxx + 2, 1),
-                          '%s: %s' % (dmode, 'APO'),
-                          'APO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
-                          'Cumulative Fraction', np.nan)
-                plot_hist(ax2, xval_apo,
-                          False, False,
-                          np.arange(0, maxx + 2, 1),
-                          '%s: %s' % (dmode, 'APO'),
-                          'APO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
-                          'N', np.nan)
-                plot_hist(ax3, xval_lco,
-                          True, True,
-                          np.arange(0, maxx + 2, 1),
-                          '%s: %s' % (dmode, 'LCO'),
-                          'LCO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
-                          'Cumulative Fraction', np.nan)
-                plot_hist(ax4, xval_lco,
-                          False, False,
-                          np.arange(0, maxx + 2, 1),
-                          '%s: %s' % (dmode, 'LCO'),
-                          'LCO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
-                          'N', np.nan)
+                if valid_apo is not None:
+                    plot_hist(ax1, xval_apo,
+                              True, True,
+                              np.arange(0, maxx + 2, 1),
+                              '%s: %s' % (dmode, 'APO'),
+                              'APO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
+                              'Cumulative Fraction', np.nan)
+                    plot_hist(ax2, xval_apo,
+                              False, False,
+                              np.arange(0, maxx + 2, 1),
+                              '%s: %s' % (dmode, 'APO'),
+                              'APO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
+                              'N', np.nan)
+                if valid_lco is not None:
+                    plot_hist(ax3, xval_lco,
+                              True, True,
+                              np.arange(0, maxx + 2, 1),
+                              '%s: %s' % (dmode, 'LCO'),
+                              'LCO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
+                              'Cumulative Fraction', np.nan)
+                    plot_hist(ax4, xval_lco,
+                              False, False,
+                              np.arange(0, maxx + 2, 1),
+                              '%s: %s' % (dmode, 'LCO'),
+                              'LCO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
+                              'N', np.nan)
                 plt.savefig(path + '/dist_plots/%s_%s.png' % (valid_apo.columns.names[i-1],
                                                       dmode),
                             bbox_inches='tight', dpi=150)

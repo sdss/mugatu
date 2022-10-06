@@ -35,60 +35,71 @@ class ThetaFormatterShiftPi(GeoAxes.ThetaFormatter):
         return GeoAxes.ThetaFormatter.__call__(self, x, pos)
 
 
+def get_healpix_N_dmode(valid_file, designmode, Hpix_num_obs,
+                  m, met, nside):
+    """
+    get N per pix in healpix map per dmode
+    """
+    N_obs = np.zeros(healpy.nside2npix(nside)) - 1
+
+    for j in np.unique(Hpix_num_obs):
+        ev_obs = eval("(Hpix_num_obs == j) & (valid_file.designmode == m) & (valid_file[valid_file.columns.names[i]] >= 0.)")
+        vals = valid_file[valid_file.columns.names[i]][ev_obs]
+        if len(vals) > 0:
+            N_obs[j]  = np.mean(vals)
+        else:
+            N_obs[j] = np.nan
+    return N_obs
+
+
+def get healpix_N(valid_file, nside):
+    """
+    get healpix N
+    """
+    Hpix_num_obs = np.zeros(len(valid_file), dtype=int)
+
+    for file in np.unique(valid_file.file_name):
+        ra = valid_file['racen'][valid_file.file_name == file][0]
+        dec = valid_file['deccen'][valid_file.file_name == file][0]
+        hpix = healpy.pixelfunc.ang2pix(nside, ra,
+                                        dec, lonlat=True)
+        Hpix_num_obs[valid_file.file_name == file] = hpix
+    return Hpix_num_obs
+
+
 def plots_healpix(valid_apo, valid_lco, designmode):
     """
     Make sky plots with healpix
     """
-    Hpix_num_apo = np.zeros(len(valid_apo), dtype=int)
-    Hpix_num_lco = np.zeros(len(valid_lco), dtype=int)
+    if valid_apo is not None:
+        Hpix_num_apo = get healpix_N(valid_apo, 24)
+        column_names = valid_apo.columns.names
+        valid_file = valid_apo
+    if valid_lco is not None:
+        Hpix_num_lco = get healpix_N(valid_apo, 32)
+        column_names = valid_lco.columns.names
+        valid_file = valid_lco
 
-    for file in np.unique(valid_apo.file_name):
-        ra = valid_apo['racen'][valid_apo.file_name == file][0]
-        dec = valid_apo['deccen'][valid_apo.file_name == file][0]
-        hpix = healpy.pixelfunc.ang2pix(24, ra,
-                                        dec, lonlat=True)
-        Hpix_num_apo[valid_apo.file_name == file] = hpix
-        
-    for file in np.unique(valid_lco.file_name):
-        ra = valid_lco['racen'][valid_lco.file_name == file][0]
-        dec = valid_lco['deccen'][valid_lco.file_name == file][0]
-        hpix = healpy.pixelfunc.ang2pix(32, ra,
-                                        dec, lonlat=True)
-        Hpix_num_lco[valid_lco.file_name == file] = hpix
-
-    for i in range(len(valid_apo.columns.names)):
-        if 'value' in valid_apo.columns.names[i]:
-            pf = valid_apo.columns.names[i - 1]
+    for i in range(len(column_names)):
+        if 'value' in column_names:
+            pf = valid_file.columns.names[i - 1]
             mets = []
-            for dmode in np.unique(valid_apo['designmode']):
+            for dmode in np.unique(valid_file['designmode']):
                 evd = eval("designmode['label'] == dmode")
-                dmode_val = designmode[valid_apo.columns.names[i-1]][evd][0]
+                dmode_val = designmode[valid_file.columns.names[i-1]][evd][0]
                 if isinstance(dmode_val, np.ndarray):
                     mets.append(dmode_val[-1])
                 else:
                     mets.append(dmode_val)
-            for m, met in zip(np.unique(valid_apo['designmode']), mets):
-                N_apo = np.zeros(healpy.nside2npix(24)) - 1
-                N_lco = np.zeros(healpy.nside2npix(32)) - 1
-
-                for j in np.unique(Hpix_num_apo):
-                    ev_apo =eval("(Hpix_num_apo == j) & (valid_apo.designmode == m) & (valid_apo[valid_apo.columns.names[i]] >= 0.)")
-                    vals = valid_apo[valid_apo.columns.names[i]][ev_apo]
-                    if len(vals) > 0:
-                        N_apo[j]  = np.mean(vals)
-                    else:
-                        N_apo[j] = np.nan
-
-                for j in np.unique(Hpix_num_lco):
-                    ev_lco =eval("(Hpix_num_lco == j) & (valid_lco.designmode == m) & (valid_lco[valid_apo.columns.names[i]] >= 0.)")
-                    vals = valid_lco[valid_apo.columns.names[i]][ev_lco]
-                    if len(vals) > 0:
-                        N_lco[j]  = np.mean(vals)
-                    else:
-                        N_lco[j] = np.nan
-
-                N_apo[N_apo < 0] = np.nan
-                N_lco[N_lco < 0] = np.nan
+            for m, met in zip(np.unique(valid_file['designmode']), mets):
+                if valid_apo is not None:
+                    N_apo = get_healpix_N_dmode(valid_apo, designmode, Hpix_num_apo,
+                                                m, met, 24)
+                    N_apo[N_apo < 0] = np.nan
+                if valid_lco is not None:
+                    N_lco = get_healpix_N_dmode(valid_lco, designmode, Hpix_num_lco,
+                                                m, met, 32)
+                    N_lco[N_lco < 0] = np.nan
 
                 xsize = int(2000)
                 ysize = int(xsize/2)
@@ -100,13 +111,8 @@ def plots_healpix(valid_apo, valid_lco, designmode):
 
                 # project the map to a rectangular matrix xsize x ysize
                 PHI, THETA = np.meshgrid(phi, theta)
-                grid_pix = hp.ang2pix(24, THETA, PHI)
-
-                grid_map = N_apo[grid_pix]
-
-                grid_pix2 = hp.ang2pix(32, THETA, PHI)
-
-                grid_map2 = N_lco[grid_pix2]
+                grid_pix_apo = hp.ang2pix(24, THETA, PHI)
+                grid_pix_lco = hp.ang2pix(32, THETA, PHI)
 
                 vmin = 0
                 vmax = 2 * met
@@ -120,10 +126,12 @@ def plots_healpix(valid_apo, valid_lco, designmode):
 
                 # rasterized makes the map bitmap while the labels remain vectorial
                 # flip longitude to the astro convention
-                image = plt.pcolormesh(longitude[::-1], latitude, grid_map,
-                                       vmin=vmin, vmax=vmax, rasterized=True, cmap='coolwarm')
-                image = plt.pcolormesh(longitude[::-1], latitude, grid_map2,
-                                       vmin=vmin, vmax=vmax, rasterized=True, cmap='coolwarm')
+                if valid_apo is not None:
+                    image = plt.pcolormesh(longitude[::-1], latitude, N_apo[grid_pix_apo],
+                                           vmin=vmin, vmax=vmax, rasterized=True, cmap='coolwarm')
+                if valid_apo is not None:
+                    image = plt.pcolormesh(longitude[::-1], latitude, N_lco[grid_pix_lco],
+                                           vmin=vmin, vmax=vmax, rasterized=True, cmap='coolwarm')
 
                 # graticule
                 #ax.set_longitude_grid(30)
@@ -131,8 +139,8 @@ def plots_healpix(valid_apo, valid_lco, designmode):
                 ax.set_title('%s: %s' % (pf, m))
 
                 plt.colorbar(image,
-                                         orientation='vertical', label=r'Mean %s for Field' % pf,
-                                         ax=ax)
+                             orientation='vertical', label=r'Mean %s for Field' % pf,
+                             ax=ax)
 
                 ax.set_xlabel('R.A.')
                 ax.set_ylabel('Decl.')

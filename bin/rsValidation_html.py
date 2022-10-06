@@ -212,7 +212,7 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                 if valid_lco is not None:
                     xval_lco, minn_lco, maxx_lco, dmode_val = get_hist_values(valid_lco, i, dmode, designmode)
 
-                if valid_apo in not None and valid_lco is not Not:
+                if valid_apo is not None and valid_lco is not Not:
                     if minn_lco < minn_apo:
                         minn = minn_lco
                     else:

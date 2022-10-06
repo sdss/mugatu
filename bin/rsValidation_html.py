@@ -129,7 +129,7 @@ def plots_healpix(valid_apo, valid_lco, designmode):
                 if valid_apo is not None:
                     image = plt.pcolormesh(longitude[::-1], latitude, N_apo[grid_pix_apo],
                                            vmin=vmin, vmax=vmax, rasterized=True, cmap='coolwarm')
-                if valid_apo is not None:
+                if valid_lco is not None:
                     image = plt.pcolormesh(longitude[::-1], latitude, N_lco[grid_pix_lco],
                                            vmin=vmin, vmax=vmax, rasterized=True, cmap='coolwarm')
 

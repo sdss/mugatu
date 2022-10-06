@@ -72,11 +72,11 @@ def plots_healpix(valid_apo, valid_lco, designmode):
     Make sky plots with healpix
     """
     if valid_apo is not None:
-        Hpix_num_apo = get healpix_N(valid_apo, 24)
+        Hpix_num_apo = get_healpix_N(valid_apo, 24)
         column_names = valid_apo.columns.names
         valid_file = valid_apo
     if valid_lco is not None:
-        Hpix_num_lco = get healpix_N(valid_apo, 32)
+        Hpix_num_lco = get_healpix_N(valid_apo, 32)
         column_names = valid_lco.columns.names
         valid_file = valid_lco
 

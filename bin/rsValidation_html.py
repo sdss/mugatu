@@ -14,6 +14,8 @@ from astropy.io import fits
 from mugatu.designmode import allDesignModes
 import mugatu
 from sdssdb.peewee.sdss5db import targetdb
+from mugatu.exceptions import MugatuWarning, MugatuError
+import warnings
 
 
 mugatu_version = mugatu.__version__
@@ -432,10 +434,23 @@ if __name__ == '__main__':
         dmarr[i] = arr
     fitsio.write(path + '/designmodes_rs_%s.fits' % plan, dmarr)
     # get validaiton results
-    valid_apo = fits.open(path +
-                          '/rs_%s_apo_design_validation_results.fits' % plan)[1].data
-    valid_lco = fits.open(path +
-                          '/rs_%s_lco_design_validation_results.fits' % plan)[1].data
+    try:
+        valid_apo = fits.open(path +
+                              '/rs_%s_apo_design_validation_results.fits' % plan)[1].data
+    except FileNotFoundError:
+        valid_apo = None
+        flag = 'No validation for APO!'
+        warnings.warn(flag, MugatuWarning)
+    try:
+        valid_lco = fits.open(path +
+                              '/rs_%s_lco_design_validation_results.fits' % plan)[1].data
+    except FileNotFoundError:
+        valid_lco = None
+        flag = 'No validation for LCO!'
+        warnings.warn(flag, MugatuWarning)
+    if valid_apo is None and valid_lco is None:
+        message = 'No validation files for this run'
+        raise MugatuError(message=message)
     designmode = fits.open(path + '/designmodes_rs_%s.fits' % plan)[1].data
 
     write_html_jinja(valid_apo, valid_lco, designmode,

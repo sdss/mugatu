@@ -36,7 +36,7 @@ class ThetaFormatterShiftPi(GeoAxes.ThetaFormatter):
 
 
 def get_healpix_N_dmode(valid_file, designmode, Hpix_num_obs,
-                  m, met, nside):
+                  m, met, nside, i):
     """
     get N per pix in healpix map per dmode
     """
@@ -76,7 +76,7 @@ def plots_healpix(valid_apo, valid_lco, designmode):
         column_names = valid_apo.columns.names
         valid_file = valid_apo
     if valid_lco is not None:
-        Hpix_num_lco = get_healpix_N(valid_apo, 32)
+        Hpix_num_lco = get_healpix_N(valid_lco, 32)
         column_names = valid_lco.columns.names
         valid_file = valid_lco
 
@@ -94,11 +94,11 @@ def plots_healpix(valid_apo, valid_lco, designmode):
             for m, met in zip(np.unique(valid_file['designmode']), mets):
                 if valid_apo is not None:
                     N_apo = get_healpix_N_dmode(valid_apo, designmode, Hpix_num_apo,
-                                                m, met, 24)
+                                                m, met, 24, i)
                     N_apo[N_apo < 0] = np.nan
                 if valid_lco is not None:
                     N_lco = get_healpix_N_dmode(valid_lco, designmode, Hpix_num_lco,
-                                                m, met, 32)
+                                                m, met, 32, i)
                     N_lco[N_lco < 0] = np.nan
 
                 xsize = int(2000)

@@ -81,7 +81,7 @@ def plots_healpix(valid_apo, valid_lco, designmode):
         valid_file = valid_lco
 
     for i in range(len(column_names)):
-        if 'value' in column_names:
+        if 'value' in column_names[i]:
             pf = valid_file.columns.names[i - 1]
             mets = []
             for dmode in np.unique(valid_file['designmode']):

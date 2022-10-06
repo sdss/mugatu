@@ -413,22 +413,24 @@ class FPSDesign(object):
         apogee_mag_lim = modes[self.desmode_label].bright_limit_targets['APOGEE'][:, 0]
         apogee_mag_col = 8
 
-        ev_boss = (self.design['offset']) & (self.design['obsWavelength'] == 'BOSS')
+        ev_boss = (self.design['obsWavelength'] == 'BOSS')
         res = object_offset(self.design['magnitudes'][:, boss_mag_col][ev_boss],
                             boss_mag_lim,
                             lunation,
                             'Boss',
-                            fmagloss=fmagloss)
+                            fmagloss=fmagloss,
+                            can_offset=self.design['offset'][ev_boss])
         self.design['delta_ra'][ev_boss] = res[0]
         self.design['delta_dec'][ev_boss] = res[1]
         self.design['offset_flag'][ev_boss] = res[2]
 
-        ev_apogee = (self.design['offset']) & (self.design['obsWavelength'] == 'APOGEE')
+        ev_apogee = (self.design['obsWavelength'] == 'APOGEE')
         res = object_offset(self.design['magnitudes'][:, apogee_mag_col][ev_apogee],
                             apogee_mag_lim,
                             lunation,
                             'Apogee',
-                            fmagloss=fmagloss)
+                            fmagloss=fmagloss,
+                            can_offset=self.design['offset'][ev_apogee])
         self.design['delta_ra'][ev_apogee] = res[0]
         self.design['delta_dec'][ev_apogee] = res[1]
         self.design['offset_flag'][ev_apogee] = res[2]

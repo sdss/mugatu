@@ -352,7 +352,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     vtype = args.type
-    loc = args.loc
     directory = args.dir
     plan = args.plan
     observatory = args.observatory

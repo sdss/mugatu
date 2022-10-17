@@ -257,8 +257,6 @@ def valid_field(file):
         db_results_boss[dm] = {}
         db_results_apogee[dm] = {}
         if 'bright' in dm:
-            # no r_sdss for bright so do g band
-            # this is hacky and needs to be fixed!!!
             mag_lim = desmodes[dm].bright_limit_targets['BOSS'][5][0]
         else:
             mag_lim = desmodes[dm].bright_limit_targets['BOSS'][1][0]

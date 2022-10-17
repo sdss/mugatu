@@ -15,6 +15,7 @@ import coordio.time
 from mugatu.exceptions import MugatuDesignError, MugatuError
 from multiprocessing import Pool
 from itertools import repeat
+from tqdm import tqdm
 
 import mugatu
 mugatu_ver = mugatu.__version__
@@ -421,7 +422,8 @@ if __name__ == '__main__':
     start = time.time()
     # start validaitng designs
     with Pool(processes=Ncores) as pool:
-        res = pool.map(valid_field, files)
+        res = tqdm(pool.imap(valid_field, files), total=len(files))
+        res = [r for r in res]
     for i, r in enumerate(res):
         if vtype == 'rs_replace':
             valid_arr = Table(r)

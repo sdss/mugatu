@@ -274,7 +274,7 @@ def valid_field(file):
                                                                 racen,
                                                                 deccen,
                                                                 head['obs'].strip().upper())
-        mag_lim = desmodes[dm].bright_limit_targets['APOGEE'][-1][0]
+        mag_lim = desmodes[dm].bright_limit_targets['APOGEE'][8][0]
         db_results_apogee[dm]['designmode'] = build_brigh_neigh_query('designmode',
                                                                       'APOGEE',
                                                                       mag_lim,

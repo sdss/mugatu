@@ -161,6 +161,9 @@ class FPSDesign(object):
         will default to first entry in DesignToField for that
         design_id.
 
+    offset_min_skybrightness: float
+        Minimum skybrightness targets will be offset
+
     Attributes
     ----------
     design: dict
@@ -209,7 +212,8 @@ class FPSDesign(object):
                  pmra=None, pmdec=None, delta_ra=None, delta_dec=None,
                  epoch=None, holeID=None, obsWavelength=None,
                  priority=None, carton_pk=None, category=None, magnitudes=None,
-                 design_file=None, manual_design=False, exp=0, RS_VERSION=None):
+                 design_file=None, manual_design=False, exp=0, RS_VERSION=None,
+                 offset_min_skybrightness=0.5):
         if idtype != 'catalogID' and idtype != 'carton_to_target':
             message = 'idtype must be catalogID or carton_to_target'
             raise MugatuError(message=message)
@@ -346,6 +350,8 @@ class FPSDesign(object):
 
         self.design_built = False
 
+        self.offset_min_skybrightness = offset_min_skybrightness
+
     def calculate_offsets(self):
         """
         Calculate the offsets for which an algorithmic
@@ -354,9 +360,11 @@ class FPSDesign(object):
         if 'bright' in self.desmode_label:
             boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][:, 0]
             lunation = 'bright'
+            skybrightness = 1.0
         else:
             boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][:, 0]
             lunation = 'dark'
+            skybrightness = 0.35
         boss_mag_col = 5
         apogee_mag_lim = modes[self.desmode_label].bright_limit_targets['APOGEE'][:, 0]
         apogee_mag_col = 8
@@ -367,7 +375,9 @@ class FPSDesign(object):
                             lunation,
                             'Boss',
                             fmagloss=fmagloss,
-                            can_offset=self.design['offset'][ev_boss])
+                            can_offset=self.design['offset'][ev_boss],
+                            skybrightness=skybrightness,
+                            offset_min_skybrightness=self.offset_min_skybrightness)
         self.design['delta_ra'][ev_boss] = res[0]
         self.design['delta_dec'][ev_boss] = res[1]
         self.design['offset_flag'][ev_boss] = res[2]
@@ -378,7 +388,9 @@ class FPSDesign(object):
                             lunation,
                             'Apogee',
                             fmagloss=fmagloss,
-                            can_offset=self.design['offset'][ev_apogee])
+                            can_offset=self.design['offset'][ev_apogee],
+                            skybrightness=skybrightness,
+                            offset_min_skybrightness=self.offset_min_skybrightness)
         self.design['delta_ra'][ev_apogee] = res[0]
         self.design['delta_dec'][ev_apogee] = res[1]
         self.design['offset_flag'][ev_apogee] = res[2]

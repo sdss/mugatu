@@ -586,6 +586,7 @@ class TargetdbFieldIDs(object):
                 else:
                     if oth >= fieldid_bounds[0] and oth < fieldid_bounds[1]:
                         fieldids.append(oth)
+            fieldids = list(set(fieldids))
             # sort in order
             fieldids.sort()
             # look for breaks

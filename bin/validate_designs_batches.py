@@ -152,7 +152,7 @@ def valid_field(file):
                         'apogee_n_skies_min', 'boss_min_skies_fovmetric',
                         'apogee_min_skies_fovmetric',
                         'boss_n_stds_min', 'apogee_n_stds_min',
-                        'boss_min_stds_fovmetric', 'apogee_min_stds_fovmetric', 
+                        'boss_min_stds_fovmetric', 'apogee_min_stds_fovmetric',
                         'boss_stds_mags', 'apogee_stds_mags',
                         'boss_bright_limit_targets', 'apogee_bright_limit_targets',
                         'boss_sky_neighbors_targets', 'apogee_sky_neighbors_targets']
@@ -204,7 +204,7 @@ def valid_field(file):
                         'apogee_n_skies_min', 'boss_min_skies_fovmetric',
                         'apogee_min_skies_fovmetric',
                         'boss_n_stds_min', 'apogee_n_stds_min',
-                        'boss_min_stds_fovmetric', 'apogee_min_stds_fovmetric', 
+                        'boss_min_stds_fovmetric', 'apogee_min_stds_fovmetric',
                         'boss_stds_mags', 'apogee_stds_mags',
                         'boss_bright_limit_targets', 'apogee_bright_limit_targets',
                         'boss_sky_neighbors_targets', 'apogee_sky_neighbors_targets']
@@ -223,7 +223,6 @@ def valid_field(file):
             else:
                 valid_arr[c + '_value'][0] = des.design_errors[k + '_metric']
         return valid_arr
-
 
     def valid_design_func(file, exp, obsTime, field_desmodes,
                           db_results_boss, db_results_apogee,
@@ -265,23 +264,27 @@ def valid_field(file):
                                                                     'BOSS',
                                                                     mag_lim,
                                                                     racen,
-                                                                    deccen)
+                                                                    deccen,
+                                                                    head['obs'].strip().upper())
         db_results_boss[dm]['safety'] = build_brigh_neigh_query('safety',
                                                                 'BOSS',
                                                                 mag_lim,
                                                                 racen,
-                                                                deccen)
+                                                                deccen,
+                                                                head['obs'].strip().upper())
         mag_lim = desmodes[dm].bright_limit_targets['APOGEE'][8][0]
         db_results_apogee[dm]['designmode'] = build_brigh_neigh_query('designmode',
                                                                       'APOGEE',
                                                                       mag_lim,
                                                                       racen,
-                                                                      deccen)
+                                                                      deccen,
+                                                                      head['obs'].strip().upper())
         db_results_apogee[dm]['safety'] = build_brigh_neigh_query('safety',
                                                                   'APOGEE',
                                                                   mag_lim,
                                                                   racen,
-                                                                  deccen)
+                                                                  deccen,
+                                                                  head['obs'].strip().upper())
     if n_exp == 1:
         exp = 0
         dm = field_desmodes[exp]
@@ -327,7 +330,7 @@ if __name__ == '__main__':
         prog=os.path.basename(sys.argv[0]),
         description='In a batch, validate a set of designs')
     parser.add_argument('-t', '--type', dest='type',
-                        type=str, help='Validating files in directory (dir) or robostrategy (rs)', 
+                        type=str, help='Validating files in directory (dir) or robostrategy (rs)',
                         choices=['dir', 'rs', 'rs_replace'], required=True)
     parser.add_argument('-d', '--dir', dest='dir',
                         type=str, help='directory with design files (for type=dir)',

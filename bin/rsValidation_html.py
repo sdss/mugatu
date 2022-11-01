@@ -14,6 +14,8 @@ from astropy.io import fits
 from mugatu.designmode import allDesignModes
 import mugatu
 from sdssdb.peewee.sdss5db import targetdb
+from mugatu.exceptions import MugatuWarning, MugatuError
+import warnings
 
 
 mugatu_version = mugatu.__version__
@@ -33,60 +35,71 @@ class ThetaFormatterShiftPi(GeoAxes.ThetaFormatter):
         return GeoAxes.ThetaFormatter.__call__(self, x, pos)
 
 
+def get_healpix_N_dmode(valid_file, designmode, Hpix_num_obs,
+                  m, met, nside, i):
+    """
+    get N per pix in healpix map per dmode
+    """
+    N_obs = np.zeros(healpy.nside2npix(nside)) - 1
+
+    for j in np.unique(Hpix_num_obs):
+        ev_obs = eval("(Hpix_num_obs == j) & (valid_file.designmode == m) & (valid_file[valid_file.columns.names[i]] >= 0.)")
+        vals = valid_file[valid_file.columns.names[i]][ev_obs]
+        if len(vals) > 0:
+            N_obs[j]  = np.mean(vals)
+        else:
+            N_obs[j] = np.nan
+    return N_obs
+
+
+def get_healpix_N(valid_file, nside):
+    """
+    get healpix N
+    """
+    Hpix_num_obs = np.zeros(len(valid_file), dtype=int)
+
+    for file in np.unique(valid_file.file_name):
+        ra = valid_file['racen'][valid_file.file_name == file][0]
+        dec = valid_file['deccen'][valid_file.file_name == file][0]
+        hpix = healpy.pixelfunc.ang2pix(nside, ra,
+                                        dec, lonlat=True)
+        Hpix_num_obs[valid_file.file_name == file] = hpix
+    return Hpix_num_obs
+
+
 def plots_healpix(valid_apo, valid_lco, designmode):
     """
     Make sky plots with healpix
     """
-    Hpix_num_apo = np.zeros(len(valid_apo), dtype=int)
-    Hpix_num_lco = np.zeros(len(valid_lco), dtype=int)
+    if valid_apo is not None:
+        Hpix_num_apo = get_healpix_N(valid_apo, 24)
+        column_names = valid_apo.columns.names
+        valid_file = valid_apo
+    if valid_lco is not None:
+        Hpix_num_lco = get_healpix_N(valid_lco, 32)
+        column_names = valid_lco.columns.names
+        valid_file = valid_lco
 
-    for file in np.unique(valid_apo.file_name):
-        ra = valid_apo['racen'][valid_apo.file_name == file][0]
-        dec = valid_apo['deccen'][valid_apo.file_name == file][0]
-        hpix = healpy.pixelfunc.ang2pix(24, ra,
-                                        dec, lonlat=True)
-        Hpix_num_apo[valid_apo.file_name == file] = hpix
-        
-    for file in np.unique(valid_lco.file_name):
-        ra = valid_lco['racen'][valid_lco.file_name == file][0]
-        dec = valid_lco['deccen'][valid_lco.file_name == file][0]
-        hpix = healpy.pixelfunc.ang2pix(32, ra,
-                                        dec, lonlat=True)
-        Hpix_num_lco[valid_lco.file_name == file] = hpix
-
-    for i in range(len(valid_apo.columns.names)):
-        if 'value' in valid_apo.columns.names[i]:
-            pf = valid_apo.columns.names[i - 1]
+    for i in range(len(column_names)):
+        if 'value' in column_names[i]:
+            pf = valid_file.columns.names[i - 1]
             mets = []
-            for dmode in np.unique(valid_apo['designmode']):
+            for dmode in np.unique(valid_file['designmode']):
                 evd = eval("designmode['label'] == dmode")
-                dmode_val = designmode[valid_apo.columns.names[i-1]][evd][0]
+                dmode_val = designmode[valid_file.columns.names[i-1]][evd][0]
                 if isinstance(dmode_val, np.ndarray):
                     mets.append(dmode_val[-1])
                 else:
                     mets.append(dmode_val)
-            for m, met in zip(np.unique(valid_apo['designmode']), mets):
-                N_apo = np.zeros(healpy.nside2npix(24)) - 1
-                N_lco = np.zeros(healpy.nside2npix(32)) - 1
-
-                for j in np.unique(Hpix_num_apo):
-                    ev_apo =eval("(Hpix_num_apo == j) & (valid_apo.designmode == m) & (valid_apo[valid_apo.columns.names[i]] >= 0.)")
-                    vals = valid_apo[valid_apo.columns.names[i]][ev_apo]
-                    if len(vals) > 0:
-                        N_apo[j]  = np.mean(vals)
-                    else:
-                        N_apo[j] = np.nan
-
-                for j in np.unique(Hpix_num_lco):
-                    ev_lco =eval("(Hpix_num_lco == j) & (valid_lco.designmode == m) & (valid_lco[valid_apo.columns.names[i]] >= 0.)")
-                    vals = valid_lco[valid_apo.columns.names[i]][ev_lco]
-                    if len(vals) > 0:
-                        N_lco[j]  = np.mean(vals)
-                    else:
-                        N_lco[j] = np.nan
-
-                N_apo[N_apo < 0] = np.nan
-                N_lco[N_lco < 0] = np.nan
+            for m, met in zip(np.unique(valid_file['designmode']), mets):
+                if valid_apo is not None:
+                    N_apo = get_healpix_N_dmode(valid_apo, designmode, Hpix_num_apo,
+                                                m, met, 24, i)
+                    N_apo[N_apo < 0] = np.nan
+                if valid_lco is not None:
+                    N_lco = get_healpix_N_dmode(valid_lco, designmode, Hpix_num_lco,
+                                                m, met, 32, i)
+                    N_lco[N_lco < 0] = np.nan
 
                 xsize = int(2000)
                 ysize = int(xsize/2)
@@ -98,13 +111,8 @@ def plots_healpix(valid_apo, valid_lco, designmode):
 
                 # project the map to a rectangular matrix xsize x ysize
                 PHI, THETA = np.meshgrid(phi, theta)
-                grid_pix = hp.ang2pix(24, THETA, PHI)
-
-                grid_map = N_apo[grid_pix]
-
-                grid_pix2 = hp.ang2pix(32, THETA, PHI)
-
-                grid_map2 = N_lco[grid_pix2]
+                grid_pix_apo = hp.ang2pix(24, THETA, PHI)
+                grid_pix_lco = hp.ang2pix(32, THETA, PHI)
 
                 vmin = 0
                 vmax = 2 * met
@@ -118,10 +126,12 @@ def plots_healpix(valid_apo, valid_lco, designmode):
 
                 # rasterized makes the map bitmap while the labels remain vectorial
                 # flip longitude to the astro convention
-                image = plt.pcolormesh(longitude[::-1], latitude, grid_map,
-                                       vmin=vmin, vmax=vmax, rasterized=True, cmap='coolwarm')
-                image = plt.pcolormesh(longitude[::-1], latitude, grid_map2,
-                                       vmin=vmin, vmax=vmax, rasterized=True, cmap='coolwarm')
+                if valid_apo is not None:
+                    image = plt.pcolormesh(longitude[::-1], latitude, N_apo[grid_pix_apo],
+                                           vmin=vmin, vmax=vmax, rasterized=True, cmap='coolwarm')
+                if valid_lco is not None:
+                    image = plt.pcolormesh(longitude[::-1], latitude, N_lco[grid_pix_lco],
+                                           vmin=vmin, vmax=vmax, rasterized=True, cmap='coolwarm')
 
                 # graticule
                 #ax.set_longitude_grid(30)
@@ -129,8 +139,8 @@ def plots_healpix(valid_apo, valid_lco, designmode):
                 ax.set_title('%s: %s' % (pf, m))
 
                 plt.colorbar(image,
-                                         orientation='vertical', label=r'Mean %s for Field' % pf,
-                                         ax=ax)
+                             orientation='vertical', label=r'Mean %s for Field' % pf,
+                             ax=ax)
 
                 ax.set_xlabel('R.A.')
                 ax.set_ylabel('Decl.')
@@ -160,77 +170,99 @@ def plot_hist(ax, values, cumulative, density, bins, title,
                    label='DesignMode Value')
 
 
+def get_hist_values(valid_file, i, dmode, designmode):
+    """
+    get the histogram values
+    """
+    ev = eval("(valid_file['designmode'] == dmode) & (valid_file[valid_file.columns.names[i]] >= 0)")
+    evd = eval("designmode['label'] == dmode")
+    dmode_val = designmode[valid_file.columns.names[i-1]][evd][0]
+    xval = valid_file[valid_file.columns.names[i]][ev]
+    try:
+        maxx = np.max(xval) * 1.1
+        minn = np.min(xval) * 0.9
+    except ValueError:
+        maxx = 1
+        minn = 0
+    if minn < 0:
+        minn = 0
+    if maxx < 0:
+        maxx = 1
+    return xval, minn, maxx, dmode_val
+
+
 def create_summary_dist_plots(valid_apo, valid_lco, designmode):
     """
     Create the summary distribution plots
     """
-    for i in range(len(valid_apo.columns.names)):
-        if 'value' in valid_apo.columns.names[i]:
-            for dmode in np.unique(valid_apo['designmode']):
+    if valid_apo is not None:
+        column_names = valid_apo.columns.names
+        valid_file = valid_apo
+    if valid_lco is not None:
+        column_names = valid_lco.columns.names
+        valid_file = valid_lco
+    for i in range(len(column_names)):
+        if 'value' in column_names[i]:
+            for dmode in np.unique(valid_file['designmode']):
                 f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(40,10))
 
-                ev = eval("(valid_apo['designmode'] == dmode) & (valid_apo[valid_apo.columns.names[i]] >= 0)")
-                evd = eval("designmode['label'] == dmode")
-                dmode_val = designmode[valid_apo.columns.names[i-1]][evd][0]
-                xval_apo = valid_apo[valid_apo.columns.names[i]][ev]
-                try:
-                    maxx = np.max(xval_apo) * 1.1
-                    minn = np.min(xval_apo) * 0.9
-                except ValueError:
-                    maxx = 1
-                    minn = 0
-                if minn < 0:
-                    minn = 0
-                if maxx < 0:
-                    maxx = 1
-                ev = eval("(valid_lco['designmode'] == dmode) & (valid_lco[valid_lco.columns.names[i]] >= 0)")
-                xval_lco = valid_lco[valid_lco.columns.names[i]][ev]
-                try:
-                    maxx_lco = np.max(xval_lco) * 1.1
-                    minn_lco = np.min(xval_lco) * 0.9
-                except ValueError:
-                    maxx_lco = 1
-                    minn_lco = 0
-                if minn_lco < 0:
-                    minn_lco = 0
-                if maxx_lco < 0:
-                    maxx_lco = 1
-                if minn_lco < minn:
+                if valid_apo is not None:
+                    xval_apo, minn_apo, maxx_apo, dmode_val = get_hist_values(valid_apo, i, dmode, designmode)
+
+                if valid_lco is not None:
+                    xval_lco, minn_lco, maxx_lco, dmode_val = get_hist_values(valid_lco, i, dmode, designmode)
+
+                if valid_apo is not None and valid_lco is not None:
+                    if minn_lco < minn_apo:
+                        minn = minn_lco
+                    else:
+                        minn = minn_apo
+                    if maxx_lco > maxx_apo:
+                        maxx = maxx_lco
+                    else:
+                        maxx = maxx_apo
+                elif valid_apo is not None:
+                    minn = minn_apo
+                    maxx = maxx_apo
+                else:
                     minn = minn_lco
-                if maxx_lco > maxx:
                     maxx = maxx_lco
-                plot_hist(ax1, xval_apo,
-                          True, True,
-                          np.linspace(minn,
-                                      maxx,
-                                      50),
-                          '%s: %s' % (dmode, 'APO'),
-                          'APO', valid_apo.columns.names[i - 1],
-                          'Cumulative Fraction', dmode_val)
-                plot_hist(ax2, xval_apo,
-                          False, False,
-                          np.linspace(minn,
-                                      maxx,
-                                      50),
-                          '%s: %s' % (dmode, 'APO'),
-                          'APO', valid_apo.columns.names[i - 1],
-                          'N', dmode_val)
-                plot_hist(ax3, xval_lco,
-                          True, True,
-                          np.linspace(minn,
-                                      maxx,
-                                      50),
-                          '%s: %s' % (dmode, 'LCO'),
-                          'LCO', valid_apo.columns.names[i - 1],
-                          'Cumulative Fraction', dmode_val)
-                plot_hist(ax4, xval_lco,
-                          False, False,
-                          np.linspace(minn,
-                                      maxx,
-                                      50),
-                          '%s: %s' % (dmode, 'LCO'),
-                          'LCO', valid_apo.columns.names[i - 1],
-                          'N', dmode_val)
+
+                if valid_apo is not None:
+                    plot_hist(ax1, xval_apo,
+                              True, True,
+                              np.linspace(minn,
+                                          maxx,
+                                          50),
+                              '%s: %s' % (dmode, 'APO'),
+                              'APO', valid_apo.columns.names[i - 1],
+                              'Cumulative Fraction', dmode_val)
+                    plot_hist(ax2, xval_apo,
+                              False, False,
+                              np.linspace(minn,
+                                          maxx,
+                                          50),
+                              '%s: %s' % (dmode, 'APO'),
+                              'APO', valid_apo.columns.names[i - 1],
+                              'N', dmode_val)
+                if valid_lco is not None:
+                    plot_hist(ax3, xval_lco,
+                              True, True,
+                              np.linspace(minn,
+                                          maxx,
+                                          50),
+                              '%s: %s' % (dmode, 'LCO'),
+                              'LCO', valid_apo.columns.names[i - 1],
+                              'Cumulative Fraction', dmode_val)
+                    plot_hist(ax4, xval_lco,
+                              False, False,
+                              np.linspace(minn,
+                                          maxx,
+                                          50),
+                              '%s: %s' % (dmode, 'LCO'),
+                              'LCO', valid_apo.columns.names[i - 1],
+                              'N', dmode_val)
+
                 plt.savefig(path + '/dist_plots/%s_%s.png' % (valid_apo.columns.names[i-1],
                                                       dmode),
                             bbox_inches='tight', dpi=150)
@@ -239,48 +271,59 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                 plt.cla()
                 plt.clf()
                 plt.close(f)
-        if 'pass' in valid_apo.columns.names[i]:
+        if 'pass' in column_names[i]:
             for dmode in np.unique(valid_apo['designmode']):
                 f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(40,10))
 
-                ev = eval("valid_apo['designmode'] == dmode")
-                xval_apo = valid_apo[valid_apo.columns.names[i+1]][ev] - valid_apo[valid_apo.columns.names[i]][ev]
-                try:
-                    maxx = np.max(xval_apo)
-                except ValueError:
-                    maxx = 0
-                ev = eval("valid_lco['designmode'] == dmode")
-                xval_lco = valid_lco[valid_lco.columns.names[i+1]][ev] - valid_lco[valid_lco.columns.names[i]][ev]
-                try:
-                    maxx_lco = np.max(xval_lco)
-                except ValueError:
-                    maxx_lco = 0
-                if maxx_lco > maxx:
+                if valid_apo is not None:
+                    ev = eval("valid_apo['designmode'] == dmode")
+                    xval_apo = valid_apo[valid_apo.columns.names[i+1]][ev] - valid_apo[valid_apo.columns.names[i]][ev]
+                    try:
+                        maxx_apo = np.max(xval_apo)
+                    except ValueError:
+                        maxx_apo = 0
+                if valid_lco is not None:
+                    ev = eval("valid_lco['designmode'] == dmode")
+                    xval_lco = valid_lco[valid_lco.columns.names[i+1]][ev] - valid_lco[valid_lco.columns.names[i]][ev]
+                    try:
+                        maxx_lco = np.max(xval_lco)
+                    except ValueError:
+                        maxx_lco = 0
+                if valid_apo is not None and valid_lco is not None:
+                    if maxx_lco > maxx_apo:
+                        maxx = maxx_lco
+                    else:
+                        maxx = maxx_apo
+                elif valid_apo is not None:
+                    maxx = maxx_apo
+                else:
                     maxx = maxx_lco
-                plot_hist(ax1, xval_apo,
-                          True, True,
-                          np.arange(0, maxx + 2, 1),
-                          '%s: %s' % (dmode, 'APO'),
-                          'APO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
-                          'Cumulative Fraction', np.nan)
-                plot_hist(ax2, xval_apo,
-                          False, False,
-                          np.arange(0, maxx + 2, 1),
-                          '%s: %s' % (dmode, 'APO'),
-                          'APO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
-                          'N', np.nan)
-                plot_hist(ax3, xval_lco,
-                          True, True,
-                          np.arange(0, maxx + 2, 1),
-                          '%s: %s' % (dmode, 'LCO'),
-                          'LCO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
-                          'Cumulative Fraction', np.nan)
-                plot_hist(ax4, xval_lco,
-                          False, False,
-                          np.arange(0, maxx + 2, 1),
-                          '%s: %s' % (dmode, 'LCO'),
-                          'LCO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
-                          'N', np.nan)
+                if valid_apo is not None:
+                    plot_hist(ax1, xval_apo,
+                              True, True,
+                              np.arange(0, maxx + 2, 1),
+                              '%s: %s' % (dmode, 'APO'),
+                              'APO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
+                              'Cumulative Fraction', np.nan)
+                    plot_hist(ax2, xval_apo,
+                              False, False,
+                              np.arange(0, maxx + 2, 1),
+                              '%s: %s' % (dmode, 'APO'),
+                              'APO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
+                              'N', np.nan)
+                if valid_lco is not None:
+                    plot_hist(ax3, xval_lco,
+                              True, True,
+                              np.arange(0, maxx + 2, 1),
+                              '%s: %s' % (dmode, 'LCO'),
+                              'LCO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
+                              'Cumulative Fraction', np.nan)
+                    plot_hist(ax4, xval_lco,
+                              False, False,
+                              np.arange(0, maxx + 2, 1),
+                              '%s: %s' % (dmode, 'LCO'),
+                              'LCO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
+                              'N', np.nan)
                 plt.savefig(path + '/dist_plots/%s_%s.png' % (valid_apo.columns.names[i-1],
                                                       dmode),
                             bbox_inches='tight', dpi=150)
@@ -318,7 +361,11 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
     sky_files = [f for f in listdir(mypath_sky) if isfile(join(mypath_sky, f))]
     sky_files.sort()
     sky_files = np.array(sky_files)
-    for col, ty in zip(valid_apo.columns.names, valid_apo.columns.formats):
+    if valid_apo is not None:
+        valid_file = valid_apo
+    else:
+        valid_file = valid_lco
+    for col, ty in zip(valid_file.columns.names, valid_file.columns.formats):
         if ty == 'L' and 'apogee' not in col:
             html_dict = {}
             if 'boss' in col:
@@ -331,7 +378,7 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
 
                 for h in designmode.columns.names:
                     if valid_check in h:
-                        for m in np.unique(valid_apo['designmode']):
+                        for m in np.unique(valid_file['designmode']):
                             val = designmode[h][designmode.label == m][0]
                             if 'boss' in h:
                                 html_dict[m + '_boss'] = '%s' % val
@@ -346,8 +393,8 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
             html_dict['valid_check'] = valid_check
 
             for o, col in zip(obs, cols):
-                for m in np.unique(valid_apo['designmode']):
-                    if o == 'APO':
+                for m in np.unique(valid_file['designmode']):
+                    if o == 'APO' and valid_apo is not None:
                         try:
                             value = (100 *
                                      len(valid_apo[col][(valid_apo[col]) & (valid_apo['designmode'] == m)]) /
@@ -355,7 +402,7 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
                             val = '%.2f' % value + '%'
                         except ZeroDivisionError:
                             val = 'NA'
-                    else:
+                    elif o == 'LCO' and valid_lco is not None:
                         try:
                             value = (100 *
                                      len(valid_lco[col][(valid_lco[col]) & (valid_lco['designmode'] == m)]) /
@@ -363,6 +410,9 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
                             val = '%.2f' % value + '%'
                         except ZeroDivisionError:
                             val = 'NA'
+                    else:
+                        pass
+
                     if 'boss' in col:
                         html_dict[o + '_boss_' + m] = val
                     elif 'apogee' in col:
@@ -432,10 +482,23 @@ if __name__ == '__main__':
         dmarr[i] = arr
     fitsio.write(path + '/designmodes_rs_%s.fits' % plan, dmarr)
     # get validaiton results
-    valid_apo = fits.open(path +
-                          '/rs_%s_apo_design_validation_results.fits' % plan)[1].data
-    valid_lco = fits.open(path +
-                          '/rs_%s_lco_design_validation_results.fits' % plan)[1].data
+    try:
+        valid_apo = fits.open(path +
+                              '/rs_%s_apo_design_validation_results.fits' % plan)[1].data
+    except FileNotFoundError:
+        valid_apo = None
+        flag = 'No validation for APO!'
+        warnings.warn(flag, MugatuWarning)
+    try:
+        valid_lco = fits.open(path +
+                              '/rs_%s_lco_design_validation_results.fits' % plan)[1].data
+    except FileNotFoundError:
+        valid_lco = None
+        flag = 'No validation for LCO!'
+        warnings.warn(flag, MugatuWarning)
+    if valid_apo is None and valid_lco is None:
+        message = 'No validation files for this run'
+        raise MugatuError(message=message)
     designmode = fits.open(path + '/designmodes_rs_%s.fits' % plan)[1].data
 
     write_html_jinja(valid_apo, valid_lco, designmode,

@@ -507,7 +507,7 @@ def adjusted_brigh_neigh_mag(mag_bs, r, lunation):
 
 
 def build_brigh_neigh_query(check_type, instrument, mag_lim,
-                            racen, deccen, version_catdb='0.5.0'):
+                            racen, deccen, observatory, version_catdb='0.5.0'):
     """
     Builds the database query needed to run bright
     neighbor check
@@ -533,6 +533,10 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
     deccen: float
         Feild center in declination
 
+    observatory: str
+        Observatory where observation is taking place, either
+        'LCO' or 'APO'.
+
     version_catdb: str
         catalogdb.Version.plan to use for the query
 
@@ -545,6 +549,11 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
     # return empty tuple if no mag limit
     if mag_lim == -999.:
         return ()
+    # change search radius based on observatory
+    if observatory == 'APO':
+        r_search = 1.5
+    else:
+        r_search = 1.0
     if check_type == 'designmode':
         if instrument == 'BOSS':
             cat = catalogdb.Gaia_DR2
@@ -568,7 +577,7 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                 .join(catalogdb.Gaia_DR2)
                 .where((cat.cone_search(racen,
                                         deccen,
-                                        1.5,
+                                        r_search,
                                         ra_col=ra_col_str,
                                         dec_col=dec_col_str)) &
                        (mag_col < mag_lim) &
@@ -604,7 +613,7 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                 .join(catalogdb.Tycho2)
                 .where((cat.cone_search(racen,
                                         deccen,
-                                        1.5,
+                                        r_search,
                                         ra_col=ra_col_str,
                                         dec_col=dec_col_str)) &
                        (mag_colvt < mag_lim) &
@@ -668,7 +677,7 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                 .join(cat)
                 .where((cat.cone_search(racen,
                                         deccen,
-                                        1.5,
+                                        r_search,
                                         ra_col=ra_col_str,
                                         dec_col=dec_col_str)) &
                        (mag_col < mag_lim) &
@@ -702,7 +711,7 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                                 .join(targetdb.Version)
                                                 .where((targetdb.Target.cone_search(racen,
                                                                                     deccen,
-                                                                                    1.5)) &
+                                                                                    r_search)) &
                                                        (targetdb.Carton.carton == carts[0]) &
                                                        (targetdb.Version.plan >= version_catdb) &
                                                        (~(targetdb.Version.plan % '%-test'))))
@@ -730,7 +739,7 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                                 .join(targetdb.Version)
                                                 .where((targetdb.Target.cone_search(racen,
                                                                                     deccen,
-                                                                                    1.5)) &
+                                                                                    r_search)) &
                                                        (targetdb.Carton.carton == carts[1]) &
                                                        (targetdb.Version.plan >= version_catdb) &
                                                        (~(targetdb.Version.plan % '%-test'))))
@@ -776,7 +785,7 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                                                .join(targetdb.Version)
                                                .where((targetdb.Target.cone_search(racen,
                                                                                    deccen,
-                                                                                   1.5)) &
+                                                                                   r_search)) &
                                                       (targetdb.Carton.carton == carts[0]) &
                                                       (targetdb.Version.plan >= version_catdb) &
                                                       (~(targetdb.Version.plan % '%-test'))))
@@ -1382,7 +1391,7 @@ class DesignModeCheck(DesignMode):
         elif db_query is None:
             db_query = build_brigh_neigh_query(check_type, instrument,
                                                mag_lim, self.racen,
-                                               self.deccen)
+                                               self.deccen, self.observatory)
 
         # only do check if any stars returned
         if len(db_query) > 0:

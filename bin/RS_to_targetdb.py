@@ -113,7 +113,7 @@ if __name__ == '__main__':
         # catalogid assignment for each fiber
         design = fits.open(field_assigned_file)[2].data
         # here will need to grab another HDU with design_ids
-        design_ids = fits.open(field_assigned_file)[-1].data
+        design_ids = fits.open(field_assigned_file)['STATUS'].data
         # get list of designmodes
         desmode_labels = head['DESMODE'].split(' ')
 
@@ -182,7 +182,7 @@ if __name__ == '__main__':
                     design_pass=True,
                     design_valid_file_row=valid_results[ind])
             else:
-                make_designToField(design=design_ids['designid'][i],
+                make_designToField(design=int(design_ids['designid'][i]),
                                    fieldid=fieldid_inst,
                                    exposure=i - allo['iexpst'],
                                    field_exposure=i)

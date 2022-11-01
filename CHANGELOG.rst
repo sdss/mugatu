@@ -6,6 +6,10 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Fixed bug in function that outputs next available field_id
+* Script to create HTML page of RS validation results now does not require both observatories
+* Validation script now validates fields in parallel
+* Can pass observatory to bright neighbor query to change search radius
 * :release:`1.3.2 <2022-08-05>`
 * Change bright safety query to exclude Tycho catalogids in Gaia
 * :release:`1.3.1 <2022-08-01>`

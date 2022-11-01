@@ -507,7 +507,8 @@ def adjusted_brigh_neigh_mag(mag_bs, r, lunation):
 
 
 def build_brigh_neigh_query(check_type, instrument, mag_lim,
-                            racen, deccen, observatory, version_catdb='0.5.0'):
+                            racen, deccen, observatory=None,
+                            version_catdb='0.5.0'):
     """
     Builds the database query needed to run bright
     neighbor check
@@ -550,7 +551,9 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
     if mag_lim == -999.:
         return ()
     # change search radius based on observatory
-    if observatory == 'APO':
+    if observatory is None:
+        r_search = 1.5
+    elif observatory == 'APO':
         r_search = 1.5
     else:
         r_search = 1.0

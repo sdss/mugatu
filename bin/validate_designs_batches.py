@@ -15,6 +15,7 @@ import coordio.time
 from mugatu.exceptions import MugatuDesignError, MugatuError
 from multiprocessing import Pool
 from itertools import repeat
+from tqdm import tqdm
 
 import mugatu
 mugatu_ver = mugatu.__version__
@@ -151,7 +152,7 @@ def valid_field(file):
                         'apogee_n_skies_min', 'boss_min_skies_fovmetric',
                         'apogee_min_skies_fovmetric',
                         'boss_n_stds_min', 'apogee_n_stds_min',
-                        'boss_min_stds_fovmetric', 'apogee_min_stds_fovmetric', 
+                        'boss_min_stds_fovmetric', 'apogee_min_stds_fovmetric',
                         'boss_stds_mags', 'apogee_stds_mags',
                         'boss_bright_limit_targets', 'apogee_bright_limit_targets',
                         'boss_sky_neighbors_targets', 'apogee_sky_neighbors_targets']
@@ -203,7 +204,7 @@ def valid_field(file):
                         'apogee_n_skies_min', 'boss_min_skies_fovmetric',
                         'apogee_min_skies_fovmetric',
                         'boss_n_stds_min', 'apogee_n_stds_min',
-                        'boss_min_stds_fovmetric', 'apogee_min_stds_fovmetric', 
+                        'boss_min_stds_fovmetric', 'apogee_min_stds_fovmetric',
                         'boss_stds_mags', 'apogee_stds_mags',
                         'boss_bright_limit_targets', 'apogee_bright_limit_targets',
                         'boss_sky_neighbors_targets', 'apogee_sky_neighbors_targets']
@@ -222,7 +223,6 @@ def valid_field(file):
             else:
                 valid_arr[c + '_value'][0] = des.design_errors[k + '_metric']
         return valid_arr
-
 
     def valid_design_func(file, exp, obsTime, field_desmodes,
                           db_results_boss, db_results_apogee,
@@ -257,9 +257,7 @@ def valid_field(file):
         db_results_boss[dm] = {}
         db_results_apogee[dm] = {}
         if 'bright' in dm:
-            # no r_sdss for bright so do g band
-            # this is hacky and needs to be fixed!!!
-            mag_lim = desmodes[dm].bright_limit_targets['BOSS'][0][0]
+            mag_lim = desmodes[dm].bright_limit_targets['BOSS'][5][0]
         else:
             mag_lim = desmodes[dm].bright_limit_targets['BOSS'][1][0]
         db_results_boss[dm]['designmode'] = build_brigh_neigh_query('designmode',
@@ -332,7 +330,7 @@ if __name__ == '__main__':
         prog=os.path.basename(sys.argv[0]),
         description='In a batch, validate a set of designs')
     parser.add_argument('-t', '--type', dest='type',
-                        type=str, help='Validating files in directory (dir) or robostrategy (rs)', 
+                        type=str, help='Validating files in directory (dir) or robostrategy (rs)',
                         choices=['dir', 'rs', 'rs_replace'], required=True)
     parser.add_argument('-d', '--dir', dest='dir',
                         type=str, help='directory with design files (for type=dir)',
@@ -427,7 +425,8 @@ if __name__ == '__main__':
     start = time.time()
     # start validaitng designs
     with Pool(processes=Ncores) as pool:
-        res = pool.map(valid_field, files)
+        res = tqdm(pool.imap(valid_field, files), total=len(files))
+        res = [r for r in res]
     for i, r in enumerate(res):
         if vtype == 'rs_replace':
             valid_arr = Table(r)

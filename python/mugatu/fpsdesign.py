@@ -16,11 +16,15 @@ import kaiju.robotGrid
 from mugatu.exceptions import (MugatuError, MugatuWarning,
                                MugatuDesignError, MugatuDesignWarning,
                                MugatuDesignModeWarning)
-from coordio.utils import radec2wokxy
+from coordio.utils import (radec2wokxy, object_offset, Moffat2dInterp,
+                           _offset_radec)
+
+fmagloss = Moffat2dInterp()
+
 from coordio.defaults import POSITIONER_HEIGHT
 from mugatu.designs_to_targetdb import (make_design_assignments_targetdb,
                                         make_design_field_targetdb)
-from mugatu.designmode import DesignModeCheck
+from mugatu.designmode import DesignModeCheck, allDesignModes
 
 import robostrategy.obstime as obstime
 import coordio.time
@@ -37,6 +41,8 @@ from sdssdb.peewee.sdss5db.targetdb import (Design, Field, Observatory,
                                             Hole, CartonToTarget, Carton,
                                             Magnitude, Category, DesignToField,
                                             Version)
+
+modes = allDesignModes()
 
 
 class FPSDesign(object):
@@ -155,6 +161,9 @@ class FPSDesign(object):
         will default to first entry in DesignToField for that
         design_id.
 
+    offset_min_skybrightness: float
+        Minimum skybrightness targets will be offset
+
     Attributes
     ----------
     design: dict
@@ -203,7 +212,8 @@ class FPSDesign(object):
                  pmra=None, pmdec=None, delta_ra=None, delta_dec=None,
                  epoch=None, holeID=None, obsWavelength=None,
                  priority=None, carton_pk=None, category=None, magnitudes=None,
-                 design_file=None, manual_design=False, exp=0, RS_VERSION=None):
+                 design_file=None, manual_design=False, exp=0, RS_VERSION=None,
+                 offset_min_skybrightness=0.5):
         if idtype != 'catalogID' and idtype != 'carton_to_target':
             message = 'idtype must be catalogID or carton_to_target'
             raise MugatuError(message=message)
@@ -340,58 +350,50 @@ class FPSDesign(object):
 
         self.design_built = False
 
-    def _offset_radec(self, ra=None, dec=None, delta_ra=0., delta_dec=0.):
-        """Offsets ra and dec according to specified amount. From Mike's
-        robostrategy.Field object
+        self.offset_min_skybrightness = offset_min_skybrightness
 
-        Parameters
-        ----------
-        ra : np.float64 or ndarray of np.float64
-        right ascension, deg
-        dec : np.float64 or ndarray of np.float64
-            declination, deg
-        delta_ra : np.float64 or ndarray of np.float64
-            right ascension direction offset, arcsec
-        delta_dec : np.float64 or ndarray of np.float64
-            declination direction offset, arcsec
-
-        Returns
-        -------
-        offset_ra : np.float64 or ndarray of np.float64
-            offset right ascension, deg
-        offset_dec : np.float64 or ndarray of np.float64
-            offset declination, deg
-
-        Notes
-        -----
-        Assumes that delta_ra, delta_dec are in proper coordinates; i.e.
-        an offset of delta_ra=1 arcsec represents the same angular separation
-        on the sky at any declination.
-        Carefully offsets in the local directions of ra, dec based on
-        the local tangent plane (i.e. does not just scale delta_ra by
-        1/cos(dec))
+    def calculate_offsets(self):
         """
-        deg2rad = np.pi / 180.
-        arcsec2rad = np.pi / 180. / 3600.
-        x = np.cos(dec * deg2rad) * np.cos(ra * deg2rad)
-        y = np.cos(dec * deg2rad) * np.sin(ra * deg2rad)
-        z = np.sin(dec * deg2rad)
-        ra_x = - np.sin(ra * deg2rad)
-        ra_y = np.cos(ra * deg2rad)
-        ra_z = 0.
-        dec_x = - np.sin(dec * deg2rad) * np.cos(ra * deg2rad)
-        dec_y = - np.sin(dec * deg2rad) * np.sin(ra * deg2rad)
-        dec_z = np.cos(dec * deg2rad)
-        xoff = x + (ra_x * delta_ra + dec_x * delta_dec) * arcsec2rad
-        yoff = y + (ra_y * delta_ra + dec_y * delta_dec) * arcsec2rad
-        zoff = z + (ra_z * delta_ra + dec_z * delta_dec) * arcsec2rad
-        offnorm = np.sqrt(xoff**2 + yoff**2 + zoff**2)
-        xoff = xoff / offnorm
-        yoff = yoff / offnorm
-        zoff = zoff / offnorm
-        decoff = np.arcsin(zoff) / deg2rad
-        raoff = ((np.arctan2(yoff, xoff) / deg2rad) + 360.) % 360.
-        return(raoff, decoff)
+        Calculate the offsets for which an algorithmic
+        offset value was requested
+        """
+        if 'bright' in self.desmode_label:
+            boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][:, 0]
+            lunation = 'bright'
+            skybrightness = 1.0
+        else:
+            boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][:, 0]
+            lunation = 'dark'
+            skybrightness = 0.35
+        boss_mag_col = 5
+        apogee_mag_lim = modes[self.desmode_label].bright_limit_targets['APOGEE'][:, 0]
+        apogee_mag_col = 8
+
+        ev_boss = (self.design['obsWavelength'] == 'BOSS')
+        res = object_offset(self.design['magnitudes'][:, boss_mag_col][ev_boss],
+                            boss_mag_lim,
+                            lunation,
+                            'Boss',
+                            fmagloss=fmagloss,
+                            can_offset=self.design['offset'][ev_boss],
+                            skybrightness=skybrightness,
+                            offset_min_skybrightness=self.offset_min_skybrightness)
+        self.design['delta_ra'][ev_boss] = res[0]
+        self.design['delta_dec'][ev_boss] = res[1]
+        self.design['offset_flag'][ev_boss] = res[2]
+
+        ev_apogee = (self.design['obsWavelength'] == 'APOGEE')
+        res = object_offset(self.design['magnitudes'][:, apogee_mag_col][ev_apogee],
+                            apogee_mag_lim,
+                            lunation,
+                            'Apogee',
+                            fmagloss=fmagloss,
+                            can_offset=self.design['offset'][ev_apogee],
+                            skybrightness=skybrightness,
+                            offset_min_skybrightness=self.offset_min_skybrightness)
+        self.design['delta_ra'][ev_apogee] = res[0]
+        self.design['delta_dec'][ev_apogee] = res[1]
+        self.design['offset_flag'][ev_apogee] = res[2]
 
     def radec_to_xy(self, ev):
         """
@@ -484,6 +486,8 @@ class FPSDesign(object):
         self.design['dec'] = np.zeros(500, dtype=float) - 9999.99
         self.design['delta_ra'] = np.zeros(500, dtype=float) - 9999.99
         self.design['delta_dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.design['offset'] = np.zeros(500, dtype=bool)
+        self.design['offset_flag'] = np.zeros(500, dtype=int)
         self.design['epoch'] = np.zeros(500, dtype=float) - 9999.99
         self.design['ra_off'] = np.zeros(500, dtype=float) - 9999.99
         self.design['dec_off'] = np.zeros(500, dtype=float) - 9999.99
@@ -517,6 +521,7 @@ class FPSDesign(object):
                               Magnitude.k,
                               CartonToTarget.delta_ra,
                               CartonToTarget.delta_dec,
+                              CartonToTarget.can_offset,
                               Target.pmra,
                               Target.pmdec,
                               Target.epoch,
@@ -558,6 +563,7 @@ class FPSDesign(object):
             self.design['dec'][pos_ind] = d.dec
             self.design['delta_ra'][pos_ind] = d.delta_ra
             self.design['delta_dec'][pos_ind] = d.delta_dec
+            self.design['offset'][pos_ind] = d.can_offset
             self.design['pmra'][pos_ind] = d.pmra
             self.design['pmdec'][pos_ind] = d.pmdec
             self.design['epoch'][pos_ind] = d.epoch
@@ -575,14 +581,16 @@ class FPSDesign(object):
         # set nan pm tp zero
         self.design['pmra'][np.isnan(self.design['pmra'])] = 0.
         self.design['pmdec'][np.isnan(self.design['pmdec'])] = 0.
+        # calculate offsets for targets that request algorithm offsets
+        self.calculate_offsets()
         # here convert ra/dec to x/y based on field/time of observation
         # I think I need to add inertial in here at some point,
         # dont see this in targetdb though
         ev = eval("(self.design['ra'] != -9999.99)")
-        res = self._offset_radec(ra=self.design['ra'][ev],
-                                 dec=self.design['dec'][ev],
-                                 delta_ra=self.design['delta_ra'][ev],
-                                 delta_dec=self.design['delta_dec'][ev])
+        res = _offset_radec(ra=self.design['ra'][ev],
+                            dec=self.design['dec'][ev],
+                            delta_ra=self.design['delta_ra'][ev],
+                            delta_dec=self.design['delta_dec'][ev])
         self.design['ra_off'][ev], self.design['dec_off'][ev] = res
         fieldWarn = self.radec_to_xy(ev)
 
@@ -683,6 +691,7 @@ class FPSDesign(object):
             self.design['dec'] = design_inst['dec'][roboIDs != -1]
             self.design['delta_ra'] = design_inst['delta_ra'][roboIDs != -1]
             self.design['delta_dec'] = design_inst['delta_dec'][roboIDs != -1]
+            self.design['offset'] = design_inst['can_offset'][roboIDs != -1]
             self.design['pmra'] = design_inst['pmra'][roboIDs != -1]
             self.design['pmdec'] = design_inst['pmdec'][roboIDs != -1]
             self.design['epoch'] = design_inst['epoch'][roboIDs != -1]
@@ -720,13 +729,16 @@ class FPSDesign(object):
         self.design['dec_off'] = (np.zeros(len(self.design['catalogID']),
                                   dtype=float) -
                                   9999.99)
-
+        self.design['offset_flag'] = np.zeros(len(self.design['catalogID']),
+                                              dtype=int)
+        # calculate offsets for targets that request algorithm offsets
+        self.calculate_offsets()
         # here convert ra/dec to x/y based on field/time of observation
         ev = eval("(self.design['ra'] != -9999.99)")
-        res = self._offset_radec(ra=self.design['ra'][ev],
-                                 dec=self.design['dec'][ev],
-                                 delta_ra=self.design['delta_ra'][ev],
-                                 delta_dec=self.design['delta_dec'][ev])
+        res = _offset_radec(ra=self.design['ra'][ev],
+                            dec=self.design['dec'][ev],
+                            delta_ra=self.design['delta_ra'][ev],
+                            delta_dec=self.design['delta_dec'][ev])
         self.design['ra_off'][ev], self.design['dec_off'][ev] = res
         fieldWarn = self.radec_to_xy(ev)
 
@@ -837,7 +849,7 @@ class FPSDesign(object):
         self.design_errors['min_skies_boss_metric'] = (mode
                                                        .n_skies_min_check
                                                        ['BOSS_metric'])
-        if self.design_errors['min_skies_boss'] is False:
+        if self.design_errors['min_skies_boss'] == False:
             flag = 'Design does not meet minimum BOSS skies for DesignMode'
             warnings.warn(flag, MugatuDesignModeWarning)
         self.design_errors['min_skies_apogee'] = (mode
@@ -845,7 +857,7 @@ class FPSDesign(object):
         self.design_errors['min_skies_apogee_metric'] = (mode
                                                          .n_skies_min_check
                                                          ['APOGEE_metric'])
-        if self.design_errors['min_skies_apogee'] is False:
+        if self.design_errors['min_skies_apogee'] == False:
             flag = 'Design does not meet minimum APOGEE skies for DesignMode'
             warnings.warn(flag, MugatuDesignModeWarning)
 
@@ -855,7 +867,7 @@ class FPSDesign(object):
         self.design_errors['fov_skies_boss_metric'] = (mode
                                                        .min_skies_fovmetric_check
                                                        ['BOSS_metric'])
-        if self.design_errors['fov_skies_boss'] is False:
+        if self.design_errors['fov_skies_boss'] == False:
             flag = ('Design does not meet FOV criteria '
                     'for BOSS skies for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
@@ -865,7 +877,7 @@ class FPSDesign(object):
         self.design_errors['fov_skies_apogee_metric'] = (mode
                                                          .min_skies_fovmetric_check
                                                          ['APOGEE_metric'])
-        if self.design_errors['fov_skies_apogee'] is False:
+        if self.design_errors['fov_skies_apogee'] == False:
             flag = ('Design does not meet FOV criteria '
                     'for APOGEE skies for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
@@ -874,14 +886,14 @@ class FPSDesign(object):
         self.design_errors['min_stds_boss_metric'] = (mode
                                                       .n_stds_min_check
                                                       ['BOSS_metric'])
-        if self.design_errors['min_stds_boss'] is False:
+        if self.design_errors['min_stds_boss'] == False:
             flag = 'Design does not meet minimum BOSS standards for DesignMode'
             warnings.warn(flag, MugatuDesignModeWarning)
         self.design_errors['min_stds_apogee'] = mode.n_stds_min_check['APOGEE']
         self.design_errors['min_stds_apogee_metric'] = (mode
                                                         .n_stds_min_check
                                                         ['APOGEE_metric'])
-        if self.design_errors['min_stds_apogee'] is False:
+        if self.design_errors['min_stds_apogee'] == False:
             flag = ('Design does not meet minimum '
                     'APOGEE standards for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
@@ -892,7 +904,7 @@ class FPSDesign(object):
         self.design_errors['fov_stds_boss_metric'] = (mode
                                                       .min_stds_fovmetric_check
                                                       ['BOSS_metric'])
-        if self.design_errors['fov_stds_boss'] is False:
+        if self.design_errors['fov_stds_boss'] == False:
             flag = ('Design does not meet FOV criteria '
                     'for BOSS standards for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
@@ -902,7 +914,7 @@ class FPSDesign(object):
         self.design_errors['fov_stds_apogee_metric'] = (mode
                                                         .min_stds_fovmetric_check
                                                         ['APOGEE_metric'])
-        if self.design_errors['fov_stds_apogee'] is False:
+        if self.design_errors['fov_stds_apogee'] == False:
             flag = ('Design does not meet FOV criteria '
                     'for APOGEE standards for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
@@ -911,7 +923,7 @@ class FPSDesign(object):
             mode.stds_mags_check['BOSS'][0][(self.design['catalogID'] != -1) &
                                             (self.design['category'] == 'standard_boss')])
         self.design_errors['stds_mag_boss_metric'] = mode.stds_mags_check['BOSS_metric']
-        if self.design_errors['stds_mag_boss'] is False:
+        if self.design_errors['stds_mag_boss'] == False:
             flag = ('Design has BOSS standard '
                     'assignments too bright for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
@@ -919,7 +931,7 @@ class FPSDesign(object):
             mode.stds_mags_check['APOGEE'][0][(self.design['catalogID'] != -1) &
                                               (self.design['category'] == 'standard_apogee')])
         self.design_errors['stds_mag_apogee_metric'] = mode.stds_mags_check['APOGEE_metric']
-        if self.design_errors['stds_mag_apogee'] is False:
+        if self.design_errors['stds_mag_apogee'] == False:
             flag = ('Design has APOGEE standard '
                     'assignments too bright for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
@@ -929,7 +941,7 @@ class FPSDesign(object):
                                                        (self.design['category'] == 'science') &
                                                        (self.design['obsWavelength'] == 'BOSS')])
         self.design_errors['sci_mag_boss_metric'] = mode.bright_limit_targets_check['BOSS_metric']
-        if self.design_errors['sci_mag_boss'] is False:
+        if self.design_errors['sci_mag_boss'] == False:
             flag = ('Design has BOSS science assignments '
                     ' too bright for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
@@ -941,7 +953,7 @@ class FPSDesign(object):
         self.design_errors['sci_mag_apogee_metric'] = (mode
                                                        .bright_limit_targets_check
                                                        ['APOGEE_metric'])
-        if self.design_errors['sci_mag_apogee'] is False:
+        if self.design_errors['sci_mag_apogee'] == False:
             flag = ('Design has APOGEE science assignments '
                     'too bright for DesignMode')
             warnings.warn(flag, MugatuDesignModeWarning)
@@ -1015,6 +1027,8 @@ class FPSDesign(object):
         self.valid_design['pmdec'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['delta_ra'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['delta_dec'] = np.zeros(500, dtype=float) - 9999.99
+        self.valid_design['offset'] = np.zeros(500, dtype=bool)
+        self.valid_design['offset_flag'] = np.zeros(500, dtype=int)
         self.valid_design['ra_off'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['dec_off'] = np.zeros(500, dtype=float) - 9999.99
         self.valid_design['epoch'] = np.zeros(500, dtype=float) - 9999.99
@@ -1042,6 +1056,8 @@ class FPSDesign(object):
                 self.valid_design['pmdec'][i] = self.design['pmdec'][cond][0]
                 self.valid_design['delta_ra'][i] = self.design['delta_ra'][cond][0]
                 self.valid_design['delta_dec'][i] = self.design['delta_dec'][cond][0]
+                self.valid_design['offset'][i] = self.design['offset'][cond][0]
+                self.valid_design['offset_flag'][i] = self.design['offset_flag'][cond][0]
                 self.valid_design['ra_off'][i] = self.design['ra_off'][cond][0]
                 self.valid_design['dec_off'][i] = self.design['dec_off'][cond][0]
                 self.valid_design['epoch'][i] = self.design['epoch'][cond][0]

@@ -12,7 +12,10 @@ from scipy.spatial import cKDTree
 from astropy.time import Time
 
 from mugatu.exceptions import MugatuError, MugatuWarning
-from coordio.utils import radec2wokxy, wokxy2radec
+from coordio.utils import (radec2wokxy, wokxy2radec,
+                           offset_definition, Moffat2dInterp)
+
+fmagloss = Moffat2dInterp()
 
 try:
     from sdssdb.peewee.sdss5db import database
@@ -432,6 +435,10 @@ def bright_neigh_exclusion_r(mag_bs, mag_limit_r, lunation):
     r_exclude: float or np.array
         exclusion radius in arcseconds around bright star(s)
     """
+    flag = ('mugatu.designmode.bright_neigh_exclusion_r will be depriciated '
+            'in future releases. For the same functionalitiy, please use '
+            'coordio.utils.offset_definition')
+    warnings.warn(flag, MugatuWarning)
     # linear portion in the wings
     r_wings = (mag_limit_r - mag_bs - 8.2) / 0.05
     # linear portion in transition area
@@ -500,7 +507,8 @@ def adjusted_brigh_neigh_mag(mag_bs, r, lunation):
 
 
 def build_brigh_neigh_query(check_type, instrument, mag_lim,
-                            racen, deccen, observatory, version_catdb='0.5.0'):
+                            racen, deccen, observatory=None,
+                            version_catdb='0.5.0'):
     """
     Builds the database query needed to run bright
     neighbor check
@@ -543,7 +551,9 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
     if mag_lim == -999.:
         return ()
     # change search radius based on observatory
-    if observatory == 'APO':
+    if observatory is None:
+        r_search = 1.5
+    elif observatory == 'APO':
         r_search = 1.5
     else:
         r_search = 1.0
@@ -1271,17 +1281,21 @@ class DesignModeCheck(DesignMode):
             if (self.design['catalogID'][i] != -1 and
                 self.design['category'][i] in self.carton_classes[carton_class] and
                 self.design['obsWavelength'][i] == instrument):
-                # check in each band that has check defined
-                targ_check = np.zeros(len(check_inds), dtype=bool)
-                for j, ind in enumerate(check_inds):
-                    # check the magntiude for this assignment
-                    targ_check[j], complete_check[i] = check_assign_mag_limit(
-                                                            mag_metric[ind][0],
-                                                            mag_metric[ind][1],
-                                                            self.mags[i][ind])
-                # if all True, then passes
-                if np.all(targ_check):
+                # don't do check and make true if offset target
+                if self.design['offset'][i] and self.design['offset_flag'][i] == 0:
                     mag_checks[i] = True
+                else:
+                    # check in each band that has check defined
+                    targ_check = np.zeros(len(check_inds), dtype=bool)
+                    for j, ind in enumerate(check_inds):
+                        # check the magntiude for this assignment
+                        targ_check[j], complete_check[i] = check_assign_mag_limit(
+                                                                mag_metric[ind][0],
+                                                                mag_metric[ind][1],
+                                                                self.mags[i][ind])
+                    # if all True, then passes
+                    if np.all(targ_check):
+                        mag_checks[i] = True
             else:
                 complete_check[i] = 'INCOMPLETE'
         return mag_checks, complete_check
@@ -1359,18 +1373,18 @@ class DesignModeCheck(DesignMode):
                                                    obsTime=self.obsTime)
 
         neigh_checks = np.zeros(500, dtype=bool) + True
-        # run query for field if not supplied
-        if instrument == 'BOSS':
-             # grab r_sdss limit for boss
-            if 'bright' in self.desmode_label:
-                # no r_sdss for bright so do g band
-                # this is hacky and needs to be fixed!!!
-                mag_lim = self.bright_limit_targets['BOSS'][0][0]
-            else:
-                mag_lim = self.bright_limit_targets['BOSS'][1][0]
+        mag_limits = self.bright_limit_targets[instrument][:, 0]
+        # set magntiude limit for instrument and lunation
+        if instrument == 'Apogee':
+            # 2MASS H
+            mag_lim = mag_limits[8]
+        elif 'bright' in self.desmode_label:
+            # Gaia G
+            mag_lim = mag_limits[5]
         else:
-            # grab h 2mass mag for limit
-            mag_lim = self.bright_limit_targets['APOGEE'][8][0]
+            # SDSS r
+            mag_lim = mag_limits[1]
+        # run query for field if not supplied
         if (self.db_query_results_boss is not None and
            instrument == 'BOSS'):
             db_query = self.db_query_results_boss[check_type]
@@ -1424,13 +1438,17 @@ class DesignModeCheck(DesignMode):
 
 
             if 'bright' in self.desmode_label:
-                r_exclude = bright_neigh_exclusion_r(mags,
-                                                     mag_lim,
-                                                     lunation='bright')
+                r_exclude, _ = offset_definition(mags,
+                                                 mag_limits,
+                                                 lunation='bright',
+                                                 waveName=instrument.title(),
+                                                 fmagloss=fmagloss)
             else:
-                r_exclude = bright_neigh_exclusion_r(mags,
-                                                     mag_lim,
-                                                     lunation='dark')
+                r_exclude, _ = offset_definition(mags,
+                                                 mag_limits,
+                                                 lunation='dark',
+                                                 waveName=instrument.title(),
+                                                 fmagloss=fmagloss)
 
             # check if fibers too close to bright neighbors
             for i in range(len(r_exclude)):

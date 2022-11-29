@@ -6,6 +6,9 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* :release:`2.0.0-alpha.0 <2022-11-29>`
+* Added functions to allow for offsetting of targets in design based on offset function from coordio.
+* Added optional parameter to mugatu.designmode.build_brigh_neigh_query to specify observatory and change search radius.
 * Fixed bug in function that outputs next available field_id
 * Script to create HTML page of RS validation results now does not require both observatories
 * Validation script now validates fields in parallel

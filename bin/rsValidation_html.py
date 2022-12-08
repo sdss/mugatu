@@ -252,7 +252,7 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                                           maxx,
                                           50),
                               '%s: %s' % (dmode, 'LCO'),
-                              'LCO', valid_apo.columns.names[i - 1],
+                              'LCO', valid_lco.columns.names[i - 1],
                               'Cumulative Fraction', dmode_val)
                     plot_hist(ax4, xval_lco,
                               False, False,
@@ -260,10 +260,10 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                                           maxx,
                                           50),
                               '%s: %s' % (dmode, 'LCO'),
-                              'LCO', valid_apo.columns.names[i - 1],
+                              'LCO', valid_lco.columns.names[i - 1],
                               'N', dmode_val)
 
-                plt.savefig(path + '/dist_plots/%s_%s.png' % (valid_apo.columns.names[i-1],
+                plt.savefig(path + '/dist_plots/%s_%s.png' % (valid_file.columns.names[i-1],
                                                       dmode),
                             bbox_inches='tight', dpi=150)
                 plt.figure().clear()
@@ -272,7 +272,7 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                 plt.clf()
                 plt.close(f)
         if 'pass' in column_names[i]:
-            for dmode in np.unique(valid_apo['designmode']):
+            for dmode in np.unique(valid_file['designmode']):
                 f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(40,10))
 
                 if valid_apo is not None:
@@ -316,15 +316,15 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
                               True, True,
                               np.arange(0, maxx + 2, 1),
                               '%s: %s' % (dmode, 'LCO'),
-                              'LCO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
+                              'LCO', valid_lco.columns.names[i - 1] + ' (N Fibers in Design Failed)',
                               'Cumulative Fraction', np.nan)
                     plot_hist(ax4, xval_lco,
                               False, False,
                               np.arange(0, maxx + 2, 1),
                               '%s: %s' % (dmode, 'LCO'),
-                              'LCO', valid_apo.columns.names[i - 1] + ' (N Fibers in Design Failed)',
+                              'LCO', valid_lco.columns.names[i - 1] + ' (N Fibers in Design Failed)',
                               'N', np.nan)
-                plt.savefig(path + '/dist_plots/%s_%s.png' % (valid_apo.columns.names[i-1],
+                plt.savefig(path + '/dist_plots/%s_%s.png' % (valid_file.columns.names[i-1],
                                                       dmode),
                             bbox_inches='tight', dpi=150)
                 plt.figure().clear()

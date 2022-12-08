@@ -394,6 +394,7 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
 
             for o, col in zip(obs, cols):
                 for m in np.unique(valid_file['designmode']):
+                    val = 'NA'
                     if o == 'APO' and valid_apo is not None:
                         try:
                             value = (100 *

@@ -6,6 +6,8 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* :release:`2.0.0 <2023-01-05>`
+* Added stable versions for coordio and kaiju in dependencies.
 * :release:`2.0.0-alpha.0 <2022-11-29>`
 * Added functions to allow for offsetting of targets in design based on offset function from coordio.
 * Added optional parameter to mugatu.designmode.build_brigh_neigh_query to specify observatory and change search radius.

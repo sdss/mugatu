@@ -153,6 +153,8 @@ Here is a full worked example on how to validate, visualize the validation resul
 
 The above should load all the default versions of the required software. Next, we will validate the designs for each observatory. This is best done in parallel by submiting a slurm job script. Below is an example of a slurm job script called ``submit_validate.sh`` that will accomplish this:
 
+::
+
 	#!/bin/bash
 	#SBATCH --job-name example_valid_apo
 	#SBATCH --output=example_valid_apo.txt

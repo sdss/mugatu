@@ -674,8 +674,7 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                 catalogdb.Catalog.pmdec)
                 .join(catalogdb.Version)
                 .switch(catalogdb.Catalog)
-                .join(catalogdb.CatalogToTIC_v8)
-                .join(catalogdb.TIC_v8)
+                .join(catalogdb.CatalogToTwoMassPSC)
                 .join(cat)
                 .where((cat.cone_search(racen,
                                         deccen,

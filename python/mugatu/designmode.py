@@ -508,7 +508,7 @@ def adjusted_brigh_neigh_mag(mag_bs, r, lunation):
 
 def build_brigh_neigh_query(check_type, instrument, mag_lim,
                             racen, deccen, observatory=None,
-                            version_catdb='0.5.0'):
+                            version_catdb='1.0.0'):
     """
     Builds the database query needed to run bright
     neighbor check

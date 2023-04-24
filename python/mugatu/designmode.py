@@ -577,11 +577,11 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                 .switch(catalogdb.Catalog)
                 .join(catalogdb.CatalogToGaia_DR3)
                 .join(catalogdb.Gaia_DR3)
-                .where((cat.cone_search(racen,
-                                        deccen,
-                                        r_search,
-                                        ra_col=ra_col_str,
-                                        dec_col=dec_col_str)) &
+                .where((catalogdb.Catalog.cone_search(racen,
+                                                      deccen,
+                                                      r_search,
+                                                      ra_col=ra_col_str,
+                                                      dec_col=dec_col_str)) &
                        (mag_col < mag_lim) &
                        (catalogdb.Version.plan == version_catdb)))
             rasg, decsg, magsg, catalogidsg, pmrasg, pmdecsg = map(list, zip(*list(db_query_gaia.tuples())))

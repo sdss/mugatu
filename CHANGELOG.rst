@@ -6,6 +6,8 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* :release:`2.1.0 <2023-04-24>`
+* Changed designmode.build_brigh_neigh_query to default to v1 and use Gaia DR3. This means mugatu versions from here on need to use v1 targets and older versions should be used if using v0.5 targeting.
 * :release:`2.0.0 <2023-01-05>`
 * Added stable versions for coordio and kaiju in dependencies.
 * :release:`2.0.0-alpha.0 <2022-11-29>`

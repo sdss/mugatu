@@ -15,6 +15,7 @@ import coordio.time
 from mugatu.exceptions import MugatuDesignError, MugatuError
 from multiprocessing import Pool
 from itertools import repeat
+from functools import partial
 from tqdm import tqdm
 
 import mugatu
@@ -37,7 +38,7 @@ primary_hdu.header['coordio_version'] = coordio_ver
 primary_hdu.header['fps_calibrations_version'] = fps_calib_ver
 
 
-def valid_field(file):
+def valid_field(file, offset_min_skybrightness):
     # need import here for create new connection
     from mugatu.fpsdesign import FPSDesign
     from mugatu.designmode import (build_brigh_neigh_query,
@@ -51,11 +52,19 @@ def valid_field(file):
         Validate a design and record any errors or warnings
         from the validation
         """
-        des = FPSDesign(design_pk=-1,
-                        obsTime=obsTime,
-                        design_file=design_file,
-                        manual_design=True,
-                        exp=exp)
+        if offset_min_skybrightness is None:
+            des = FPSDesign(design_pk=-1,
+                            obsTime=obsTime,
+                            design_file=design_file,
+                            manual_design=True,
+                            exp=exp)
+        else:
+            des = FPSDesign(design_pk=-1,
+                            obsTime=obsTime,
+                            design_file=design_file,
+                            manual_design=True,
+                            exp=exp,
+                            offset_min_skybrightness=offset_min_skybrightness)
         # set default
         decolide = True
         bright_safety = True
@@ -347,6 +356,8 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--Ncores', dest='Ncores',
                         type=int, help='number of cores to use. If Ncores=1, then not run in parallal.',
                         default=1, nargs='?')
+    parser.add_argument('-o','--offset_min_skybrightness', help='offset_min_skybrightness for design',
+                        type=float, required=False)
 
     args = parser.parse_args()
     vtype = args.type
@@ -355,6 +366,7 @@ if __name__ == '__main__':
     observatory = args.observatory
     fieldids = args.fieldids
     Ncores = args.Ncores
+    offset_min_skybrightness = args.offset_min_skybrightness
 
     if vtype == 'dir':
         files = [file for file in glob.glob(directory + '*.fits')]
@@ -425,7 +437,9 @@ if __name__ == '__main__':
     start = time.time()
     # start validaitng designs
     with Pool(processes=Ncores) as pool:
-        res = tqdm(pool.imap(valid_field, files), total=len(files))
+        res = tqdm(pool.imap(partial(valid_field, offset_min_skybrightness=offset_min_skybrightness),
+                                     files),
+                   total=len(files))
         res = [r for r in res]
     for i, r in enumerate(res):
         if vtype == 'rs_replace':

@@ -356,7 +356,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--Ncores', dest='Ncores',
                         type=int, help='number of cores to use. If Ncores=1, then not run in parallal.',
                         default=1, nargs='?')
-    parser.add_argument('-o','--offset_min_skybrightness', help='offset_min_skybrightness for design',
+    parser.add_argument('-s','--offset_min_skybrightness', help='offset_min_skybrightness for design',
                         type=float, required=False)
 
     args = parser.parse_args()

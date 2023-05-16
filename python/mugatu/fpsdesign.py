@@ -298,6 +298,11 @@ class FPSDesign(object):
             self.observatory = design_field_db.objects()[0].label
             self.desmode_label = design_field_db.objects()[0].design_mode.label
 
+        if self.observatory == 'LCO' and self.position_angle < 180:
+            flag = ('Design position angle outside of reachable position'
+                    'at LCO. Please set 180 < PA < 360.')
+            warnings.warn(flag, MugatuDesignWarning)
+
         # should these be catalogids or carton_to_target?
         self.idtype = idtype
         self.catalogids = catalogids

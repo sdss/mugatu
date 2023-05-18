@@ -213,7 +213,7 @@ class FPSDesign(object):
                  epoch=None, holeID=None, obsWavelength=None,
                  priority=None, carton_pk=None, category=None, magnitudes=None,
                  design_file=None, manual_design=False, exp=0, RS_VERSION=None,
-                 offset_min_skybrightness=0.5):
+                 offset_min_skybrightness=0.):
         if idtype != 'catalogID' and idtype != 'carton_to_target':
             message = 'idtype must be catalogID or carton_to_target'
             raise MugatuError(message=message)

@@ -370,12 +370,10 @@ class FPSDesign(object):
             boss_mag_lim = modes[self.desmode_label].bright_limit_targets['BOSS'][:, 0]
             lunation = 'dark'
             skybrightness = 0.35
-        boss_mag_col = 5
         apogee_mag_lim = modes[self.desmode_label].bright_limit_targets['APOGEE'][:, 0]
-        apogee_mag_col = 8
 
         ev_boss = (self.design['obsWavelength'] == 'BOSS')
-        res = object_offset(self.design['magnitudes'][:, boss_mag_col][ev_boss],
+        res = object_offset(self.design['magnitudes'][ev_boss, :],
                             boss_mag_lim,
                             lunation,
                             'Boss',
@@ -388,7 +386,7 @@ class FPSDesign(object):
         self.design['offset_flag'][ev_boss] = res[2]
 
         ev_apogee = (self.design['obsWavelength'] == 'APOGEE')
-        res = object_offset(self.design['magnitudes'][:, apogee_mag_col][ev_apogee],
+        res = object_offset(self.design['magnitudes'][ev_apogee, :],
                             apogee_mag_lim,
                             lunation,
                             'Apogee',

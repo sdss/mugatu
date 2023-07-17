@@ -38,7 +38,7 @@ primary_hdu.header['coordio_version'] = coordio_ver
 primary_hdu.header['fps_calibrations_version'] = fps_calib_ver
 
 
-def valid_field(file, cache_files, offset_min_skybrightness, cache_bs):
+def valid_field(file, offset_min_skybrightness, cache_bs):
     # need import here for create new connection
     from mugatu.fpsdesign import FPSDesign
     from mugatu.designmode import (build_brigh_neigh_query,

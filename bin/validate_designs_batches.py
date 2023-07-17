@@ -38,7 +38,7 @@ primary_hdu.header['coordio_version'] = coordio_ver
 primary_hdu.header['fps_calibrations_version'] = fps_calib_ver
 
 
-def valid_field(file, offset_min_skybrightness):
+def valid_field(file, cache_files, offset_min_skybrightness, cache_bs):
     # need import here for create new connection
     from mugatu.fpsdesign import FPSDesign
     from mugatu.designmode import (build_brigh_neigh_query,
@@ -358,6 +358,8 @@ if __name__ == '__main__':
                         default=1, nargs='?')
     parser.add_argument('-s','--offset_min_skybrightness', help='offset_min_skybrightness for design',
                         type=float, required=False)
+    parser.add_argument('-c','--cache_bs', help='if want to use cache of bright star queries',
+                        type=bool, required=False, default=False)
 
     args = parser.parse_args()
     vtype = args.type
@@ -367,11 +369,16 @@ if __name__ == '__main__':
     fieldids = args.fieldids
     Ncores = args.Ncores
     offset_min_skybrightness = args.offset_min_skybrightness
+    cache_bs = args.cache_bs
 
     if vtype == 'dir':
         files = [file for file in glob.glob(directory + '*.fits')]
+        cache_files = []
     elif vtype == 'rs':
         files = []
+
+        cache_files = []
+        cache_dir = os.popen('echo $ROBOSTRATEGY_DATA').read()[:-1] + '/allocations/eta-0-bs-cache/targets/'
 
         allocate_file = sdss_path.full('rsAllocationFinal', plan=plan,
                                        observatory=observatory)
@@ -383,7 +390,9 @@ if __name__ == '__main__':
 
         fieldids = np.unique(rsAllocation1["fieldid"])
 
-        for fieldid in fieldids:
+        rs_fieldids = np.unique(rsAllocation1["rs_fieldid"])
+
+        for fieldid, rs_fieldid in zip(fieldids, rs_fieldids):
             # now grab the assignment file for this field
             field_assigned_file = sdss_path.full('rsFieldAssignmentsFinal',
                                                  plan=plan,
@@ -394,11 +403,17 @@ if __name__ == '__main__':
                 field_assigned_file = field_assigned_file[:32] + 'sdss50' + field_assigned_file[44:]
 
             files.append(field_assigned_file)
+
+            if cache_bs and 'eta' in plan:
+                cache_file = cache_dir + 'rsBrightStars-eta-0-bs-cache-{obs}-{fid}.fits'.format(obs=observatory,
+                                                                                               fid=rs_fieldid)
+                cache_files.append(cache_file)
     elif vtype == 'rs_replace':
         replace_path = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
                         'target/robostrategy_replacement/{plan}/'.format(
                             plan=plan))
         files = []
+        cache_files = []
         for fid in fieldids:
             files += [file for file in glob.glob(replace_path +
                                                  '{plan}_{fid}*.fits'.format(
@@ -437,7 +452,8 @@ if __name__ == '__main__':
     start = time.time()
     # start validaitng designs
     with Pool(processes=Ncores) as pool:
-        res = tqdm(pool.imap(partial(valid_field, offset_min_skybrightness=offset_min_skybrightness),
+        res = tqdm(pool.imap(partial(valid_field, offset_min_skybrightness=offset_min_skybrightness,
+                                     cache_bs=cache_bs),
                                      files),
                    total=len(files))
         res = [r for r in res]

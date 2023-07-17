@@ -38,7 +38,7 @@ primary_hdu.header['coordio_version'] = coordio_ver
 primary_hdu.header['fps_calibrations_version'] = fps_calib_ver
 
 
-def valid_field(file, offset_min_skybrightness, cache_bs):
+def valid_field(all_files, offset_min_skybrightness, cache_bs):
     # need import here for create new connection
     from mugatu.fpsdesign import FPSDesign
     from mugatu.designmode import (build_brigh_neigh_query,
@@ -252,6 +252,11 @@ def valid_field(file, offset_min_skybrightness, cache_bs):
 
     desmodes = allDesignModes()
 
+    file = all_files[0]
+    cache_file = all_files[1]
+    if cache_bs:
+        hdu_cache = fits.open(cache_file)
+
     head = fits.open(file)[0].header
     racen = head['RACEN']
     deccen = head['DECCEN']
@@ -269,12 +274,24 @@ def valid_field(file, offset_min_skybrightness, cache_bs):
             mag_lim = desmodes[dm].bright_limit_targets['BOSS'][5][0]
         else:
             mag_lim = desmodes[dm].bright_limit_targets['BOSS'][1][0]
-        db_results_boss[dm]['designmode'] = build_brigh_neigh_query('designmode',
-                                                                    'BOSS',
-                                                                    mag_lim,
-                                                                    racen,
-                                                                    deccen,
-                                                                    head['obs'].strip().upper())
+        if cache_bs:
+            for idc in range(1, len(hdu_cache)):
+                if hdu_cache[idc].header['FIBERTY'] == 'BOSS' and hdu_cache[idc].header['DESMODE'] == dm:
+                    bs_field = hdu_cache[idc].data
+                    db_results_boss[dm]['designmode'] = (bs_field['catalog_ra'],
+                                                         bs_field['catalog_dec'],
+                                                         bs_field['mag'],
+                                                         bs_field['catalogid'],
+                                                         bs_field['pmra'],
+                                                         bs_field['pmdec'])
+                    break
+        else:
+            db_results_boss[dm]['designmode'] = build_brigh_neigh_query('designmode',
+                                                                        'BOSS',
+                                                                        mag_lim,
+                                                                        racen,
+                                                                        deccen,
+                                                                        head['obs'].strip().upper())
         db_results_boss[dm]['safety'] = build_brigh_neigh_query('safety',
                                                                 'BOSS',
                                                                 mag_lim,
@@ -282,12 +299,24 @@ def valid_field(file, offset_min_skybrightness, cache_bs):
                                                                 deccen,
                                                                 head['obs'].strip().upper())
         mag_lim = desmodes[dm].bright_limit_targets['APOGEE'][8][0]
-        db_results_apogee[dm]['designmode'] = build_brigh_neigh_query('designmode',
-                                                                      'APOGEE',
-                                                                      mag_lim,
-                                                                      racen,
-                                                                      deccen,
-                                                                      head['obs'].strip().upper())
+        if cache_bs:
+            for idc in range(1, len(hdu_cache)):
+                if hdu_cache[idc].header['FIBERTY'] == 'APOGEE' and hdu_cache[idc].header['DESMODE'] == dm:
+                    bs_field = hdu_cache[idc].data
+                    db_results_apogee[dm]['designmode'] = (bs_field['catalog_ra'],
+                                                           bs_field['catalog_dec'],
+                                                           bs_field['mag'],
+                                                           bs_field['catalogid'],
+                                                           bs_field['pmra'],
+                                                           bs_field['pmdec'])
+                    break
+        else:
+            db_results_apogee[dm]['designmode'] = build_brigh_neigh_query('designmode',
+                                                                          'APOGEE',
+                                                                          mag_lim,
+                                                                          racen,
+                                                                          deccen,
+                                                                          head['obs'].strip().upper())
         db_results_apogee[dm]['safety'] = build_brigh_neigh_query('safety',
                                                                   'APOGEE',
                                                                   mag_lim,
@@ -452,9 +481,13 @@ if __name__ == '__main__':
     start = time.time()
     # start validaitng designs
     with Pool(processes=Ncores) as pool:
+        if len(cache_files) > 0:
+            all_files = [(f, cf) for f, cf in zip(files, cache_files)]
+        else:
+            all_files = [(f, '') for f in files]
         res = tqdm(pool.imap(partial(valid_field, offset_min_skybrightness=offset_min_skybrightness,
                                      cache_bs=cache_bs),
-                                     files),
+                                     all_files),
                    total=len(files))
         res = [r for r in res]
     for i, r in enumerate(res):

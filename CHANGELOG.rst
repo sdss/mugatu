@@ -6,6 +6,9 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* :release:`2.2.0 <2023-07-26>`
+* Add option in validation to used cached bright neighbor queries from robostrategy.
+* Updated offsetting function calls for function versions that use all magnitudes and are on a per observatory basis.
 * :release:`2.1.0 <2023-04-24>`
 * Changed designmode.build_brigh_neigh_query to default to v1 and use Gaia DR3. This means mugatu versions from here on need to use v1 targets and older versions should be used if using v0.5 targeting.
 * :release:`2.0.0 <2023-01-05>`

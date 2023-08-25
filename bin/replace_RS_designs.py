@@ -116,8 +116,15 @@ if __name__ == '__main__':
             head['PA'] == field_replace.position_angle):
             fieldid_new = fieldid_replace
         else:
-            fieldid_new = targetdb.FieldReservation.requestNext(
-                 N=1, commit=True, commissioning=False)[0]
+            same_field = targetdb.Field.select().where(head['RACEN'] == targetdb.Field.racen,
+                                                       head['DECCEN'] == targetdb.Field.deccen,
+                                                       head['PA'] == targetdb.Field.position_angle,
+                                                       targetdb.Field.field_id >= 100000)
+            if len(same_field) > 0:
+                fieldid_new = same_field[0].field_id
+            else:
+                fieldid_new = targetdb.FieldReservation.requestNext(
+                     N=1, commit=True, commissioning=False)[0]
         racen_new = head['RACEN']
         deccen_new = head['DECCEN']
         pa_new = head['PA']

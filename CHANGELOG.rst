@@ -6,6 +6,10 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* :release:`2.2.1 <2023-08-25>`
+* Below patches do not effect core functions of mugatu.
+* Change to replacement of designs in targetdb with custom designs to recognize previously defined custom fields.
+* Add designid_status column to results form validation script so designs created in a previous robostrategy run can be ignored when analyzing validation results.
 * :release:`2.2.0 <2023-07-26>`
 * Add option in validation to used cached bright neighbor queries from robostrategy.
 * Updated offsetting function calls for function versions that use all magnitudes and are on a per observatory basis.

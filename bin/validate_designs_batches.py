@@ -96,6 +96,7 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs):
                           ('racen', np.float64),
                           ('deccen', np.float64),
                           ('designmode', '<U15'),
+                          ('designid_status', np.int32),
                           ('decolide', bool),
                           ('bright_safety', bool),
                           ('bright_safety_pass', np.int32),
@@ -264,6 +265,10 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs):
     obsTime = coordio.time.Time(ot.nominal(lst=racen)).jd
     n_exp = head['NEXP']
     field_desmodes = head['DESMODE'].split(' ')
+    try:
+        design_ids = fits.open(file)['STATUS'].data['designid']
+    except KeyError:
+        design_ids = np.zeros(n_exp, dtype=np.int32) - 1
     # do db query results for each desmode in field
     db_results_boss = {}
     db_results_apogee = {}
@@ -337,6 +342,8 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs):
                                             db_results_boss[dm],
                                             db_results_apogee[dm],
                                             desmodes[dm])
+
+        valid_arr['designid_status'][0] = design_ids[0]
     else:
         for exp in range(n_exp):
             dm = field_desmodes[exp]
@@ -351,6 +358,7 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs):
                                                     db_results_boss[dm],
                                                     db_results_apogee[dm],
                                                     desmodes[dm])
+            valid_arr_des['designid_status'][0] = design_ids[exp]
             if exp == 0:
                 valid_arr = valid_arr_des
             else:

@@ -462,10 +462,13 @@ if __name__ == '__main__':
                         type=str, help='kaiju_v', required=True)
     parser.add_argument('-c', '--coordio_v', dest='coordio_v',
                         type=str, help='coordio_v', required=True)
+    parser.add_argument('-i','--ignore_prev', help='True if want to ignore previously observed designs in validation',
+                        type=bool, required=False, default=True)
     args = parser.parse_args()
     plan = args.plan
     kaiju_v = args.kaiju_v
     coordio_v = args.coordio_v
+    ignore_prev = args.ignore_prev
 
     targetdb.database.connect_from_parameters(user='sdss_user',
                                               host='operations.sdss.utah.edu',
@@ -486,6 +489,9 @@ if __name__ == '__main__':
     try:
         valid_apo = fits.open(path +
                               '/rs_%s_apo_design_validation_results.fits' % plan)[1].data
+        # ignore previously observed designs with designid_status != -1
+        if ignore_prev:
+            valid_apo = valid_apo[valid_apo['designid_status'] == -1]
     except FileNotFoundError:
         valid_apo = None
         flag = 'No validation for APO!'
@@ -493,6 +499,8 @@ if __name__ == '__main__':
     try:
         valid_lco = fits.open(path +
                               '/rs_%s_lco_design_validation_results.fits' % plan)[1].data
+        if ignore_prev:
+            valid_lco = valid_lco[valid_lco['designid_status'] == -1]
     except FileNotFoundError:
         valid_lco = None
         flag = 'No validation for LCO!'

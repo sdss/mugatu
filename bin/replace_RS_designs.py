@@ -108,7 +108,8 @@ if __name__ == '__main__':
 
         # get field info to be replaced
         fieldid_replace = int(file.split(replace_path)[1].split('_')[1])
-        field_replace = targetdb.Field.get(field_id=fieldid_replace)
+        field_replace = (targetdb.Field.select().where(targetdb.Field.field_id == fieldid_replace,
+                                                       targetdb.Field.version == ver_inst.pk)[0])
         # create replacement field
         # get new field_id only if racen, deccen and PA change
         if (head['RACEN'] == field_replace.racen and

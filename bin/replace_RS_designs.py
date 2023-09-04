@@ -158,7 +158,7 @@ if __name__ == '__main__':
         n_exp = head['NEXP']
 
         # get number of exposures to be replaced
-        des = targetdb.Design.select().where(targetdb.Design.field == field_replace.pk)
+        des = targetdb.DesignToField.select().where(targetdb.DesignToField.field == field_replace.pk)
         n_exp_expc = len(des)
         # ensure exposures is correct
         if n_exp == n_exp_expc:

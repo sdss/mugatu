@@ -40,11 +40,18 @@ if __name__ == '__main__':
                         choices=['apo', 'lco'], required=True)
     parser.add_argument('-t', '--tag', dest='tag',
                         type=str, help='tag for the plan', required=True)
+    parser.add_argument('-ti', '--type_ing', dest='type_ing',
+                        type=str, help='what type of ingestion this is',
+                        choices=['rs', 'rs_catchup'], default='rs')
+    parser.add_argument('-v', '--ver_catch', dest='ver_catch',
+                        type=str, help='version of catchup (for type=rs_catchup)', required=False)
 
     args = parser.parse_args()
     plan = args.plan
     observatory = args.observatory
     tag = args.tag
+    type_ing = args.type_ing
+    ver_catch = args.ver_catch
 
     # connect to targetdb
     targetdb.database.connect_from_parameters(user='sdss',
@@ -67,6 +74,9 @@ if __name__ == '__main__':
     # file with cadences for each field
     allocate_file = sdss_path.full('rsAllocationFinal', plan=plan,
                                    observatory=observatory)
+    if type_ing == 'rs_catchup':
+        # get the catchup file
+        allocate_file = allocate_file.replace('final', 'catchup').replace('Final', 'Catchup%s' % ver_catch)
     rsAllocation1 = fits.open(allocate_file)[1].data
 
     # get the instrument pks
@@ -89,11 +99,20 @@ if __name__ == '__main__':
     # get plan pk
     ver_inst = targetdb.Version.get(plan=plan)
 
-    valid_results = fits.open(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                               'sandbox/mugatu/rs_plan_validations/{plan}/'
-                               'rs_{plan}_{obs}_design_validation_results.fits'.format(
-                                   plan=plan,
-                                   obs=observatory)))[1].data
+    if type_ing == 'rs_catchup':
+        # get the catchup file
+        valid_results = fits.open(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                                   'sandbox/mugatu/rs_plan_validations/{plan}/'
+                                   'rs_Catchup{ver_catch}_{plan}_{obs}_design_validation_results.fits'.format(
+                                       ver_catch=ver_catch,
+                                       plan=plan,
+                                       obs=observatory)))[1].data
+    else:
+        valid_results = fits.open(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                                   'sandbox/mugatu/rs_plan_validations/{plan}/'
+                                   'rs_{plan}_{obs}_design_validation_results.fits'.format(
+                                       plan=plan,
+                                       obs=observatory)))[1].data
 
     for allo in rsAllocation1:
         # get fieldid and slots_exposure
@@ -105,6 +124,9 @@ if __name__ == '__main__':
                                              plan=plan,
                                              observatory=observatory,
                                              fieldid=fieldid)
+        if type_ing == 'rs_catchup':
+            # get the catchup file
+            field_assigned_file = field_assigned_file.replace('final', 'catchup').replace('Final', 'Catchup%s' % ver_catch)
 
         # get header with field info
         head = fits.open(field_assigned_file)[0].header
@@ -118,6 +140,10 @@ if __name__ == '__main__':
         desmode_labels = head['DESMODE'].split(' ')
 
         # use mugatu function to create field in targetdb
+        if type_ing == 'rs_catchup':
+            replacement_field = True
+        else:
+            replacement_field = False
         make_design_field_targetdb(cadence=allo['cadence'],
                                    fieldid=fieldid,
                                    plan=ver_inst,
@@ -125,7 +151,8 @@ if __name__ == '__main__':
                                    deccen=head['DECCEN'],
                                    position_angle=head['PA'],
                                    observatory=obs_inst,
-                                   slots_exposures=slots_exposures)
+                                   slots_exposures=slots_exposures,
+                                   replacement_field=replacement_field)
 
         fieldid_inst = (targetdb.Field.select()
                                       .join(targetdb.Version)

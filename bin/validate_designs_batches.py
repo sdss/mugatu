@@ -377,7 +377,7 @@ if __name__ == '__main__':
         description='In a batch, validate a set of designs')
     parser.add_argument('-t', '--type', dest='type',
                         type=str, help='Validating files in directory (dir) or robostrategy (rs)',
-                        choices=['dir', 'rs', 'rs_replace'], required=True)
+                        choices=['dir', 'rs', 'rs_replace', 'rs_catchup'], required=True)
     parser.add_argument('-d', '--dir', dest='dir',
                         type=str, help='directory with design files (for type=dir)',
                         required=False)
@@ -397,6 +397,8 @@ if __name__ == '__main__':
                         type=float, required=False)
     parser.add_argument('-c','--cache_bs', help='if want to use cache of bright star queries',
                         type=bool, required=False, default=False)
+    parser.add_argument('-v', '--ver_catch', dest='ver_catch',
+                        type=str, help='version of catchup (for type=rs_catchup)', required=False)
 
     args = parser.parse_args()
     vtype = args.type
@@ -407,6 +409,7 @@ if __name__ == '__main__':
     Ncores = args.Ncores
     offset_min_skybrightness = args.offset_min_skybrightness
     cache_bs = args.cache_bs
+    ver_catch = args.ver_catch
 
     if vtype == 'dir':
         files = [file for file in glob.glob(directory + '*.fits')]
@@ -445,6 +448,46 @@ if __name__ == '__main__':
                 cache_file = cache_dir + 'rsBrightStars-eta-0-bs-cache-{obs}-{fid}.fits'.format(obs=observatory,
                                                                                                fid=rs_fieldid)
                 cache_files.append(cache_file)
+    elif vtype == 'rs_catchup':
+        files = []
+
+        cache_files = []
+        cache_dir = os.popen('echo $ROBOSTRATEGY_DATA').read()[:-1] + '/allocations/eta-0-bs-cache/targets/'
+
+        allocate_file = sdss_path.full('rsAllocationFinal', plan=plan,
+                                       observatory=observatory)
+        if 'sas' in allocate_file:
+            allocate_file = allocate_file[:32] + 'sdss50' + allocate_file[44:]
+
+        # get the catchup file
+        allocate_file = allocate_file.replace('final', 'catchup').replace('Final', 'Catchup%s' % ver_catch)
+
+        # only grab unique fields for this
+        rsAllocation1 = fits.open(allocate_file)[1].data
+
+        fieldids = np.unique(rsAllocation1["fieldid"])
+
+        rs_fieldids = np.unique(rsAllocation1["rs_fieldid"])
+
+        for fieldid, rs_fieldid in zip(fieldids, rs_fieldids):
+            # now grab the assignment file for this field
+            field_assigned_file = sdss_path.full('rsFieldAssignmentsFinal',
+                                                 plan=plan,
+                                                 observatory=observatory,
+                                                 fieldid=fieldid)
+
+            if 'sas' in field_assigned_file:
+                field_assigned_file = field_assigned_file[:32] + 'sdss50' + field_assigned_file[44:]
+
+            # get the catchup file
+            field_assigned_file = field_assigned_file.replace('final', 'catchup').replace('Final', 'Catchup%s' % ver_catch)
+
+            files.append(field_assigned_file)
+
+            if cache_bs and 'eta' in plan:
+                cache_file = cache_dir + 'rsBrightStars-eta-0-bs-cache-{obs}-{fid}.fits'.format(obs=observatory,
+                                                                                               fid=rs_fieldid)
+                cache_files.append(cache_file)
     elif vtype == 'rs_replace':
         replace_path = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
                         'target/robostrategy_replacement/{plan}/'.format(
@@ -474,6 +517,19 @@ if __name__ == '__main__':
         file_save = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
                      'sandbox/mugatu/rs_plan_validations/{plan}/'
                      'rs_{plan}_{obs}_design_validation_results.fits'.format(
+                         plan=plan,
+                         obs=observatory))
+    elif vtype == 'rs_catchup':
+        if not os.path.isdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                              'sandbox/mugatu/rs_plan_validations/{plan}'
+                              .format(plan=plan))):
+            os.mkdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                      'sandbox/mugatu/rs_plan_validations/{plan}'
+                      .format(plan=plan)))
+        file_save = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                     'sandbox/mugatu/rs_plan_validations/{plan}/'
+                     'rs_Catchup{ver_catch}_{plan}_{obs}_design_validation_results.fits'.format(
+                         ver_catch=ver_catch,
                          plan=plan,
                          obs=observatory))
     elif vtype == 'rs_replace':

@@ -566,7 +566,7 @@ if __name__ == '__main__':
             valid_arr = np.append(valid_arr,
                                   r)
     # write to fits file
-    if vtype == 'dir' or vtype == 'rs':
+    if vtype == 'dir' or vtype == 'rs' or vtype == 'rs_catchup':
         valid_arr = Table(valid_arr)
         bin_fits = fits.BinTableHDU(valid_arr)
         hdu = fits.HDUList([primary_hdu, bin_fits])

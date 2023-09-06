@@ -13,7 +13,8 @@ from mugatu.designs_to_targetdb import (make_design_field_targetdb,
                                         make_design_assignments_targetdb,
                                         TargetdbFieldIDs,
                                         make_desigmmode_results_targetdb,
-                                        design_status_bitmask)
+                                        design_status_bitmask,
+                                        make_designToField)
 from mugatu.exceptions import MugatuError
 
 
@@ -56,11 +57,15 @@ if __name__ == '__main__':
                                                  plan=plan,
                                                  fid=fid))]
     for f in files:
-        if 'validation' in f:
+        if 'validation' in f or 'status' in f:
             files.remove(f)
     files_valid = []
     for f in files:
         files_valid.append(f[:-5] + '_validation.fits')
+    # get status files
+    files_status = []
+    for f in files:
+        files_status.append(f[:-5] + '-status.dat')
 
     # get observatory insts
     obsDB = targetdb.Observatory()
@@ -94,7 +99,7 @@ if __name__ == '__main__':
     ver_inst = targetdb.Version.get(plan=plan)
 
     # add designs in the files
-    for file, valid in zip(files, files_valid):
+    for file, valid, status in zip(files, files_valid, files_status):
         # get header with field info
         head = fits.open(file)[0].header
         # association between catalogid and instrument
@@ -157,6 +162,10 @@ if __name__ == '__main__':
 
         # get number of exposures
         n_exp = head['NEXP']
+        if os.path.exists(status):
+            design_ids = np.genfromtxt(status, dtype=int)
+        else:
+            design_ids = np.zeros(n_exp, dtype=int) - 1
 
         # get number of exposures to be replaced
         des = targetdb.DesignToField.select().where(targetdb.DesignToField.field == field_replace.pk)
@@ -174,29 +183,35 @@ if __name__ == '__main__':
                     holeIDs = design['holeID'][:, i]
                     desmode_label = desmode_labels[i]
                 # write exposure to targetdb
-                design_id = make_design_assignments_targetdb(
-                    plan=ver_inst,
-                    fieldid=fieldid_inst,
-                    exposure=i,
-                    field_exposure=i,  # safe to assume same for these?
-                    desmode_label=desmode_label,
-                    design_ids=design_inst['carton_to_target_pk'],
-                    robotID=roboIDs,
-                    holeID=holeIDs,
-                    obsWavelength=design_inst['fiberType'],
-                    carton=design_inst['carton'],
-                    observatory=obs_inst[field_replace.observatory.label],
-                    targetdb_ver=None,
-                    instr_pks=instr_pks,
-                    cart_pks=None,
-                    fiber_pks=fiber_pks[field_replace.observatory.label],
-                    idtype='carton_to_target',
-                    return_design_id=True)
-                make_desigmmode_results_targetdb(
-                    design_id=design_id,
-                    design_pass=True,
-                    design_valid_file_row=valid_data[i],
-                    design_status=design_status_bitmask(replacement_design=True))
+                if design_ids[i] == -1:
+                    design_id = make_design_assignments_targetdb(
+                        plan=ver_inst,
+                        fieldid=fieldid_inst,
+                        exposure=i,
+                        field_exposure=i,  # safe to assume same for these?
+                        desmode_label=desmode_label,
+                        design_ids=design_inst['carton_to_target_pk'],
+                        robotID=roboIDs,
+                        holeID=holeIDs,
+                        obsWavelength=design_inst['fiberType'],
+                        carton=design_inst['carton'],
+                        observatory=obs_inst[field_replace.observatory.label],
+                        targetdb_ver=None,
+                        instr_pks=instr_pks,
+                        cart_pks=None,
+                        fiber_pks=fiber_pks[field_replace.observatory.label],
+                        idtype='carton_to_target',
+                        return_design_id=True)
+                    make_desigmmode_results_targetdb(
+                        design_id=design_id,
+                        design_pass=True,
+                        design_valid_file_row=valid_data[i],
+                        design_status=design_status_bitmask(replacement_design=True))
+                else:
+                    make_designToField(design=design_ids[i],
+                                       fieldid=fieldid_inst,
+                                       exposure=i,
+                                       field_exposure=i)
         elif n_exp == 1:
             for i in range(n_exp_expc):
                 # repeat same design so always use only index
@@ -204,29 +219,35 @@ if __name__ == '__main__':
                 holeIDs = design['holeID']
                 desmode_label = desmode_labels[0]
                 # write exposure to targetdb
-                design_id = make_design_assignments_targetdb(
-                    plan=ver_inst,
-                    fieldid=fieldid_inst,
-                    exposure=i,
-                    field_exposure=i,  # safe to assume same for these?
-                    desmode_label=desmode_label,
-                    design_ids=design_inst['carton_to_target_pk'],
-                    robotID=roboIDs,
-                    holeID=holeIDs,
-                    obsWavelength=design_inst['fiberType'],
-                    carton=design_inst['carton'],
-                    observatory=obs_inst[field_replace.observatory.label],
-                    targetdb_ver=None,
-                    instr_pks=instr_pks,
-                    cart_pks=None,
-                    fiber_pks=fiber_pks[field_replace.observatory.label],
-                    idtype='carton_to_target',
-                    return_design_id=True)
-                make_desigmmode_results_targetdb(
-                    design_id=design_id,
-                    design_pass=True,
-                    design_valid_file_row=valid_data[0],
-                    design_status=design_status_bitmask(replacement_design=True))
+                if design_ids[0] == -1:
+                    design_id = make_design_assignments_targetdb(
+                        plan=ver_inst,
+                        fieldid=fieldid_inst,
+                        exposure=i,
+                        field_exposure=i,  # safe to assume same for these?
+                        desmode_label=desmode_label,
+                        design_ids=design_inst['carton_to_target_pk'],
+                        robotID=roboIDs,
+                        holeID=holeIDs,
+                        obsWavelength=design_inst['fiberType'],
+                        carton=design_inst['carton'],
+                        observatory=obs_inst[field_replace.observatory.label],
+                        targetdb_ver=None,
+                        instr_pks=instr_pks,
+                        cart_pks=None,
+                        fiber_pks=fiber_pks[field_replace.observatory.label],
+                        idtype='carton_to_target',
+                        return_design_id=True)
+                    make_desigmmode_results_targetdb(
+                        design_id=design_id,
+                        design_pass=True,
+                        design_valid_file_row=valid_data[0],
+                        design_status=design_status_bitmask(replacement_design=True))
+                else:
+                    make_designToField(design=design_ids[0],
+                                       fieldid=fieldid_inst,
+                                       exposure=i,
+                                       field_exposure=i)
         else:
             raise MugatuError(message='Incorrect number of exposures in design')
         # save field_id info

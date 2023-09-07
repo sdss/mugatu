@@ -161,6 +161,10 @@ if __name__ == '__main__':
                                       .where((targetdb.Field.field_id == fieldid) &
                                              (targetdb.Version.plan == plan) &
                                              (targetdb.Cadence.label == allo['cadence'])))
+        if type_ing == 'rs_catchup':
+            pk_field = np.max([f.pk for f in fieldid_inst])
+            fieldid_inst = (targetdb.Field.select()
+                                          .where(targetdb.Field.pk == pk_field))
 
         # get number of exposures
         n_exp = head['NEXP']

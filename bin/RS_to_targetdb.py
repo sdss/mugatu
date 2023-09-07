@@ -205,6 +205,9 @@ if __name__ == '__main__':
                                     plan=plan,
                                     observatory=observatory,
                                     fieldid=fieldid).split('/')[-1]
+                if type_ing == 'rs_catchup':
+                    # get the catchup file
+                    file = file.replace('final', 'catchup').replace('Final', 'Catchup%s' % ver_catch)
 
                 ind = np.where((valid_results['file_name'] == file) &
                                (valid_results['exp'] == i))[0][0]

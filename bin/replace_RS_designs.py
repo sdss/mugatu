@@ -208,7 +208,7 @@ if __name__ == '__main__':
                         design_valid_file_row=valid_data[i],
                         design_status=design_status_bitmask(replacement_design=True))
                 else:
-                    make_designToField(design=design_ids[i],
+                    make_designToField(design=int(design_ids[i]),
                                        fieldid=fieldid_inst,
                                        exposure=i,
                                        field_exposure=i)
@@ -244,7 +244,7 @@ if __name__ == '__main__':
                         design_valid_file_row=valid_data[0],
                         design_status=design_status_bitmask(replacement_design=True))
                 else:
-                    make_designToField(design=design_ids[0],
+                    make_designToField(design=int(design_ids[0]),
                                        fieldid=fieldid_inst,
                                        exposure=i,
                                        field_exposure=i)

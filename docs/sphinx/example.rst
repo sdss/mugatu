@@ -165,7 +165,7 @@ The above should load all the default versions of the required software. Next, w
 	#SBATCH --time=3-00:00:00
 	srun -n 1 -c 16 python -W ignore -u $MUGATU_DIR/bin/validate_designs_batches.py -t rs -p example_plan -o apo -n 16
 
-The above will run the validation at APO for a robostrategy run called ``example_plan`` using 16 cores. The job is then submited by:
+The above will run the validation at APO for a robostrategy run called ``example_plan`` using 16 cores and does not print warnings to the log file. In this case, the log file will only print the progress of the validation. If you want warnings as part of the outputs, remove ``-W ignore``. The job is then submited by:
 
 	>>> sbatch submit_validate.sh
 

@@ -411,7 +411,7 @@ if __name__ == '__main__':
     cache_bs = args.cache_bs
     ver_catch = args.ver_catch
 
-    MUGATU_DATA = os.popen('echo $MUGATU_DATA').read()[:-1]
+    MUGATU_DATA = os.getenv('MUGATU_DATA')
 
     if vtype == 'dir':
         files = [file for file in glob.glob(directory + '*.fits')]

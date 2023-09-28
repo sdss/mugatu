@@ -411,6 +411,8 @@ if __name__ == '__main__':
     cache_bs = args.cache_bs
     ver_catch = args.ver_catch
 
+    MUGATU_DATA = os.popen('echo $MUGATU_DATA').read()[:-1]
+
     if vtype == 'dir':
         files = [file for file in glob.glob(directory + '*.fits')]
         cache_files = []
@@ -508,26 +510,20 @@ if __name__ == '__main__':
     if vtype == 'dir':
         file_save = directory + 'design_validation_results.fits'
     elif vtype == 'rs':
-        if not os.path.isdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                              'sandbox/mugatu/rs_plan_validations/{plan}'
+        if not os.path.isdir((MUGATU_DATA + '/rs_plan_validations/{plan}'
                               .format(plan=plan))):
-            os.makedirs(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                         'sandbox/mugatu/rs_plan_validations/{plan}'
+            os.makedirs((MUGATU_DATA + '/rs_plan_validations/{plan}'
                          .format(plan=plan)))
-        file_save = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                     'sandbox/mugatu/rs_plan_validations/{plan}/'
+        file_save = (MUGATU_DATA + '/rs_plan_validations/{plan}/'
                      'rs_{plan}_{obs}_design_validation_results.fits'.format(
                          plan=plan,
                          obs=observatory))
     elif vtype == 'rs_catchup':
-        if not os.path.isdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                              'sandbox/mugatu/rs_plan_validations/{plan}'
+        if not os.path.isdir((MUGATU_DATA + '/rs_plan_validations/{plan}'
                               .format(plan=plan))):
-            os.makedirs(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                         'sandbox/mugatu/rs_plan_validations/{plan}'
+            os.makedirs((MUGATU_DATA + '/rs_plan_validations/{plan}'
                          .format(plan=plan)))
-        file_save = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                     'sandbox/mugatu/rs_plan_validations/{plan}/'
+        file_save = (MUGATU_DATA + '/rs_plan_validations/{plan}/'
                      'rs_Catchup{ver_catch}_{plan}_{obs}_design_validation_results.fits'.format(
                          ver_catch=ver_catch,
                          plan=plan,

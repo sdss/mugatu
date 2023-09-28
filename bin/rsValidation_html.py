@@ -18,8 +18,6 @@ from mugatu.exceptions import MugatuWarning, MugatuError
 import warnings
 
 
-mugatu_version = mugatu.__version__
-
 plt.rcParams.update({'font.size': 18})
 plt.rcParams['savefig.facecolor'] = 'white'
 
@@ -336,7 +334,7 @@ def create_summary_dist_plots(valid_apo, valid_lco, designmode):
 
 def write_html_jinja(valid_apo, valid_lco, designmode,
                      rs_run, mugatu_v, kaiju_v, coordio_v,
-                     path):
+                     fps_calib_v, path):
     """
     Write HTML file using jinja
     """
@@ -440,6 +438,7 @@ def write_html_jinja(valid_apo, valid_lco, designmode,
     html_dict['mugatu_v'] = mugatu_v
     html_dict['kaiju_v'] = kaiju_v
     html_dict['coordio_v'] = coordio_v
+    html_dict['fps_calib_v'] = fps_calib_v
     template = env.get_template('main_validation_page.html')
     page = template.render(html_dict)
     fp = open('%s/%s_validation.html' % (path, rs_run), 'w')
@@ -458,16 +457,10 @@ if __name__ == '__main__':
 
     parser.add_argument('-p', '--plan', dest='plan',
                         type=str, help='name of plan', required=True)
-    parser.add_argument('-k', '--kaiju_v', dest='kaiju_v',
-                        type=str, help='kaiju_v', required=True)
-    parser.add_argument('-c', '--coordio_v', dest='coordio_v',
-                        type=str, help='coordio_v', required=True)
     parser.add_argument('-i','--ignore_prev', help='True if want to ignore previously observed designs in validation',
                         type=bool, required=False, default=True)
     args = parser.parse_args()
     plan = args.plan
-    kaiju_v = args.kaiju_v
-    coordio_v = args.coordio_v
     ignore_prev = args.ignore_prev
 
     targetdb.database.connect_from_parameters(user='sdss_user',
@@ -490,6 +483,12 @@ if __name__ == '__main__':
     try:
         valid_apo = fits.open(path +
                               '/rs_%s_apo_design_validation_results.fits' % plan)[1].data
+        header = fits.open(path +
+                              '/rs_%s_apo_design_validation_results.fits' % plan)[0].header
+        kaiju_v = header['kaiju_version']
+        coordio_v = header['coordio_version']
+        fps_calib_v = header['fps_calibrations_version']
+        mugatu_version = header['mugatu_version']
         # ignore previously observed designs with designid_status != -1
         if ignore_prev:
             valid_apo = valid_apo[valid_apo['designid_status'] == -1]
@@ -500,6 +499,12 @@ if __name__ == '__main__':
     try:
         valid_lco = fits.open(path +
                               '/rs_%s_lco_design_validation_results.fits' % plan)[1].data
+        header = fits.open(path +
+                              '/rs_%s_lco_design_validation_results.fits' % plan)[0].header
+        kaiju_v = header['kaiju_version']
+        coordio_v = header['coordio_version']
+        fps_calib_v = header['fps_calibrations_version']
+        mugatu_version = header['mugatu_version']
         if ignore_prev:
             valid_lco = valid_lco[valid_lco['designid_status'] == -1]
     except FileNotFoundError:
@@ -512,5 +517,5 @@ if __name__ == '__main__':
     designmode = fits.open(path + '/designmodes_rs_%s.fits' % plan)[1].data
 
     write_html_jinja(valid_apo, valid_lco, designmode,
-                     plan, mugatu_version, kaiju_v, coordio_v,
+                     plan, mugatu_version, kaiju_v, coordio_v, fps_calib_v,
                      path)

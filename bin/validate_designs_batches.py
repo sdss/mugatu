@@ -511,9 +511,9 @@ if __name__ == '__main__':
         if not os.path.isdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
                               'sandbox/mugatu/rs_plan_validations/{plan}'
                               .format(plan=plan))):
-            os.mkdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                      'sandbox/mugatu/rs_plan_validations/{plan}'
-                      .format(plan=plan)))
+            os.makedirs(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                         'sandbox/mugatu/rs_plan_validations/{plan}'
+                         .format(plan=plan)))
         file_save = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
                      'sandbox/mugatu/rs_plan_validations/{plan}/'
                      'rs_{plan}_{obs}_design_validation_results.fits'.format(
@@ -523,9 +523,9 @@ if __name__ == '__main__':
         if not os.path.isdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
                               'sandbox/mugatu/rs_plan_validations/{plan}'
                               .format(plan=plan))):
-            os.mkdir(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
-                      'sandbox/mugatu/rs_plan_validations/{plan}'
-                      .format(plan=plan)))
+            os.makedirs(('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
+                         'sandbox/mugatu/rs_plan_validations/{plan}'
+                         .format(plan=plan)))
         file_save = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
                      'sandbox/mugatu/rs_plan_validations/{plan}/'
                      'rs_Catchup{ver_catch}_{plan}_{obs}_design_validation_results.fits'.format(

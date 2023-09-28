@@ -474,7 +474,8 @@ if __name__ == '__main__':
                                               host='operations.sdss.utah.edu',
                                               port=5432)
 
-    path = '/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/sandbox/mugatu/rs_plan_validations/%s' % plan
+    MUGATU_DATA = os.popen('echo $MUGATU_DATA').read()[:-1]
+    path = MUGATU_DATA + '/rs_plan_validations/%s' % plan
 
     # create designmode file for run
     designModeDict = allDesignModes()

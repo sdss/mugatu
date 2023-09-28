@@ -161,10 +161,11 @@ The above should load all the default versions of the required software. Next, w
 	#SBATCH --account=sdss-np
 	#SBATCH --partition=sdss-np
 	#SBATCH --nodes=1
+	#SBATCH --ntasks=16
 	#SBATCH --time=3-00:00:00
-	srun -n 1 -c 8 python -u $MUGATU_DIR/bin/validate_designs_batches.py -t rs -l utah -p example_plan -o apo -n 8
+	srun -n 1 -c 16 python -W ignore -u $MUGATU_DIR/bin/validate_designs_batches.py -t rs -p example_plan -o apo -n 16
 
-The above will run the validation at APO for a robostrategy run called ``example_plan`` using 8 cores. The job is then submited by:
+The above will run the validation at APO for a robostrategy run called ``example_plan`` using 16 cores. The job is then submited by:
 
 	>>> sbatch submit_validate.sh
 
@@ -174,19 +175,25 @@ Once completed, the results of the validations can be found here:
 
 ::
 
-	/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/sandbox/mugatu/rs_plan_validations/{plan_name}/rs_{plan_name}_{obs}_design_validation_results.fits
+	$MUGATU_DATA/rs_plan_validations/{plan_name}/rs_{plan_name}_{obs}_design_validation_results.fits
 
-Where in this example ``{plan_name} = example_plan`` and there will be two files, one with ``{obs} = apo`` and the other with ``{obs} = lco``. To better visualize the results, an HTML page can be generated with summary plots. This is done by running the command:
+Where in this example ``{plan_name} = example_plan`` and there will be two files, one with ``{obs} = apo`` and the other with ``{obs} = lco``. By default, the envoirnmental variable ``$MUGATU_DATA`` is:
 
-	>>> python $MUGATU_DIR/bin/rsValidation_html.py -p example_plan --kaiju_v 1.3.1 --coordio_v 1.5.2
+::
 
-In the above, the inputs for ``--kaiju_v`` and ``--coordio_v`` should be changed to the current versions of kaiju and coordio. These can be seen by using the command ``module list``. Once the above script is finished, the validation results can then be viewed at:
+	$MUGATU_DATA = /uufs/chpc.utah.edu/common/home/sdss50/sdsswork/sandbox/mugatu
+
+To better visualize the results, an HTML page can be generated with summary plots. This is done by running the command:
+
+	>>> python $MUGATU_DIR/bin/rsValidation_html.py -p example_plan
+
+Once the above script is finished, the validation results can then be viewed at:
 
 ::
 
 	https://data.sdss5.org/sas/sdsswork/sandbox/mugatu/rs_plan_validations/{plan_name}/{plan_name}_validation.html
 
-On this page will be links to the various tests so one can assess the validation results and look for any major issues with the robostrategy run.
+This assumes the default ``$MUGATU_DATA`` is being used. On this page will be links to the various tests so one can assess the validation results and look for any major issues with the robostrategy run.
 
 If the above validation is verified as acceptable, then the designs can be loaded into targetdb. This process can take some time, so it is best to run it in the background. This can be done via the following command:
 

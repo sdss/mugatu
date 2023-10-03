@@ -16,6 +16,7 @@ import mugatu
 from sdssdb.peewee.sdss5db import targetdb
 from mugatu.exceptions import MugatuWarning, MugatuError
 import warnings
+import datetime
 
 
 plt.rcParams.update({'font.size': 18})
@@ -456,19 +457,46 @@ if __name__ == '__main__':
         description='Write validaiton summary HTML file')
 
     parser.add_argument('-p', '--plan', dest='plan',
-                        type=str, help='name of plan', required=True)
+                        type=str, help='name of plan (for type=rs or type=rs_replace)',
+                        required=False)
+    parser.add_argument('-d', '--dir', dest='dir',
+                        type=str, help='directory with design files (for type=dir)',
+                        required=False)
+    parser.add_argument('-da', '--date', dest='date',
+                        type=str, help='date of validation in YYYY_MM_DD format (for type=dir)',
+                        required=False)
+    parser.add_argument('-t', '--type', dest='type',
+                        type=str, help='Validating files in directory (dir) or robostrategy (rs)',
+                        choices=['dir', 'rs', 'rs_catchup'], required=False,
+                        default='rs')
+    parser.add_argument('-v', '--ver_catch', dest='ver_catch',
+                        type=str, help='version of catchup (for type=rs_catchup)', required=False)
     parser.add_argument('-i','--ignore_prev', help='True if want to ignore previously observed designs in validation',
                         type=bool, required=False, default=True)
     args = parser.parse_args()
     plan = args.plan
+    directory = args.dir
+    date = args.date
+    vtype = args.type
+    ver_catch = args.ver_catch
     ignore_prev = args.ignore_prev
 
     targetdb.database.connect_from_parameters(user='sdss_user',
                                               host='operations.sdss.utah.edu',
                                               port=5432)
 
-    MUGATU_DATA = os.popen('echo $MUGATU_DATA').read()[:-1]
-    path = MUGATU_DATA + '/rs_plan_validations/%s' % plan
+    MUGATU_DATA = os.getenv('MUGATU_DATA')
+    if vtype == 'dir':
+        path = (directory + '/design_validation_{year}_{month}_{day}'
+                  .format(year=date[:4],
+                          month=date[5:7],
+                          day=date[8:]))
+    elif vtype == 'rs':
+        path = MUGATU_DATA + '/rs_plan_validations/%s' % plan
+    elif vtype == 'rs_catchup':
+        path = MUGATU_DATA + '/rs_plan_validations/%s' % plan
+    else:
+        raise MugatuError(message='Improper Validation Type')
 
     # create designmode file for run
     designModeDict = allDesignModes()
@@ -481,10 +509,17 @@ if __name__ == '__main__':
     fitsio.write(path + '/designmodes_rs_%s.fits' % plan, dmarr)
     # get validaiton results
     try:
-        valid_apo = fits.open(path +
-                              '/rs_%s_apo_design_validation_results.fits' % plan)[1].data
-        header = fits.open(path +
-                              '/rs_%s_apo_design_validation_results.fits' % plan)[0].header
+        if vtype == 'dir':
+            file = 'design_validation_results.fits'
+        elif vtype == 'rs':
+            file = 'rs_{plan}_apo_design_validation_results.fits'.format(plan=plan)
+        elif vtype == 'rs_catchup':
+            file = 'rs_Catchup{ver_catch}_{plan}_apo_design_validation_results.fits'.format(ver_catch=ver_catch,
+                                                                                            plan=plan)
+        else:
+            raise MugatuError(message='Improper Validation Type')
+        valid_apo = fits.open(path + '/' + file)[1].data
+        header = fits.open(path + '/' + file)[0].header
         kaiju_v = header['kaiju_version']
         coordio_v = header['coordio_version']
         fps_calib_v = header['fps_calibrations_version']
@@ -497,10 +532,17 @@ if __name__ == '__main__':
         flag = 'No validation for APO!'
         warnings.warn(flag, MugatuWarning)
     try:
-        valid_lco = fits.open(path +
-                              '/rs_%s_lco_design_validation_results.fits' % plan)[1].data
-        header = fits.open(path +
-                              '/rs_%s_lco_design_validation_results.fits' % plan)[0].header
+        if vtype == 'dir':
+            raise FileNotFoundError
+        elif vtype == 'rs':
+            file = 'rs_{plan}_lco_design_validation_results.fits'.format(plan=plan)
+        elif vtype == 'rs_catchup':
+            file = 'rs_Catchup{ver_catch}_{plan}_lco_design_validation_results.fits'.format(ver_catch=ver_catch,
+                                                                                            plan=plan)
+        else:
+            raise MugatuError(message='Improper Validation Type')
+        valid_apo = fits.open(path + '/' + file)[1].data
+        header = fits.open(path + '/' + file)[0].header
         kaiju_v = header['kaiju_version']
         coordio_v = header['coordio_version']
         fps_calib_v = header['fps_calibrations_version']

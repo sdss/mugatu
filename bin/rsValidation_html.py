@@ -506,7 +506,7 @@ if __name__ == '__main__':
         if(dmarr is None):
             dmarr = np.zeros(len(designModeDict), dtype=arr.dtype)
         dmarr[i] = arr
-    fitsio.write(path + '/designmodes_rs_%s.fits' % plan, dmarr)
+    fitsio.write(path + '/designmodes_validation.fits', dmarr)
     # get validaiton results
     try:
         if vtype == 'dir':
@@ -556,7 +556,7 @@ if __name__ == '__main__':
     if valid_apo is None and valid_lco is None:
         message = 'No validation files for this run'
         raise MugatuError(message=message)
-    designmode = fits.open(path + '/designmodes_rs_%s.fits' % plan)[1].data
+    designmode = fits.open(path + '/designmodes_validation.fits')[1].data
 
     write_html_jinja(valid_apo, valid_lco, designmode,
                      plan, mugatu_version, kaiju_v, coordio_v, fps_calib_v,

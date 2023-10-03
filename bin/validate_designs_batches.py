@@ -4,6 +4,7 @@ import os
 import numpy as np
 import glob
 import time
+import datetime
 
 from astropy.io import fits
 from astropy.table import Table
@@ -508,7 +509,19 @@ if __name__ == '__main__':
         raise MugatuError(message='Improper Validation Type')
 
     if vtype == 'dir':
-        file_save = directory + 'design_validation_results.fits'
+        date = datetime.datetime.now()
+        if not os.path.isdir((directory + '/design_validation_{year}_{month}_{day}'
+                              .format(year='%04d' % date.year,
+                                      month='%02d' % date.month,
+                                      day='%02d' % date.day))):
+            os.makedirs((directory + '/design_validation_{year}_{month}_{day}'
+                          .format(year='%04d' % date.year,
+                                  month='%02d' % date.month,
+                                  day='%02d' % date.day)))
+        file_save = (directory + '/design_validation_{year}_{month}_{day}/design_validation_results.fits'
+                      .format(year='%04d' % date.year,
+                              month='%02d' % date.month,
+                              day='%02d' % date.day))
     elif vtype == 'rs':
         if not os.path.isdir((MUGATU_DATA + '/rs_plan_validations/{plan}'
                               .format(plan=plan))):

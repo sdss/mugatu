@@ -421,7 +421,7 @@ if __name__ == '__main__':
         files = []
 
         cache_files = []
-        cache_dir = os.popen('echo $ROBOSTRATEGY_DATA').read()[:-1] + '/allocations/eta-0-bs-cache/targets/'
+        cache_dir = os.getenv('ROBOSTRATEGY_DATA') + '/allocations/eta-0-bs-cache/targets/'
 
         allocate_file = sdss_path.full('rsAllocationFinal', plan=plan,
                                        observatory=observatory)
@@ -455,7 +455,7 @@ if __name__ == '__main__':
         files = []
 
         cache_files = []
-        cache_dir = os.popen('echo $ROBOSTRATEGY_DATA').read()[:-1] + '/allocations/eta-0-bs-cache/targets/'
+        cache_dir = os.getenv('ROBOSTRATEGY_DATA') + '/allocations/eta-0-bs-cache/targets/'
 
         allocate_file = sdss_path.full('rsAllocationFinal', plan=plan,
                                        observatory=observatory)

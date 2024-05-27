@@ -39,12 +39,18 @@ primary_hdu.header['coordio_version'] = coordio_ver
 primary_hdu.header['fps_calibrations_version'] = fps_calib_ver
 
 
-def valid_field(all_files, offset_min_skybrightness, cache_bs):
+def valid_field(all_files, offset_min_skybrightness, cache_bs,
+                observatory):
     # need import here for create new connection
     from mugatu.fpsdesign import FPSDesign
     from mugatu.designmode import (build_brigh_neigh_query,
                                    DesignModeCheck,
-                                   allDesignModes)
+                                   allDesignModes,
+                                   designid_status_valid)
+    # set up correct opsdb schema
+    from sdssdb.peewee.sdss5db import opsdb
+    os.environ["OBSERVATORY"] = observatory.upper()
+    opsdb.database.connect()
 
     def validate_design(design_file, exp, obsTime,
                         db_query_results_boss, db_query_results_apogee,
@@ -98,6 +104,7 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs):
                           ('deccen', np.float64),
                           ('designmode', '<U15'),
                           ('designid_status', np.int32),
+                          ('designid_status_valid', bool),
                           ('decolide', bool),
                           ('bright_safety', bool),
                           ('bright_safety_pass', np.int32),
@@ -345,6 +352,10 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs):
                                             desmodes[dm])
 
         valid_arr['designid_status'][0] = design_ids[0]
+        # validate the design_status
+        valid_arr['designid_status_valid'][0] = designid_status_valid(design_ids[0],
+                                                                      head['FIELDID'],
+                                                                      exp)
     else:
         for exp in range(n_exp):
             dm = field_desmodes[exp]
@@ -360,6 +371,10 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs):
                                                     db_results_apogee[dm],
                                                     desmodes[dm])
             valid_arr_des['designid_status'][0] = design_ids[exp]
+            # validate the design_status
+            valid_arr_des['designid_status_valid'][0] = designid_status_valid(design_ids[exp],
+                                                                              head['FIELDID'],
+                                                                              exp)
             if exp == 0:
                 valid_arr = valid_arr_des
             else:
@@ -559,7 +574,7 @@ if __name__ == '__main__':
         else:
             all_files = [(f, '') for f in files]
         res = tqdm(pool.imap(partial(valid_field, offset_min_skybrightness=offset_min_skybrightness,
-                                     cache_bs=cache_bs),
+                                     cache_bs=cache_bs, observatory=observatory),
                                      all_files),
                    total=len(files))
         res = [r for r in res]

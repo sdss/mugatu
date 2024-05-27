@@ -28,6 +28,7 @@ from sdssdb.peewee.sdss5db.targetdb import Carton, Category, Magnitude, CartonTo
 from sdssdb.peewee.sdss5db.targetdb import DesignMode as DesignModeDB
 from sdssdb.peewee.sdss5db import catalogdb
 from sdssdb.peewee.sdss5db import targetdb
+from sdssdb.peewee.sdss5db import opsdb
 
 
 def ang_sep(ra1, dec1, ra2, dec2):
@@ -1642,3 +1643,56 @@ class DesignModeCheck(DesignMode):
             verbose_output += 'Bright Neighbor Check (APOGEE):   | %d out of %d\n' % (check_tot, design_tot)
 
             print(verbose_output)
+
+
+def check_design_to_status(design_id):
+    """
+    check if the design_id is done
+    """
+    dts = opsdb.DesignToStatus.get_or_none(design_id=design_id)
+    if dts is None:
+        return False
+    else:
+        if dts.status.label == 'done':
+            return True
+        else:
+            return False
+
+
+def designid_status_valid(design_id, field_id, field_exposure):
+    """
+    check if design_id assocatied in rsFieldAssignments file
+    is based on 'done' designs in database.
+
+    Parameters
+    ----------
+    design_id: int
+        The design_id to be validated. If -1, then checks
+        all possible field_exposures in the field.
+    
+    field_id: int
+        field_id for the design.
+
+    field_exposure: int
+        field_exposure for the design.
+
+    Returns
+    -------
+    status: bool
+        If the design_id is set correctly for the design_status.
+    """
+    if design_id != -1:
+        status = check_design_to_status(design_id)
+    else:
+        # grab all design_ids for current field_exposure in all verisons
+        # of the field
+        designs = targetdb.DesignToField.select()\
+                                        .join(targetdb.Field)\
+                                        .where(targetdb.Field.field_id == field_id,
+                                               targetdb.DesignToField.field_exposure == field_exposure)
+        # check all of the designs to see if they are marked done
+        design_status = np.zeros(len(designs), dtype=bool)
+        for i, d in enumerate(designs):
+            design_status[i] = check_design_to_status(d.design_id)
+        status = ~np.any(design_status)  # should all be False if design_id = -1
+    return status

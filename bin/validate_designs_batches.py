@@ -39,18 +39,13 @@ primary_hdu.header['coordio_version'] = coordio_ver
 primary_hdu.header['fps_calibrations_version'] = fps_calib_ver
 
 
-def valid_field(all_files, offset_min_skybrightness, cache_bs,
-                observatory):
+def valid_field(all_files, offset_min_skybrightness, cache_bs):
     # need import here for create new connection
     from mugatu.fpsdesign import FPSDesign
     from mugatu.designmode import (build_brigh_neigh_query,
                                    DesignModeCheck,
                                    allDesignModes,
                                    designid_status_valid)
-    # set up correct opsdb schema
-    from sdssdb.peewee.sdss5db import opsdb
-    os.environ["OBSERVATORY"] = observatory.upper()
-    opsdb.database.connect()
 
     def validate_design(design_file, exp, obsTime,
                         db_query_results_boss, db_query_results_apogee,
@@ -259,8 +254,6 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs,
                                                 desmodes[dm])
         return valid_arr_des
 
-    desmodes = allDesignModes()
-
     file = all_files[0]
     cache_file = all_files[1]
     if cache_bs:
@@ -277,7 +270,14 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs,
         design_ids = fits.open(file)['STATUS'].data['designid']
     except KeyError:
         design_ids = np.zeros(n_exp, dtype=np.int32) - 1
+
+    # set up correct opsdb schema
+    from sdssdb.peewee.sdss5db import opsdb
+    os.environ["OBSERVATORY"] = head['obs'].strip().upper()
+    opsdb.database.connect()
+
     # do db query results for each desmode in field
+    desmodes = allDesignModes()
     db_results_boss = {}
     db_results_apogee = {}
     for dm in np.unique(field_desmodes):
@@ -574,7 +574,7 @@ if __name__ == '__main__':
         else:
             all_files = [(f, '') for f in files]
         res = tqdm(pool.imap(partial(valid_field, offset_min_skybrightness=offset_min_skybrightness,
-                                     cache_bs=cache_bs, observatory=observatory),
+                                     cache_bs=cache_bs),
                                      all_files),
                    total=len(files))
         res = [r for r in res]

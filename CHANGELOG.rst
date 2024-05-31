@@ -6,6 +6,10 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+`2.3.0 <https://github.com/sdss/mugatu/compare/2.2.2...2.3.0>`_ - 2024-05-31
+
+* Add validation to check designid_status coomapred to info in opsdb.
+
 `2.2.2 <https://github.com/sdss/mugatu/compare/2.2.1...2.2.2>`_ - 2023-10-03
 
 * rsValidation_html script now can generate summary plots for type = dir, rs, rs_catchup.

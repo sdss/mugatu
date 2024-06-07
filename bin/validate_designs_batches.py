@@ -272,6 +272,8 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs):
         design_ids = np.zeros(n_exp, dtype=np.int32) - 1
 
     # set up correct opsdb schema
+    from sdssdb.peewee.sdss5db import database
+    database.set_profile('operations')
     from sdssdb.peewee.sdss5db import opsdb
     os.environ["OBSERVATORY"] = head['obs'].strip().upper()
     opsdb.database.connect()

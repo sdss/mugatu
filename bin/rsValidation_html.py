@@ -541,7 +541,7 @@ if __name__ == '__main__':
                                                                                             plan=plan)
         else:
             raise MugatuError(message='Improper Validation Type')
-        valid_apo = fits.open(path + '/' + file)[1].data
+        valid_lco = fits.open(path + '/' + file)[1].data
         header = fits.open(path + '/' + file)[0].header
         kaiju_v = header['kaiju_version']
         coordio_v = header['coordio_version']

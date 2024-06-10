@@ -6,6 +6,11 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+`2.3.1 <https://github.com/sdss/mugatu/compare/2.3.0...2.3.1>`_ - 2024-06-10
+
+* Add option to validation script to skip dark_rm designs.
+* Fix syntax issue in html script.
+
 `2.3.0 <https://github.com/sdss/mugatu/compare/2.2.2...2.3.0>`_ - 2024-05-31
 
 * Add validation to check designid_status coomapred to info in opsdb.

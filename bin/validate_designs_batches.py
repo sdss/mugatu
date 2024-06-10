@@ -39,7 +39,7 @@ primary_hdu.header['coordio_version'] = coordio_ver
 primary_hdu.header['fps_calibrations_version'] = fps_calib_ver
 
 
-def valid_field(all_files, offset_min_skybrightness, cache_bs):
+def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm):
     # need import here for create new connection
     from mugatu.fpsdesign import FPSDesign
     from mugatu.designmode import (build_brigh_neigh_query,
@@ -84,14 +84,9 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs):
                 bright_safety = False
         return des, decolide, bright_safety
 
-
-    def design_outputs_to_array(des, decolide,
-                                bright_safety,
-                                db_query_results_boss,
-                                db_query_results_apogee,
-                                desmode_manual):
+    def design_array_format():
         """
-        Output validation parameters as a structured array
+        return blank design array
         """
         dtype = np.dtype([('file_name', '<U100'),
                           ('exp', np.int32),
@@ -149,6 +144,17 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs):
                           ('apogee_sky_neighbors_targets_adj_mags', float,
                            (500,))])
         valid_arr = np.zeros(1, dtype=dtype)
+        return valid_arr
+
+    def design_outputs_to_array(des, decolide,
+                                bright_safety,
+                                db_query_results_boss,
+                                db_query_results_apogee,
+                                desmode_manual):
+        """
+        Output validation parameters as a structured array
+        """
+        valid_arr = design_array_format()
         valid_arr['file_name'][0] = os.path.split(des.design_file)[-1]
         if des.exp == 0:
             valid_arr['exp'][0] = des.exp
@@ -341,42 +347,62 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs):
     if n_exp == 1:
         exp = 0
         dm = field_desmodes[exp]
-        des, decolide, bright_safety = validate_design(file,
-                                                       exp,
-                                                       obsTime,
-                                                       db_results_boss[dm],
-                                                       db_results_apogee[dm],
-                                                       desmodes[dm])
-        valid_arr = design_outputs_to_array(des, decolide,
-                                            bright_safety,
-                                            db_results_boss[dm],
-                                            db_results_apogee[dm],
-                                            desmodes[dm])
-
-        valid_arr['designid_status'][0] = design_ids[0]
-        # validate the design_status
-        valid_arr['designid_status_valid'][0] = designid_status_valid(design_ids[0],
-                                                                      head['FIELDID'],
-                                                                      exp)
-    else:
-        for exp in range(n_exp):
-            dm = field_desmodes[exp]
+        if skip_rm and dm == 'dark_rm':
+            valid_arr = design_array_format()
+            valid_arr['file_name'][0] = os.path.split(file)[-1]
+            valid_arr['exp'][0] = exp
+            valid_arr['racen'][0] = racen
+            valid_arr['deccen'][0] = deccen
+            valid_arr['designmode'][0] = dm
+            valid_arr['designid_status'][0] = design_ids[0]
+            valid_arr['designid_status_valid'][0] = True
+        else:
             des, decolide, bright_safety = validate_design(file,
-                                                           exp + 1,
+                                                           exp,
                                                            obsTime,
                                                            db_results_boss[dm],
                                                            db_results_apogee[dm],
                                                            desmodes[dm])
-            valid_arr_des = design_outputs_to_array(des, decolide,
-                                                    bright_safety,
-                                                    db_results_boss[dm],
-                                                    db_results_apogee[dm],
-                                                    desmodes[dm])
-            valid_arr_des['designid_status'][0] = design_ids[exp]
+            valid_arr = design_outputs_to_array(des, decolide,
+                                                bright_safety,
+                                                db_results_boss[dm],
+                                                db_results_apogee[dm],
+                                                desmodes[dm])
+
+            valid_arr['designid_status'][0] = design_ids[0]
             # validate the design_status
-            valid_arr_des['designid_status_valid'][0] = designid_status_valid(design_ids[exp],
-                                                                              head['FIELDID'],
-                                                                              exp)
+            valid_arr['designid_status_valid'][0] = designid_status_valid(design_ids[0],
+                                                                          head['FIELDID'],
+                                                                          exp)
+    else:
+        for exp in range(n_exp):
+            dm = field_desmodes[exp]
+            if skip_rm and dm == 'dark_rm':
+                valid_arr_des = design_array_format()
+                valid_arr_des['file_name'][0] = os.path.split(file)[-1]
+                valid_arr_des['exp'][0] = exp
+                valid_arr_des['racen'][0] = racen
+                valid_arr_des['deccen'][0] = deccen
+                valid_arr_des['designmode'][0] = dm
+                valid_arr_des['designid_status'][0] = design_ids[exp]
+                valid_arr_des['designid_status_valid'][0] = True
+            else:
+                des, decolide, bright_safety = validate_design(file,
+                                                               exp + 1,
+                                                               obsTime,
+                                                               db_results_boss[dm],
+                                                               db_results_apogee[dm],
+                                                               desmodes[dm])
+                valid_arr_des = design_outputs_to_array(des, decolide,
+                                                        bright_safety,
+                                                        db_results_boss[dm],
+                                                        db_results_apogee[dm],
+                                                        desmodes[dm])
+                valid_arr_des['designid_status'][0] = design_ids[exp]
+                # validate the design_status
+                valid_arr_des['designid_status_valid'][0] = designid_status_valid(design_ids[exp],
+                                                                                  head['FIELDID'],
+                                                                                  exp)
             if exp == 0:
                 valid_arr = valid_arr_des
             else:
@@ -417,6 +443,9 @@ if __name__ == '__main__':
                         type=bool, required=False, default=False)
     parser.add_argument('-v', '--ver_catch', dest='ver_catch',
                         type=str, help='version of catchup (for type=rs_catchup)', required=False)
+    parser.add_argument('-k', '--skip_rm', dest='skip_rm',
+                        type=bool, help='whether to skip dark_rm during validation', required=False,
+                        default=False)
 
     args = parser.parse_args()
     vtype = args.type
@@ -428,6 +457,12 @@ if __name__ == '__main__':
     offset_min_skybrightness = args.offset_min_skybrightness
     cache_bs = args.cache_bs
     ver_catch = args.ver_catch
+    skip_rm = args.skip_rm
+    if type(skip_rm) is str:
+        if skip_rm == 'True':
+            skip_rm = True
+        else:
+            skip_rm = False
 
     MUGATU_DATA = os.getenv('MUGATU_DATA')
 
@@ -576,7 +611,7 @@ if __name__ == '__main__':
         else:
             all_files = [(f, '') for f in files]
         res = tqdm(pool.imap(partial(valid_field, offset_min_skybrightness=offset_min_skybrightness,
-                                     cache_bs=cache_bs),
+                                     cache_bs=cache_bs, skip_rm=skip_rm),
                                      all_files),
                    total=len(files))
         res = [r for r in res]

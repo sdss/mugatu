@@ -1698,7 +1698,7 @@ def designid_status_valid(design_id, field_id, field_exposure):
     return status
 
 
-def find_designid_status(field_id, field_exposure):
+def find_designid_status(field_id, field_exposure, assign_hash=None):
     """
     Find the designid status based on a given field and field_exposure
 
@@ -1709,6 +1709,9 @@ def find_designid_status(field_id, field_exposure):
 
     field_exposure: int
         field_exposure for the design.
+
+    assign_hash: str
+        The assignment_hash for the design
 
     Returns
     -------
@@ -1740,4 +1743,19 @@ def find_designid_status(field_id, field_exposure):
         designid_status = designids[status][np.argmax(versions[status])]
     else:
         designid_status = -1
+
+    # if assignment_hash provided, check if already exists
+    if assign_hash is not None and designid_status == -1:
+        designs = targetdb.DesignToField.select()\
+                                        .join(targetdb.Design)\
+                                        .where(targetdb.Design.assignment_hash == assign_hash,
+                                               targetdb.DesignToField.field_exposure == field_exposure)
+        # get design_id for most recent version
+        if len(designs) > 0:
+            designids = np.zeros(len(designs), dtype=int)
+            versions = np.zeros(len(designs), dtype=int)
+            for i, d in enumerate(designs):
+                designids[i] = d.design_id
+                versions[i] = d.field.version.pk
+            designid_status = designids[np.argmax(versions)]
     return designid_status

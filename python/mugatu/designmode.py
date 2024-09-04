@@ -1696,3 +1696,48 @@ def designid_status_valid(design_id, field_id, field_exposure):
             design_status[i] = check_design_to_status(d.design_id)
         status = ~np.any(design_status)  # should all be False if design_id = -1
     return status
+
+
+def find_designid_status(field_id, field_exposure):
+    """
+    Find the designid status based on a given field and field_exposure
+
+    Parameters
+    ----------    
+    field_id: int
+        field_id for the design.
+
+    field_exposure: int
+        field_exposure for the design.
+
+    Returns
+    -------
+    designid_status: int
+        The designid_status for the given slot. If -1, not observed yet
+    """
+    # grab all design_ids for current field_exposure in all verisons
+    # of the field
+    designs = targetdb.DesignToField.select()\
+                                    .join(targetdb.Field)\
+                                    .where(targetdb.Field.field_id == field_id,
+                                           targetdb.DesignToField.field_exposure == field_exposure)
+    # get the current status
+    status = np.zeros(len(designs), dtype=bool)
+    designids = np.zeros(len(designs), dtype=int)
+    versions = np.zeros(len(designs), dtype=int)
+    for i, d in enumerate(designs):
+        dts = opsdb.DesignToStatus.get_or_none(design_id=d.design_id)
+        if dts is None:
+            status[i] = False
+        else:
+            if dts.status.label == 'done':
+                status[i] = True
+            else:
+                status[i] = False
+        designids[i] = d.design_id
+        versions[i] = d.field.version.pk
+    if np.any(status):
+        designid_status = designids[status][np.argmax(versions[status])]
+    else:
+        designid_status = -1
+    return designid_status

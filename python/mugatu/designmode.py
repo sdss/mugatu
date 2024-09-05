@@ -1717,6 +1717,9 @@ def find_designid_status(field_id, field_exposure, assign_hash=None):
     -------
     designid_status: int
         The designid_status for the given slot. If -1, not observed yet
+
+    status_des: str
+        status of design in opsdb
     """
     # grab all design_ids for current field_exposure in all verisons
     # of the field
@@ -1741,8 +1744,10 @@ def find_designid_status(field_id, field_exposure, assign_hash=None):
         versions[i] = d.field.version.pk
     if np.any(status):
         designid_status = designids[status][np.argmax(versions[status])]
+        status_des = 'done'
     else:
         designid_status = -1
+        status_des = 'not started'
 
     # if assignment_hash provided, check if already exists
     if assign_hash is not None and designid_status == -1:
@@ -1758,4 +1763,4 @@ def find_designid_status(field_id, field_exposure, assign_hash=None):
                 designids[i] = d.design_id
                 versions[i] = d.field.version.pk
             designid_status = designids[np.argmax(versions)]
-    return designid_status
+    return designid_status, status_des

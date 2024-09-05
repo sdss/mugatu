@@ -483,6 +483,9 @@ if __name__ == '__main__':
         # only grab unique fields for this
         rsAllocation1 = fits.open(allocate_file)[1].data
 
+        # do not include fields we are no observing (cadence = none)
+        rsAllocation1 = rsAllocation1[rsAllocation1['cadence'] != 'none']
+
         fieldids = np.unique(rsAllocation1["fieldid"])
 
         rs_fieldids = np.unique(rsAllocation1["rs_fieldid"])
@@ -519,6 +522,9 @@ if __name__ == '__main__':
 
         # only grab unique fields for this
         rsAllocation1 = fits.open(allocate_file)[1].data
+
+        # do not include fields we are no observing (cadence = none)
+        rsAllocation1 = rsAllocation1[rsAllocation1['cadence'] != 'none']
 
         fieldids = np.unique(rsAllocation1["fieldid"])
 

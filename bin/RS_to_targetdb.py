@@ -79,6 +79,9 @@ if __name__ == '__main__':
         allocate_file = allocate_file.replace('final', 'catchup').replace('Final', 'Catchup%s' % ver_catch)
     rsAllocation1 = fits.open(allocate_file)[1].data
 
+    # do not include fields we are no observing (cadence = none)
+    rsAllocation1 = rsAllocation1[rsAllocation1['cadence'] != 'none']
+
     # get the instrument pks
     instr_pks = {}
     instr_pks['BOSS'] = targetdb.Instrument.get(label='BOSS').pk

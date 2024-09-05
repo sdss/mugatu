@@ -556,10 +556,17 @@ if __name__ == '__main__':
         files = []
         cache_files = []
         for fid in fieldids:
-            files += [file for file in glob.glob(replace_path +
-                                                 '{plan}_{fid}*.fits'.format(
-                                                     plan=plan,
-                                                     fid=fid))]
+            # try to grab to version with designid_status first
+            files_field = [file for file in glob.glob(replace_path +
+                                                      '{plan}_{fid}*_designid_status.fits'.format(
+                                                          plan=plan,
+                                                          fid=fid))]
+            if len(files_field) == 0:
+                files_field = [file for file in glob.glob(replace_path +
+                                                          '{plan}_{fid}*.fits'.format(
+                                                              plan=plan,
+                                                              fid=fid))]
+            files += files_field
         for f in files:
             if 'validation' in f:
                 files.remove(f)

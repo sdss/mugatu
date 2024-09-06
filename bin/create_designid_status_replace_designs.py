@@ -17,27 +17,33 @@ import coordio.time
 
 from sdssdb.peewee.sdss5db import targetdb
 
+from mugatu.fpsdesign import FPSDesign
+from mugatu.designmode import find_designid_status
+from mugatu.designs_to_targetdb import assignment_hash
 
-def get_designid_status(file, field_id, Ncores):
+
+def create_des_object(design_file, obsTime, exp):
+    des = FPSDesign(design_pk=-1,
+                    obsTime=obsTime,
+                    design_file=design_file,
+                    manual_design=True,
+                    exp=exp)
+    des.build_design_manual()
+    return des
+
+
+def get_designid_status(file, field_id, des_objs=None):
     """
     get the designid_status for a manual design
     """
-    from mugatu.fpsdesign import FPSDesign
-    from mugatu.designmode import find_designid_status
-    from mugatu.designs_to_targetdb import assignment_hash
-
-    def create_des_object(design_file, obsTime, exp):
-        des = FPSDesign(design_pk=-1,
-                        obsTime=obsTime,
-                        design_file=design_file,
-                        manual_design=True,
-                        exp=exp)
-        des.build_design_manual()
-        return des
-
     def designid_status(design_file, obsTime, exp, fexp, field_id, des_objs=None):
         if des_objs is None:
-            des = create_des_object(design_file, obsTime, exp)
+            des = FPSDesign(design_pk=-1,
+                            obsTime=obsTime,
+                            design_file=design_file,
+                            manual_design=True,
+                            exp=exp)
+            des.build_design_manual()
         else:
             des = des_objs[fexp]
 
@@ -67,15 +73,6 @@ def get_designid_status(file, field_id, Ncores):
         exp = 0
         designid[exp], status[exp] = designid_status(file, obsTime, exp, exp, field_id)
     else:
-        if Ncores > 1:
-            with Pool(processes=Ncores) as pool:
-                des_objs = tqdm(pool.imap(partial(create_des_object, design_file=file,
-                                                  obsTime=obsTime),
-                                                  range(1, n_exp + 1)),
-                                          total=n_exp)
-                des_objs = [r for r in des_objs]
-        else:
-            des_objs = None
         for exp in trange(n_exp):
             designid[exp], status[exp] = designid_status(file, obsTime, exp + 1, exp,
                                                          field_id, des_objs=des_objs)
@@ -131,8 +128,12 @@ if __name__ == '__main__':
 
     for file in files:
         with fits.open(file) as hdu:
-            # make a STATUS HDU
+            # get the metadata
             n_exp = hdu[0].header['NEXP']
+            racen = hdu[0].header['RACEN']
+            ot = obstime.ObsTime(observatory=hdu[0].header['obs'].strip())
+            obsTime = coordio.time.Time(ot.nominal(lst=racen)).jd
+            # make a STATUS HDU
             dtype = np.dtype([('fieldid', '>i4'),
                               ('designid', '>i4'),
                               ('status', 'S20')])
@@ -145,7 +146,17 @@ if __name__ == '__main__':
                                                        targetdb.Field.field_id >= 100000)
             if len(same_field) > 0:
                 field_id = same_field[0].field_id
-                designid, status = get_designid_status(file, field_id, Ncores)
+                # get the design objects if running in parallel
+                if Ncores > 1 and n_exp > 1:
+                    with Pool(processes=Ncores) as pool:
+                        des_objs = tqdm(pool.imap(partial(create_des_object, design_file=file,
+                                                          obsTime=obsTime),
+                                                          range(1, n_exp + 1)),
+                                                  total=n_exp)
+                        des_objs = [r for r in des_objs]
+                else:
+                    des_objs = None
+                designid, status = get_designid_status(file, field_id, des_objs=des_objs)
             else:
                 field_id = -1
                 designid = np.zeros(n_exp, dtype='>i4') - 1

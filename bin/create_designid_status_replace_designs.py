@@ -4,6 +4,7 @@ import os
 import numpy as np
 import glob
 import datetime
+from tqdm import trange
 
 from astropy.io import fits
 from astropy.table import Table
@@ -57,7 +58,7 @@ def get_designid_status(file, field_id):
         exp = 0
         designid[exp], status[exp] = designid_status(file, obsTime, exp, field_id)
     else:
-        for exp in range(n_exp):
+        for exp in trange(n_exp):
             designid[exp], status[exp] = designid_status(file, obsTime, exp + 1, field_id)
     return designid, status
 

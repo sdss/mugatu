@@ -29,7 +29,7 @@ def create_des_object(exp, design_file, obsTime):
                     manual_design=True,
                     exp=exp)
     des.build_design_manual()
-    return des
+    return des.design
 
 
 def get_designid_status(file, field_id, des_objs=None):
@@ -44,11 +44,12 @@ def get_designid_status(file, field_id, des_objs=None):
                             manual_design=True,
                             exp=exp)
             des.build_design_manual()
+            desob = des.design
         else:
-            des = des_objs[fexp]
+            desob = des_objs[fexp]
 
-        assign_hash = assignment_hash(des.design['catalogID'][des.design['robotID'] != -1],
-                                      des.design['holeID'][des.design['robotID'] != -1])
+        assign_hash = assignment_hash(desob['catalogID'][desob['robotID'] != -1],
+                                      desob['holeID'][desob['robotID'] != -1])
         designid_status = find_designid_status(field_id, fexp, assign_hash=assign_hash)
         return designid_status
 

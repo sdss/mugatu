@@ -22,7 +22,7 @@ from mugatu.designmode import find_designid_status
 from mugatu.designs_to_targetdb import assignment_hash
 
 
-def create_des_object(design_file, obsTime, exp):
+def create_des_object(exp, design_file, obsTime):
     des = FPSDesign(design_pk=-1,
                     obsTime=obsTime,
                     design_file=design_file,

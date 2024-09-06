@@ -167,8 +167,8 @@ if __name__ == '__main__':
                 status[:] = 'not started'
 
             # add the new HDU
-            status['designid'] = designid
-            status['status'] = status
+            status['designid'] = np.array(designid, dtype='>i4')
+            status['status'] = np.array(status, dtype='S20')
 
             hdu_status = fits.BinTableHDU(status, name='STATUS')
             hdu.append(hdu_status)

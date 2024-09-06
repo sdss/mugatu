@@ -167,10 +167,9 @@ if __name__ == '__main__':
                 status[:] = 'not started'
 
             # add the new HDU
-            print(designid)
             status_hdu['designid'] = designid
             status_hdu['status'] = status
 
             hdu_status = fits.BinTableHDU(status_hdu, name='STATUS')
             hdu.append(hdu_status)
-            hdu.write(file[:-5] + '_designid_status.fits')
+            hdu.writeto(file[:-5] + '_designid_status.fits')

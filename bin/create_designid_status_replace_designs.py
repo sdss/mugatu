@@ -147,6 +147,7 @@ if __name__ == '__main__':
                                                        targetdb.Field.field_id >= 100000)
             if len(same_field) > 0:
                 field_id = same_field[0].field_id
+                status['fieldid'] = np.zeros(n_exp, dtype='>i4') + field_id
                 # get the design objects if running in parallel
                 if Ncores > 1 and n_exp > 1:
                     with Pool(processes=Ncores) as pool:
@@ -160,12 +161,12 @@ if __name__ == '__main__':
                 designid, status = get_designid_status(file, field_id, des_objs=des_objs)
             else:
                 field_id = -1
+                status['fieldid'] = np.zeros(n_exp, dtype='>i4') + field_id
                 designid = np.zeros(n_exp, dtype='>i4') - 1
                 status = np.zeros(n_exp, dtype='S20')
                 status[:] = 'not started'
 
             # add the new HDU
-            status['fieldid'] += field_id
             status['designid'] = designid
             status['status'] = status
 

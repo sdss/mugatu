@@ -72,7 +72,7 @@ def get_designid_status(file, field_id, Ncores):
                 des_objs = tqdm(pool.imap(partial(create_des_object, design_file=file,
                                                   obsTime=obsTime),
                                                   range(1, n_exp + 1)),
-                                          total=len(n_exp))
+                                          total=n_exp)
                 des_objs = [r for r in des_objs]
         else:
             des_objs = None

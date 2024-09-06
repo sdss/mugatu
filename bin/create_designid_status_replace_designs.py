@@ -138,7 +138,7 @@ if __name__ == '__main__':
             dtype = np.dtype([('fieldid', '>i4'),
                               ('designid', '>i4'),
                               ('status', 'S20')])
-            status = np.zeros(n_exp, dtype=dtype)
+            status_hdu = np.zeros(n_exp, dtype=dtype)
 
             # find if the field already exists and get designids if it does
             same_field = targetdb.Field.select().where(hdu[0].header['RACEN'] == targetdb.Field.racen,
@@ -147,7 +147,7 @@ if __name__ == '__main__':
                                                        targetdb.Field.field_id >= 100000)
             if len(same_field) > 0:
                 field_id = same_field[0].field_id
-                status['fieldid'] = np.zeros(n_exp, dtype='>i4') + field_id
+                status_hdu['fieldid'] = np.zeros(n_exp, dtype='>i4') + field_id
                 # get the design objects if running in parallel
                 if Ncores > 1 and n_exp > 1:
                     with Pool(processes=Ncores) as pool:
@@ -161,16 +161,16 @@ if __name__ == '__main__':
                 designid, status = get_designid_status(file, field_id, des_objs=des_objs)
             else:
                 field_id = -1
-                status['fieldid'] = np.zeros(n_exp, dtype='>i4') + field_id
+                status_hdu['fieldid'] = np.zeros(n_exp, dtype='>i4') + field_id
                 designid = np.zeros(n_exp, dtype='>i4') - 1
                 status = np.zeros(n_exp, dtype='S20')
                 status[:] = 'not started'
 
             # add the new HDU
             print(designid)
-            status['designid'] = designid
-            status['status'] = status
+            status_hdu['designid'] = designid
+            status_hdu['status'] = status
 
-            hdu_status = fits.BinTableHDU(status, name='STATUS')
+            hdu_status = fits.BinTableHDU(status_hdu, name='STATUS')
             hdu.append(hdu_status)
             hdu.write(file[:-5] + '_designid_status.fits')

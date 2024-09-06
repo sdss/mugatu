@@ -165,7 +165,7 @@ if __name__ == '__main__':
                 status[:] = 'not started'
 
             # add the new HDU
-            status['fieldid'][:] = field_id
+            status['fieldid'] += field_id
             status['designid'] = designid
             status['status'] = status
 

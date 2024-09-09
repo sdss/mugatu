@@ -65,7 +65,10 @@ if __name__ == '__main__':
     # get status files
     files_status = []
     for f in files:
-        files_status.append(f[:-5] + '-status.dat')
+        if os.path.exists(f[:-5] + '_designid_status.fits'):
+            files_status.append(f[:-5] + '_designid_status.fits')
+        else:
+            raise MugatuError(message='No designid_status file for field')
 
     # get observatory insts
     obsDB = targetdb.Observatory()
@@ -163,7 +166,7 @@ if __name__ == '__main__':
         # get number of exposures
         n_exp = head['NEXP']
         if os.path.exists(status):
-            design_ids = np.genfromtxt(status, dtype=int)
+            design_ids = fits.open(status)['STATUS'].data['designid']
         else:
             design_ids = np.zeros(n_exp, dtype=int) - 1
 

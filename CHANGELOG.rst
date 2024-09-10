@@ -6,6 +6,11 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+`2.4.0 <https://github.com/sdss/mugatu/compare/2.3.1...2.4.0>`_ - 2024-06-10
+
+* Add function to populate designid status.
+* Add script to populate designid status in rsFieldAssignment files used to replace designs.
+
 `2.3.1 <https://github.com/sdss/mugatu/compare/2.3.0...2.3.1>`_ - 2024-06-10
 
 * Add option to validation script to skip dark_rm designs.

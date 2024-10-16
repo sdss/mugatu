@@ -174,55 +174,68 @@ if __name__ == '__main__':
 
         # iterate over exposures for this field entry
         for i in range(allo['iexpst'], allo['iexpnd'] + 1):
-            # index correctly based on n_exp
-            if n_exp == 1:
-                roboIDs = design['robotID']
-                holeIDs = design['holeID']
-                desmode_label = desmode_labels[0]
+            # check if entry already exists
+            des = targetdb.DesignToField.select()\
+                                        .join(targetdb.Field)\
+                                        .join(targetdb.Version)\
+                                        .where(targetdb.Version.plan == plan,
+                                               targetdb.Field.field_id == fieldid,
+                                               targetdb.DesignToField.exposure == i - allo['iexpst'],
+                                               targetdb.DesignToField.field_exposure == i)
+            if len(des) > 0:
+                flag = 'Design already in targetdb'
+                warnings.warn(flag, MugatuWarning)
             else:
-                roboIDs = design['robotID'][:, i]
-                holeIDs = design['holeID'][:, i]
-                desmode_label = desmode_labels[i]
-            # write exposure to targetdb if not previous design
-            if design_ids['designid'][i] == -1:
-                design_id = make_design_assignments_targetdb(
-                    plan=ver_inst,
-                    fieldid=fieldid_inst,
-                    exposure=i - allo['iexpst'],  # subtract off the min so it is 0-indexed
-                    field_exposure=i,
-                    desmode_label=desmode_label,
-                    design_ids=design_inst['carton_to_target_pk'],
-                    robotID=roboIDs,
-                    holeID=holeIDs,
-                    obsWavelength=design_inst['fiberType'],
-                    carton=design_inst['carton'],
-                    observatory=obs_inst,
-                    targetdb_ver=None,
-                    instr_pks=instr_pks,
-                    cart_pks=design_inst['carton_pk'],
-                    fiber_pks=fiber_pks,
-                    idtype='carton_to_target',
-                    return_design_id=True)
+                # index correctly based on n_exp
+                if n_exp == 1:
+                    roboIDs = design['robotID']
+                    holeIDs = design['holeID']
+                    desmode_label = desmode_labels[0]
+                else:
+                    roboIDs = design['robotID'][:, i]
+                    holeIDs = design['holeID'][:, i]
+                    desmode_label = desmode_labels[i]
+                # write exposure to targetdb if not previous design
+                if design_ids['designid'][i] == -1:
+                    design_id = make_design_assignments_targetdb(
+                        plan=ver_inst,
+                        fieldid=fieldid_inst,
+                        exposure=i - allo['iexpst'],  # subtract off the min so it is 0-indexed
+                        field_exposure=i,
+                        desmode_label=desmode_label,
+                        design_ids=design_inst['carton_to_target_pk'],
+                        robotID=roboIDs,
+                        holeID=holeIDs,
+                        obsWavelength=design_inst['fiberType'],
+                        carton=design_inst['carton'],
+                        observatory=obs_inst,
+                        targetdb_ver=None,
+                        instr_pks=instr_pks,
+                        cart_pks=design_inst['carton_pk'],
+                        fiber_pks=fiber_pks,
+                        idtype='carton_to_target',
+                        return_design_id=True)
 
-                file = sdss_path.full('rsFieldAssignmentsFinal',
-                                    plan=plan,
-                                    observatory=observatory,
-                                    fieldid=fieldid).split('/')[-1]
-                if type_ing == 'rs_catchup':
-                    # get the catchup file
-                    file = file.replace('final', 'catchup').replace('Final', 'Catchup%s' % ver_catch)
+                    file = sdss_path.full('rsFieldAssignmentsFinal',
+                                        plan=plan,
+                                        observatory=observatory,
+                                        fieldid=fieldid).split('/')[-1]
+                    if type_ing == 'rs_catchup':
+                        # get the catchup file
+                        file = file.replace('final', 'catchup').replace('Final', 'Catchup%s' % ver_catch)
 
-                try:
-                    ind = np.where((valid_results['file_name'] == file) &
-                                   (valid_results['exp'] == i))[0][0]
-                    make_desigmmode_results_targetdb(
-                        design_id=design_id,
-                        design_pass=True,
-                        design_valid_file_row=valid_results[ind])
-                except IndexError:
-                    pass
-            else:
-                make_designToField(design=int(design_ids['designid'][i]),
-                                   fieldid=fieldid_inst,
-                                   exposure=i - allo['iexpst'],
-                                   field_exposure=i)
+                    try:
+                        ind = np.where((valid_results['file_name'] == file) &
+                                       (valid_results['exp'] == i))[0][0]
+                        make_desigmmode_results_targetdb(
+                            design_id=design_id,
+                            design_pass=True,
+                            design_valid_file_row=valid_results[ind])
+                    except IndexError:
+                        flag = 'No validation results for design'
+                        warnings.warn(flag, MugatuWarning)
+                else:
+                    make_designToField(design=int(design_ids['designid'][i]),
+                                       fieldid=fieldid_inst,
+                                       exposure=i - allo['iexpst'],
+                                       field_exposure=i)

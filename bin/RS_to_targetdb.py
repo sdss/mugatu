@@ -212,12 +212,15 @@ if __name__ == '__main__':
                     # get the catchup file
                     file = file.replace('final', 'catchup').replace('Final', 'Catchup%s' % ver_catch)
 
-                ind = np.where((valid_results['file_name'] == file) &
-                               (valid_results['exp'] == i))[0][0]
-                make_desigmmode_results_targetdb(
-                    design_id=design_id,
-                    design_pass=True,
-                    design_valid_file_row=valid_results[ind])
+                try:
+                    ind = np.where((valid_results['file_name'] == file) &
+                                   (valid_results['exp'] == i))[0][0]
+                    make_desigmmode_results_targetdb(
+                        design_id=design_id,
+                        design_pass=True,
+                        design_valid_file_row=valid_results[ind])
+                except IndexError:
+                    pass
             else:
                 make_designToField(design=int(design_ids['designid'][i]),
                                    fieldid=fieldid_inst,

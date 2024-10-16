@@ -59,6 +59,9 @@ if __name__ == '__main__':
     for f in files:
         if 'validation' in f or 'status' in f:
             files.remove(f)
+    for f in files:
+        if 'validation' in f or 'status' in f:
+            files.remove(f)
     files_valid = []
     for f in files:
         files_valid.append(f[:-5] + '_validation.fits')

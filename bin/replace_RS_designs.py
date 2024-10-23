@@ -31,11 +31,15 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--fieldids', dest='fieldids', nargs='+',
                         help='field_ids to replace)',
                         type=int, required=True)
+    parser.add_argument('-v', '--ver_des', dest='ver_des',
+                        type=str, help='Version of the designs',
+                        required=False, default='')
 
     args = parser.parse_args()
     loc = args.loc
     plan = args.plan
     fieldids = args.fieldids
+    ver_des = args.ver_des
 
     if loc == 'local':
         targetdb.database.connect_from_parameters(user='sdss',
@@ -53,9 +57,10 @@ if __name__ == '__main__':
     files = []
     for fid in fieldids:
         files += [file for file in glob.glob(replace_path +
-                                             '{plan}_{fid}*.fits'.format(
+                                             '{plan}_{fid}*{ver_des}.fits'.format(
                                                  plan=plan,
-                                                 fid=fid))]
+                                                 fid=fid,
+                                                 ver_des=ver_des))]
     for f in files:
         if 'validation' in f or 'status' in f:
             files.remove(f)

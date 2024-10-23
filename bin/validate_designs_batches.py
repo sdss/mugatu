@@ -446,6 +446,9 @@ if __name__ == '__main__':
     parser.add_argument('-k', '--skip_rm', dest='skip_rm',
                         type=bool, help='whether to skip dark_rm during validation', required=False,
                         default=False)
+    parser.add_argument('-x', '--ver_des', dest='ver_des',
+                        type=str, help='Version of the designs',
+                        required=False, default='')
 
     args = parser.parse_args()
     vtype = args.type
@@ -458,6 +461,7 @@ if __name__ == '__main__':
     cache_bs = args.cache_bs
     ver_catch = args.ver_catch
     skip_rm = args.skip_rm
+    ver_des = args.ver_des
     if type(skip_rm) is str:
         if skip_rm == 'True':
             skip_rm = True
@@ -558,14 +562,16 @@ if __name__ == '__main__':
         for fid in fieldids:
             # try to grab to version with designid_status first
             files_field = [file for file in glob.glob(replace_path +
-                                                      '{plan}_{fid}*_designid_status.fits'.format(
+                                                      '{plan}_{fid}*{ver_des}_designid_status.fits'.format(
                                                           plan=plan,
-                                                          fid=fid))]
+                                                          fid=fid,
+                                                          ver_des=ver_des))]
             if len(files_field) == 0:
                 files_field = [file for file in glob.glob(replace_path +
-                                                          '{plan}_{fid}*.fits'.format(
+                                                          '{plan}_{fid}*{ver_des}.fits'.format(
                                                               plan=plan,
-                                                              fid=fid))]
+                                                              fid=fid,
+                                                              ver_des=ver_des))]
             files += files_field
         for f in files:
             if 'validation' in f:

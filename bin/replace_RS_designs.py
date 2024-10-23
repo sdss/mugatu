@@ -64,7 +64,7 @@ if __name__ == '__main__':
             files.remove(f)
     files_valid = []
     for f in files:
-        files_valid.append(f[:-5] + '_validation.fits')
+        files_valid.append(f[:-5] + '_designid_status_validation.fits')
     # get status files
     files_status = []
     for f in files:

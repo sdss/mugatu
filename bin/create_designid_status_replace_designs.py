@@ -96,12 +96,16 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--Ncores', dest='Ncores',
                         type=int, help='number of cores to use. If Ncores=1, then not run in parallal.',
                         default=1, nargs='?')
+    parser.add_argument('-v', '--ver_des', dest='ver_des',
+                        type=str, help='Version of the designs',
+                        required=False, default='')
 
     args = parser.parse_args()
     loc = args.loc
     plan = args.plan
     fieldids = args.fieldids
     Ncores = args.Ncores
+    ver_des = args.ver_des
 
     if loc == 'local':
         targetdb.database.connect_from_parameters(user='sdss',
@@ -120,9 +124,10 @@ if __name__ == '__main__':
     files = []
     for fid in fieldids:
         files += [file for file in glob.glob(replace_path +
-                                             '{plan}_{fid}*.fits'.format(
+                                             '{plan}_{fid}*{ver_des}.fits'.format(
                                                  plan=plan,
-                                                 fid=fid))]
+                                                 fid=fid,
+                                                 ver_des=ver_des))]
     for f in files:
         if 'validation' in f or 'status' in f:
             files.remove(f)

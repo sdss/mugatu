@@ -25,7 +25,7 @@ jupyter = "^1.0.0"
 ortools = "^9.1.9490"
 DateTime = "^4.3"
 notebook = "^6.4.12"
-astropy = "^5.3.3"
+astropy = "^5.2.2"
 
 [tool.poetry.dev-dependencies]
 

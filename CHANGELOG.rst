@@ -6,6 +6,9 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* For designmode.build_brigh_neigh_query(), switch to using catalogdb.Gaia_DR3_g_lt_16 for the search to make queries faster.
+* For RS replacement script, allow for versioning of designs in fields.
+
 `2.4.0 <https://github.com/sdss/mugatu/compare/2.3.1...2.4.0>`_ - 2024-06-10
 
 * Add function to populate designid status.

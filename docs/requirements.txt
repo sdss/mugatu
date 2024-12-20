@@ -1,4 +1,3 @@
 ipykernel
 nbsphinx
 sphinx-rtd-theme
-sdss-mugatu

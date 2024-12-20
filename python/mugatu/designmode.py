@@ -560,12 +560,12 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
         r_search = 1.0
     if check_type == 'designmode':
         if instrument == 'BOSS':
-            cat = catalogdb.Gaia_DR3
+            cat = catalogdb.Gaia_DR3_g_lt_16
             ra_col = catalogdb.Catalog.ra
             dec_col = catalogdb.Catalog.dec
             ra_col_str = 'ra'
             dec_col_str = 'dec'
-            mag_col = catalogdb.Gaia_DR3.phot_g_mean_mag
+            mag_col = catalogdb.Gaia_DR3_g_lt_16.phot_g_mean_mag
             # run the query
             db_query_gaia = (catalogdb.Catalog.select(
                 ra_col,
@@ -577,7 +577,9 @@ def build_brigh_neigh_query(check_type, instrument, mag_lim,
                 .join(catalogdb.Version)
                 .switch(catalogdb.Catalog)
                 .join(catalogdb.CatalogToGaia_DR3)
-                .join(catalogdb.Gaia_DR3)
+                .join(catalogdb.Gaia_DR3_g_lt_16,
+                      on=(catalogdb.Gaia_DR3_g_lt_16.source_id ==
+                          catalogdb.CatalogToGaia_DR3.target))
                 .where((cat.cone_search(racen,
                                         deccen,
                                         r_search,

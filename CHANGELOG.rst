@@ -6,6 +6,9 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Update `replace_RS_designs.py` script to allow for appending to field.
+* Create script for appending targeting_generation tables.
+
 `2.5.0 <https://github.com/sdss/mugatu/compare/2.4.0...2.5.0>`_ - 2024-12-20
 
 * For `designmode.build_brigh_neigh_query()`, switch to using catalogdb.Gaia_DR3_g_lt_16 for the search to make queries faster.

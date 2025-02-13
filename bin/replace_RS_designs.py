@@ -34,12 +34,21 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--ver_des', dest='ver_des',
                         type=str, help='Version of the designs',
                         required=False, default='')
+    parser.add_argument('-a', '--append_designs', dest='append_designs',
+                        type=bool, help='If appending field and if so ignoring exposures in current field', required=False,
+                        default=False)
 
     args = parser.parse_args()
     loc = args.loc
     plan = args.plan
     fieldids = args.fieldids
     ver_des = args.ver_des
+    append_designs = args.append_designs
+    if type(append_designs) is str:
+        if append_designs == 'True':
+            append_designs = True
+        else:
+            append_designs = False
 
     if loc == 'local':
         targetdb.database.connect_from_parameters(user='sdss',
@@ -181,8 +190,8 @@ if __name__ == '__main__':
         # get number of exposures to be replaced
         des = targetdb.DesignToField.select().where(targetdb.DesignToField.field == field_replace.pk)
         n_exp_expc = len(des)
-        # ensure exposures is correct
-        if n_exp == n_exp_expc:
+        # ensure exposures is correct or if just appending
+        if n_exp == n_exp_expc or append_designs:
             for i in range(n_exp):
                 # index correctly based on n_exp
                 if n_exp == 1:

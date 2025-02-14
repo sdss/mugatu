@@ -4,6 +4,7 @@ import os
 import numpy as np
 import glob
 import datetime
+import warnings
 
 from astropy.io import fits
 from astropy.table import Table
@@ -15,7 +16,7 @@ from mugatu.designs_to_targetdb import (make_design_field_targetdb,
                                         make_desigmmode_results_targetdb,
                                         design_status_bitmask,
                                         make_designToField)
-from mugatu.exceptions import MugatuError
+from mugatu.exceptions import MugatuError, MugatuWarning
 
 
 if __name__ == '__main__':
@@ -78,14 +79,19 @@ if __name__ == '__main__':
             files.remove(f)
     files_valid = []
     for f in files:
-        files_valid.append(f[:-5] + '_designid_status_validation.fits')
+        if os.path.exists(f[:-5] + '_designid_status_validation.fits'):
+            files_valid.append(f[:-5] + '_designid_status_validation.fits')
+        else:
+            files_valid.append(f[:-5] + '_validation.fits')
     # get status files
     files_status = []
     for f in files:
         if os.path.exists(f[:-5] + '_designid_status.fits'):
             files_status.append(f[:-5] + '_designid_status.fits')
         else:
-            raise MugatuError(message='No designid_status file for field')
+            files_status.append(f[:-5] + '_designid_status.fits')
+            flag = 'No designid_status file for field'
+            warnings.warn(flag, MugatuWarning)
 
     # get observatory insts
     obsDB = targetdb.Observatory()

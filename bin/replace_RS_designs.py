@@ -163,12 +163,14 @@ if __name__ == '__main__':
             racen_new = field_replace.racen
             deccen_new = field_replace.deccen
             pa_new = field_replace.position_angle
+            cadence_new = head['FCADENCE']
         else:
             racen_new = head['RACEN']
             deccen_new = head['DECCEN']
             pa_new = head['PA']
+            cadence_new = field_replace.cadence.label
         # use mugatu function to create field in targetdb
-        make_design_field_targetdb(cadence=field_replace.cadence.label,
+        make_design_field_targetdb(cadence=cadence_new,
                                    fieldid=fieldid_new,
                                    plan=ver_inst,
                                    racen=racen_new,

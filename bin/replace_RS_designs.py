@@ -144,7 +144,7 @@ if __name__ == '__main__':
         # create replacement field
         # get new field_id only if racen, deccen and PA change or appending
         if append_designs:
-            fieldid_new = fieldid_replace
+            fieldid_new = fieldid_replace.field_id
         elif (head['RACEN'] == field_replace.racen and
               head['DECCEN'] == field_replace.deccen and
               head['PA'] == field_replace.position_angle):

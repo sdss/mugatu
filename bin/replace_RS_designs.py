@@ -142,10 +142,12 @@ if __name__ == '__main__':
         field_replace = (targetdb.Field.select().where(targetdb.Field.field_id == fieldid_replace,
                                                        targetdb.Field.version == ver_inst.pk)[0])
         # create replacement field
-        # get new field_id only if racen, deccen and PA change
-        if (head['RACEN'] == field_replace.racen and
-            head['DECCEN'] == field_replace.deccen and
-            head['PA'] == field_replace.position_angle):
+        # get new field_id only if racen, deccen and PA change or appending
+        if append_designs:
+            fieldid_new = fieldid_replace
+        elif (head['RACEN'] == field_replace.racen and
+              head['DECCEN'] == field_replace.deccen and
+              head['PA'] == field_replace.position_angle):
             fieldid_new = fieldid_replace
         else:
             same_field = targetdb.Field.select().where(head['RACEN'] == targetdb.Field.racen,
@@ -157,9 +159,14 @@ if __name__ == '__main__':
             else:
                 fieldid_new = targetdb.FieldReservation.requestNext(
                      N=1, commit=True, commissioning=False)[0]
-        racen_new = head['RACEN']
-        deccen_new = head['DECCEN']
-        pa_new = head['PA']
+        if append_designs:
+            racen_new = field_replace.racen
+            deccen_new = field_replace.deccen
+            pa_new = field_replace.position_angle
+        else:
+            racen_new = head['RACEN']
+            deccen_new = head['DECCEN']
+            pa_new = head['PA']
         # use mugatu function to create field in targetdb
         make_design_field_targetdb(cadence=field_replace.cadence.label,
                                    fieldid=fieldid_new,

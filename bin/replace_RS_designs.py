@@ -144,7 +144,7 @@ if __name__ == '__main__':
         # create replacement field
         # get new field_id only if racen, deccen and PA change or appending
         if append_designs:
-            fieldid_new = fieldid_replace.field_id
+            fieldid_new = fieldid_replace
         elif (head['RACEN'] == field_replace.racen and
               head['DECCEN'] == field_replace.deccen and
               head['PA'] == field_replace.position_angle):
@@ -187,7 +187,7 @@ if __name__ == '__main__':
                                       .join(targetdb.Cadence)
                                       .where((targetdb.Field.field_id == fieldid_new) &
                                              (targetdb.Version.plan == plan) &
-                                             (targetdb.Cadence.label == field_replace.cadence.label)))
+                                             (targetdb.Cadence.label == cadence_new)))
         if len(fieldid_inst) > 1:
             pks = []
             for f in fieldid_inst:

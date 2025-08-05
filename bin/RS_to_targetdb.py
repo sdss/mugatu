@@ -42,9 +42,11 @@ if __name__ == '__main__':
                         type=str, help='tag for the plan', required=True)
     parser.add_argument('-ti', '--type_ing', dest='type_ing',
                         type=str, help='what type of ingestion this is',
-                        choices=['rs', 'rs_catchup'], default='rs')
+                        choices=['rs', 'rs_catchup', 'rs_overplan'], default='rs')
     parser.add_argument('-v', '--ver_catch', dest='ver_catch',
                         type=str, help='version of catchup (for type=rs_catchup)', required=False)
+    parser.add_argument('-m', '--main_plan', dest='main_plan',
+                        type=str, help='String for the main plan (for type=rs_overplan)', required=False)
 
     args = parser.parse_args()
     plan = args.plan
@@ -52,6 +54,7 @@ if __name__ == '__main__':
     tag = args.tag
     type_ing = args.type_ing
     ver_catch = args.ver_catch
+    main_plan = args.main_plan
 
     # connect to targetdb
     targetdb.database.connect_from_parameters(user='sdss',
@@ -59,21 +62,48 @@ if __name__ == '__main__':
                                               port=5432)
 
     # add new robostratgey version to targetDB if it doesnt exist
-    ver = targetdb.Version.select().where(targetdb.Version.plan == plan)
-    if ver.exists():
-        flag = 'Robostrategy plan already in targetdb'
-        warnings.warn(flag, MugatuWarning)
-    else:
-        targetdb.Version = targetdb.Version.create(plan=plan,
-                                                   target_selection=False,
-                                                   robostrategy=True,
-                                                   tag=tag)
+    if type_ing == 'rs_overplan':
+        ver = targetdb.Version.select().where(targetdb.Version.plan == main_plan)
+        if ver.exists():
+            flag = 'Robostrategy plan already in targetdb'
+            warnings.warn(flag, MugatuWarning)
+        else:
+            targetdb.Version = targetdb.Version.create(plan=main_plan,
+                                                       target_selection=False,
+                                                       robostrategy=True,
+                                                       tag=tag)
 
-        targetdb.Version.save()
+            targetdb.Version.save()
+    else:
+        ver = targetdb.Version.select().where(targetdb.Version.plan == plan)
+        if ver.exists():
+            flag = 'Robostrategy plan already in targetdb'
+            warnings.warn(flag, MugatuWarning)
+        else:
+            targetdb.Version = targetdb.Version.create(plan=plan,
+                                                       target_selection=False,
+                                                       robostrategy=True,
+                                                       tag=tag)
+
+            targetdb.Version.save()
 
     # file with cadences for each field
     allocate_file = sdss_path.full('rsAllocationFinal', plan=plan,
                                    observatory=observatory)
+    
+    # if this is overplan, create overplan entry
+    if type_ing == 'rs_overplan':
+        overplan = targetdb.Overplan.select().where(targetdb.Overplan.input_file == allocate_file.split('/')[-1],
+                                                    targetdb.Overplan.plan == plan)
+        if not overplan.exists():
+            overplan = targetdb.Overplan.create(input_file=allocate_file.split('/')[-1],
+                                                plan=plan)
+            overplan.save()
+        else:
+            overplan = targetdb.Overplan.get(overplan[0].pk)
+    else:
+        overplan = None
+
     if type_ing == 'rs_catchup':
         # get the catchup file
         allocate_file = allocate_file.replace('final', 'catchup').replace('Final', 'Catchup%s' % ver_catch)
@@ -143,7 +173,7 @@ if __name__ == '__main__':
         desmode_labels = head['DESMODE'].split(' ')
 
         # use mugatu function to create field in targetdb
-        if type_ing == 'rs_catchup':
+        if type_ing == 'rs_catchup' or type_ing == 'rs_overplan':
             replacement_field = True
         else:
             replacement_field = False
@@ -155,7 +185,8 @@ if __name__ == '__main__':
                                    position_angle=head['PA'],
                                    observatory=obs_inst,
                                    slots_exposures=slots_exposures,
-                                   replacement_field=replacement_field)
+                                   replacement_field=replacement_field,
+                                   overplan=overplan)
 
         fieldid_inst = (targetdb.Field.select()
                                       .join(targetdb.Version)
@@ -164,7 +195,7 @@ if __name__ == '__main__':
                                       .where((targetdb.Field.field_id == fieldid) &
                                              (targetdb.Version.plan == plan) &
                                              (targetdb.Cadence.label == allo['cadence'])))
-        if type_ing == 'rs_catchup':
+        if type_ing == 'rs_catchup' or type_ing == 'rs_overplan':
             pk_field = np.max([f.pk for f in fieldid_inst])
             fieldid_inst = (targetdb.Field.select()
                                           .where(targetdb.Field.pk == pk_field))

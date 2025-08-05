@@ -6,6 +6,9 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Add overplan option for `RS_to_targetdb.py`.
+* Add overplan option for field creation in `designs_to_targetdb.make_design_field_targetdb()`.
+* Change stepSize for kaiju grid to 0.1 in `fpsdesign.FPSDesign()`.
 * Update `replace_RS_designs.py` script to allow for appending to field.
 * Create script for appending targeting_generation tables.
 

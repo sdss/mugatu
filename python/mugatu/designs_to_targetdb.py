@@ -23,7 +23,8 @@ mugatu_version = mugatu.__version__
 def make_design_field_targetdb(cadence, fieldid, plan,
                                racen, deccen, position_angle,
                                observatory, slots_exposures,
-                               replacement_field=False):
+                               replacement_field=False,
+                               overplan=None):
     """
     Create a new field in targetdb. Will return warning
     if the field already exists in targetdb
@@ -60,6 +61,10 @@ def make_design_field_targetdb(cadence, fieldid, plan,
     replacement_field: boolean
         If the field is a replacement field. If True then will
         ignore check for if field exists.
+    
+    overplan: targetdb.Overplan instance
+        If this is part of an overplan, include the overplan
+        instance for the foriegn key.
     """
 
     # get the field cadence pk
@@ -92,7 +97,8 @@ def make_design_field_targetdb(cadence, fieldid, plan,
                 slots_exposures=slots_exposures,
                 cadence=dbCadence,
                 observatory=obspk,
-                version=verpk)
+                version=verpk,
+                overplan=overplan)
         # save row in database
         fieldDB.save()
     else:
@@ -115,7 +121,8 @@ def make_design_field_targetdb(cadence, fieldid, plan,
                 slots_exposures=slots_exposures,
                 cadence=dbCadence,
                 observatory=obspk,
-                version=verpk)
+                version=verpk,
+                overplan=overplan)
             # save row in database
             fieldDB.save()
 

@@ -6,6 +6,7 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Supply updated year to `robostrategy.obstime.ObsTime`.
 * Add overplan option for `RS_to_targetdb.py`.
 * Add overplan option for field creation in `designs_to_targetdb.make_design_field_targetdb()`.
 * Change stepSize for kaiju grid to 0.1 in `fpsdesign.FPSDesign()`.

@@ -1,5 +1,6 @@
 import sys
 import argparse
+import configparser
 import os
 import numpy as np
 import glob
@@ -38,8 +39,11 @@ primary_hdu.header['kaiju_version'] = kaiju_ver
 primary_hdu.header['coordio_version'] = coordio_ver
 primary_hdu.header['fps_calibrations_version'] = fps_calib_ver
 
+# default observe_epoch
+year_default = 2026.25
 
-def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm):
+def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm,
+                year):
     # need import here for create new connection
     from mugatu.fpsdesign import FPSDesign
     from mugatu.designmode import (build_brigh_neigh_query,
@@ -49,7 +53,7 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm):
 
     def validate_design(design_file, exp, obsTime,
                         db_query_results_boss, db_query_results_apogee,
-                        desmode_manual):
+                        desmode_manual, year):
         """
         Validate a design and record any errors or warnings
         from the validation
@@ -59,14 +63,16 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm):
                             obsTime=obsTime,
                             design_file=design_file,
                             manual_design=True,
-                            exp=exp)
+                            exp=exp,
+                            year=year)
         else:
             des = FPSDesign(design_pk=-1,
                             obsTime=obsTime,
                             design_file=design_file,
                             manual_design=True,
                             exp=exp,
-                            offset_min_skybrightness=offset_min_skybrightness)
+                            offset_min_skybrightness=offset_min_skybrightness,
+                            year=year)
         # set default
         decolide = True
         bright_safety = True
@@ -245,19 +251,21 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm):
 
     def valid_design_func(file, exp, obsTime, field_desmodes,
                           db_results_boss, db_results_apogee,
-                          desmodes):
+                          desmodes, year):
         dm = field_desmodes[exp]
         des, decolide, bright_safety = validate_design(file,
                                                        exp + 1,
                                                        obsTime,
                                                        db_results_boss[dm],
                                                        db_results_apogee[dm],
-                                                       desmodes[dm])
+                                                       desmodes[dm],
+                                                       year)
         valid_arr_des = design_outputs_to_array(des, decolide,
                                                 bright_safety,
                                                 db_results_boss[dm],
                                                 db_results_apogee[dm],
-                                                desmodes[dm])
+                                                desmodes[dm],
+                                                year)
         return valid_arr_des
 
     file = all_files[0]
@@ -362,7 +370,8 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm):
                                                            obsTime,
                                                            db_results_boss[dm],
                                                            db_results_apogee[dm],
-                                                           desmodes[dm])
+                                                           desmodes[dm],
+                                                           year)
             valid_arr = design_outputs_to_array(des, decolide,
                                                 bright_safety,
                                                 db_results_boss[dm],
@@ -392,7 +401,8 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm):
                                                                obsTime,
                                                                db_results_boss[dm],
                                                                db_results_apogee[dm],
-                                                               desmodes[dm])
+                                                               desmodes[dm],
+                                                               year)
                 valid_arr_des = design_outputs_to_array(des, decolide,
                                                         bright_safety,
                                                         db_results_boss[dm],
@@ -471,10 +481,17 @@ if __name__ == '__main__':
     MUGATU_DATA = os.getenv('MUGATU_DATA')
 
     if vtype == 'dir':
+        year = year_default
         files = [file for file in glob.glob(directory + '*.fits')]
         cache_files = []
     elif vtype == 'rs':
         files = []
+
+        # get observe_epoch from config
+        rs_cfg = configparser.ConfigParser(allow_no_value=True)
+        rs_cfg.optionxform = str
+        rs_cfg.read(os.getenv('RSCONFIG_DIR') + f'/etc/robostrategy-{plan}.cfg')
+        year = rs_cfg.getfloat('Assignment', 'observe_epoch')
 
         cache_files = []
         cache_dir = os.getenv('ROBOSTRATEGY_DATA') + '/allocations/eta-0-bs-cache/targets/'
@@ -512,6 +529,12 @@ if __name__ == '__main__':
                 cache_files.append(cache_file)
     elif vtype == 'rs_catchup':
         files = []
+
+        # get observe_epoch from config
+        rs_cfg = configparser.ConfigParser(allow_no_value=True)
+        rs_cfg.optionxform = str
+        rs_cfg.read(os.getenv('RSCONFIG_DIR') + f'/etc/robostrategy-{plan}.cfg')
+        year = rs_cfg.getfloat('Assignment', 'observe_epoch')
 
         cache_files = []
         cache_dir = os.getenv('ROBOSTRATEGY_DATA') + '/allocations/eta-0-bs-cache/targets/'
@@ -554,6 +577,7 @@ if __name__ == '__main__':
                                                                                                fid=rs_fieldid)
                 cache_files.append(cache_file)
     elif vtype == 'rs_replace':
+        year = year_default
         replace_path = ('/uufs/chpc.utah.edu/common/home/sdss50/sdsswork/'
                         'target/robostrategy_replacement/{plan}/'.format(
                             plan=plan))
@@ -630,7 +654,7 @@ if __name__ == '__main__':
         else:
             all_files = [(f, '') for f in files]
         res = tqdm(pool.imap(partial(valid_field, offset_min_skybrightness=offset_min_skybrightness,
-                                     cache_bs=cache_bs, skip_rm=skip_rm),
+                                     cache_bs=cache_bs, skip_rm=skip_rm, year=year),
                                      all_files),
                    total=len(files))
         res = [r for r in res]

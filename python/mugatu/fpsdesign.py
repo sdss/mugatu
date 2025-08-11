@@ -164,6 +164,10 @@ class FPSDesign(object):
     offset_min_skybrightness: float
         Minimum skybrightness targets will be offset
 
+    year: float
+        The observation epoch to use for the robostrategy.obstime.ObsTime
+        object.
+
     Attributes
     ----------
     design: dict
@@ -213,7 +217,7 @@ class FPSDesign(object):
                  epoch=None, holeID=None, obsWavelength=None,
                  priority=None, carton_pk=None, category=None, magnitudes=None,
                  design_file=None, manual_design=False, exp=0, RS_VERSION=None,
-                 offset_min_skybrightness=0.):
+                 offset_min_skybrightness=0., year=2026.25):
         if idtype != 'catalogID' and idtype != 'carton_to_target':
             message = 'idtype must be catalogID or carton_to_target'
             raise MugatuError(message=message)
@@ -323,7 +327,8 @@ class FPSDesign(object):
         self.manual_design = manual_design
         self.exp = exp
         if obsTime is None:
-            ot = obstime.ObsTime(observatory=self.observatory.lower())
+            ot = obstime.ObsTime(observatory=self.observatory.lower(),
+                                 year=year)
             self.obsTime = coordio.time.Time(ot.nominal(lst=self.racen)).jd
         else:
             self.obsTime = obsTime

@@ -40,7 +40,7 @@ primary_hdu.header['coordio_version'] = coordio_ver
 primary_hdu.header['fps_calibrations_version'] = fps_calib_ver
 
 # default observe_epoch
-year_default = 2026.25
+year_default = '2025-08-15'
 
 def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm,
                 year):
@@ -491,7 +491,7 @@ if __name__ == '__main__':
         rs_cfg = configparser.ConfigParser(allow_no_value=True)
         rs_cfg.optionxform = str
         rs_cfg.read(os.getenv('RSCONFIG_DIR') + f'/etc/robostrategy-{plan}.cfg')
-        year = rs_cfg.getfloat('Assignment', 'observe_epoch')
+        year = rs_cfg.getstr('Assignment', 'observe_epoch')
 
         cache_files = []
         cache_dir = os.getenv('ROBOSTRATEGY_DATA') + '/allocations/eta-0-bs-cache/targets/'
@@ -534,7 +534,7 @@ if __name__ == '__main__':
         rs_cfg = configparser.ConfigParser(allow_no_value=True)
         rs_cfg.optionxform = str
         rs_cfg.read(os.getenv('RSCONFIG_DIR') + f'/etc/robostrategy-{plan}.cfg')
-        year = rs_cfg.getfloat('Assignment', 'observe_epoch')
+        year = rs_cfg.getstr('Assignment', 'observe_epoch')
 
         cache_files = []
         cache_dir = os.getenv('ROBOSTRATEGY_DATA') + '/allocations/eta-0-bs-cache/targets/'

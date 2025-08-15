@@ -276,7 +276,8 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm,
     head = fits.open(file)[0].header
     racen = head['RACEN']
     deccen = head['DECCEN']
-    ot = obstime.ObsTime(observatory=head['obs'].strip())
+    ot = obstime.ObsTime(observatory=head['obs'].strip(),
+                         date=year)
     obsTime = coordio.time.Time(ot.nominal(lst=racen)).jd
     n_exp = head['NEXP']
     field_desmodes = head['DESMODE'].split(' ')

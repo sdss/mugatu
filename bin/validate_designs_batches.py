@@ -491,7 +491,7 @@ if __name__ == '__main__':
         rs_cfg = configparser.ConfigParser(allow_no_value=True)
         rs_cfg.optionxform = str
         rs_cfg.read(os.getenv('RSCONFIG_DIR') + f'/etc/robostrategy-{plan}.cfg')
-        year = rs_cfg.getstr('Assignment', 'observe_epoch')
+        year = rs_cfg.get('Assignment', 'observe_epoch')
 
         cache_files = []
         cache_dir = os.getenv('ROBOSTRATEGY_DATA') + '/allocations/eta-0-bs-cache/targets/'
@@ -534,7 +534,7 @@ if __name__ == '__main__':
         rs_cfg = configparser.ConfigParser(allow_no_value=True)
         rs_cfg.optionxform = str
         rs_cfg.read(os.getenv('RSCONFIG_DIR') + f'/etc/robostrategy-{plan}.cfg')
-        year = rs_cfg.getstr('Assignment', 'observe_epoch')
+        year = rs_cfg.get('Assignment', 'observe_epoch')
 
         cache_files = []
         cache_dir = os.getenv('ROBOSTRATEGY_DATA') + '/allocations/eta-0-bs-cache/targets/'

@@ -6,6 +6,8 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+`2.6.0 <https://github.com/sdss/mugatu/compare/2.5.0...2.6.0>`_ - 2025-08-15
+
 * Supply updated year to `robostrategy.obstime.ObsTime`.
 * Add overplan option for `RS_to_targetdb.py`.
 * Add overplan option for field creation in `designs_to_targetdb.make_design_field_targetdb()`.

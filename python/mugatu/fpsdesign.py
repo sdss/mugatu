@@ -328,7 +328,7 @@ class FPSDesign(object):
         self.exp = exp
         if obsTime is None:
             ot = obstime.ObsTime(observatory=self.observatory.lower(),
-                                 year=year)
+                                 date=year)
             self.obsTime = coordio.time.Time(ot.nominal(lst=self.racen)).jd
         else:
             self.obsTime = obsTime

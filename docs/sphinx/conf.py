@@ -123,7 +123,7 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3.6', None),
                        'astropy': ('http://docs.astropy.org/en/latest', None),
                        'numpy': ('http://docs.scipy.org/doc/numpy/', None)}
 
-autodoc_mock_imports = ['_tkinter', 'sdssdb', 'robostrategy']
+autodoc_mock_imports = ['_tkinter', 'sdssdb', 'robostrategy', "sdss_kaiju", "kaiju"]
 autodoc_member_order = 'groupwise'
 
 nbsphinx_execute = 'never'

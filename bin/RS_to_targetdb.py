@@ -205,6 +205,10 @@ if __name__ == '__main__':
 
         # iterate over exposures for this field entry
         for i in range(allo['iexpst'], allo['iexpnd'] + 1):
+            if type_ing == 'rs_overplan':
+                field_exposure = None
+            else:
+                field_exposure = i
             # check if entry already exists
             des = targetdb.DesignToField.select()\
                                         .join(targetdb.Field)\
@@ -212,7 +216,7 @@ if __name__ == '__main__':
                                         .where(targetdb.Version.plan == plan,
                                                targetdb.Field.field_id == fieldid,
                                                targetdb.DesignToField.exposure == i - allo['iexpst'],
-                                               targetdb.DesignToField.field_exposure == i)
+                                               targetdb.DesignToField.field_exposure == field_exposure)
             if len(des) > 0:
                 flag = 'Design already in targetdb'
                 warnings.warn(flag, MugatuWarning)
@@ -232,7 +236,7 @@ if __name__ == '__main__':
                         plan=ver_inst,
                         fieldid=fieldid_inst,
                         exposure=i - allo['iexpst'],  # subtract off the min so it is 0-indexed
-                        field_exposure=i,
+                        field_exposure=field_exposure,
                         desmode_label=desmode_label,
                         design_ids=design_inst['carton_to_target_pk'],
                         robotID=roboIDs,
@@ -269,4 +273,4 @@ if __name__ == '__main__':
                     make_designToField(design=int(design_ids['designid'][i]),
                                        fieldid=fieldid_inst,
                                        exposure=i - allo['iexpst'],
-                                       field_exposure=i)
+                                       field_exposure=field_exposure)

@@ -6,6 +6,8 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+* Change  `field_exposure = None` for overplan design entries.
+
 `2.6.0 <https://github.com/sdss/mugatu/compare/2.5.0...2.6.0>`_ - 2025-08-15
 
 * Supply updated year to `robostrategy.obstime.ObsTime`.

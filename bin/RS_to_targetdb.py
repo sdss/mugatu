@@ -217,7 +217,7 @@ if __name__ == '__main__':
                                                targetdb.Field.field_id == fieldid,
                                                targetdb.DesignToField.exposure == i - allo['iexpst'],
                                                targetdb.DesignToField.field_exposure == field_exposure)
-            if len(des) > 0:
+            if len(des) > 0 and type_ing == 'rs':
                 flag = 'Design already in targetdb'
                 warnings.warn(flag, MugatuWarning)
             else:

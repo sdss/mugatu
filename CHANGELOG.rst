@@ -6,6 +6,9 @@ Change Log
 
 This document records the main changes to the ``mugatu`` code.
 
+`2.6.1 <https://github.com/sdss/mugatu/compare/2.6.0...2.6.1>`_ - 2025-11-18
+
+* Add option in validation script to skip exposures with designid != -1.
 * Change  `field_exposure = None` for overplan design entries.
 
 `2.6.0 <https://github.com/sdss/mugatu/compare/2.5.0...2.6.0>`_ - 2025-08-15

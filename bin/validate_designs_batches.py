@@ -43,7 +43,7 @@ primary_hdu.header['fps_calibrations_version'] = fps_calib_ver
 year_default = '2025-08-15'
 
 def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm,
-                year):
+                skip_designed, year):
     # need import here for create new connection
     from mugatu.fpsdesign import FPSDesign
     from mugatu.designmode import (build_brigh_neigh_query,
@@ -365,6 +365,17 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm,
             valid_arr['designmode'][0] = dm
             valid_arr['designid_status'][0] = design_ids[0]
             valid_arr['designid_status_valid'][0] = True
+        elif skip_designed and design_ids[0] != -1:
+            valid_arr = design_array_format()
+            valid_arr['file_name'][0] = os.path.split(file)[-1]
+            valid_arr['exp'][0] = exp
+            valid_arr['racen'][0] = racen
+            valid_arr['deccen'][0] = deccen
+            valid_arr['designmode'][0] = dm
+            valid_arr['designid_status'][0] = design_ids[0]
+            valid_arr['designid_status_valid'][0] = designid_status_valid(design_ids[0],
+                                                                          head['FIELDID'],
+                                                                          exp)
         else:
             des, decolide, bright_safety = validate_design(file,
                                                            exp,
@@ -396,6 +407,17 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm,
                 valid_arr_des['designmode'][0] = dm
                 valid_arr_des['designid_status'][0] = design_ids[exp]
                 valid_arr_des['designid_status_valid'][0] = True
+            elif skip_designed and design_ids[exp] != -1:
+                valid_arr_des = design_array_format()
+                valid_arr_des['file_name'][0] = os.path.split(file)[-1]
+                valid_arr_des['exp'][0] = exp
+                valid_arr_des['racen'][0] = racen
+                valid_arr_des['deccen'][0] = deccen
+                valid_arr_des['designmode'][0] = dm
+                valid_arr_des['designid_status'][0] = design_ids[exp]
+                valid_arr_des['designid_status_valid'][0] = designid_status_valid(design_ids[exp],
+                                                                                  head['FIELDID'],
+                                                                                  exp)
             else:
                 des, decolide, bright_safety = validate_design(file,
                                                                exp + 1,
@@ -457,6 +479,9 @@ if __name__ == '__main__':
     parser.add_argument('-k', '--skip_rm', dest='skip_rm',
                         type=bool, help='whether to skip dark_rm during validation', required=False,
                         default=False)
+    parser.add_argument('-sd', '--skip_designed', dest='skip_designed',
+                        type=bool, help='whether to skip validating designid_staus != -1', required=False,
+                        default=False)
     parser.add_argument('-x', '--ver_des', dest='ver_des',
                         type=str, help='Version of the designs',
                         required=False, default='')
@@ -472,12 +497,18 @@ if __name__ == '__main__':
     cache_bs = args.cache_bs
     ver_catch = args.ver_catch
     skip_rm = args.skip_rm
+    skip_designed = args.skip_designed
     ver_des = args.ver_des
     if type(skip_rm) is str:
         if skip_rm == 'True':
             skip_rm = True
         else:
             skip_rm = False
+    if type(skip_designed) is str:
+        if skip_designed == 'True':
+            skip_designed = True
+        else:
+            skip_designed = False
 
     MUGATU_DATA = os.getenv('MUGATU_DATA')
 
@@ -655,7 +686,7 @@ if __name__ == '__main__':
         else:
             all_files = [(f, '') for f in files]
         res = tqdm(pool.imap(partial(valid_field, offset_min_skybrightness=offset_min_skybrightness,
-                                     cache_bs=cache_bs, skip_rm=skip_rm, year=year),
+                                     cache_bs=cache_bs, skip_rm=skip_rm, skip_designed=skip_designed, year=year),
                                      all_files),
                    total=len(files))
         res = [r for r in res]

@@ -130,7 +130,10 @@ if __name__ == '__main__':
         fiber_pks[hole.holeid] = hole.pk
 
     # get plan pk
-    ver_inst = targetdb.Version.get(plan=plan)
+    if type_ing == 'rs_overplan':
+        ver_inst = targetdb.Version.get(plan=main_plan)
+    else:
+        ver_inst = targetdb.Version.get(plan=plan)
 
     if type_ing == 'rs_catchup':
         # get the catchup file

@@ -191,13 +191,22 @@ if __name__ == '__main__':
                                    replacement_field=replacement_field,
                                    overplan=overplan)
 
-        fieldid_inst = (targetdb.Field.select()
-                                      .join(targetdb.Version)
-                                      .switch(targetdb.Field)
-                                      .join(targetdb.Cadence)
-                                      .where((targetdb.Field.field_id == fieldid) &
-                                             (targetdb.Version.plan == plan) &
-                                             (targetdb.Cadence.label == allo['cadence'])))
+        if type_ing == 'rs_overplan':
+            fieldid_inst = (targetdb.Field.select()
+                                          .join(targetdb.Version)
+                                          .switch(targetdb.Field)
+                                          .join(targetdb.Cadence)
+                                          .where((targetdb.Field.field_id == fieldid) &
+                                                 (targetdb.Version.plan == main_plan) &
+                                                 (targetdb.Cadence.label == allo['cadence'])))
+        else:
+            fieldid_inst = (targetdb.Field.select()
+                                          .join(targetdb.Version)
+                                          .switch(targetdb.Field)
+                                          .join(targetdb.Cadence)
+                                          .where((targetdb.Field.field_id == fieldid) &
+                                                 (targetdb.Version.plan == plan) &
+                                                 (targetdb.Cadence.label == allo['cadence'])))
         if type_ing == 'rs_catchup' or type_ing == 'rs_overplan':
             pk_field = np.max([f.pk for f in fieldid_inst])
             fieldid_inst = (targetdb.Field.select()

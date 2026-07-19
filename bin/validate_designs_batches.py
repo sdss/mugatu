@@ -6,6 +6,7 @@ import numpy as np
 import glob
 import time
 import datetime
+import warnings
 
 from astropy.io import fits
 from astropy.table import Table
@@ -14,7 +15,7 @@ import sdss_access.path
 import robostrategy.obstime as obstime
 import coordio.time
 
-from mugatu.exceptions import MugatuDesignError, MugatuError
+from mugatu.exceptions import MugatuDesignError, MugatuError, MugatuWarning
 from multiprocessing import Pool
 from itertools import repeat
 from functools import partial
@@ -286,6 +287,15 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm,
     except KeyError:
         design_ids = np.zeros(n_exp, dtype=np.int32) - 1
 
+    # try to get year from header
+    if year is None:
+        try:
+            year = head['OEPOCH']
+        except KeyError:
+            year = year_default
+            flag = 'OEPOCH not in header. Defaulting to obs. epoch of ' + year_default
+            warnings.warn(flag, MugatuWarning)
+
     # set up correct opsdb schema
     from sdssdb.peewee.sdss5db import database
     database.set_profile('operations')
@@ -513,7 +523,7 @@ if __name__ == '__main__':
     MUGATU_DATA = os.getenv('MUGATU_DATA')
 
     if vtype == 'dir':
-        year = year_default
+        year = None
         files = [file for file in glob.glob(directory + '*.fits')]
         cache_files = []
     elif vtype == 'rs':

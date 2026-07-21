@@ -277,9 +277,6 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm,
     head = fits.open(file)[0].header
     racen = head['RACEN']
     deccen = head['DECCEN']
-    ot = obstime.ObsTime(observatory=head['obs'].strip(),
-                         date=year)
-    obsTime = coordio.time.Time(ot.nominal(lst=racen)).jd
     n_exp = head['NEXP']
     field_desmodes = head['DESMODE'].split(' ')
     try:
@@ -295,6 +292,9 @@ def valid_field(all_files, offset_min_skybrightness, cache_bs, skip_rm,
             year = year_default
             flag = 'OEPOCH not in header. Defaulting to obs. epoch of ' + year_default
             warnings.warn(flag, MugatuWarning)
+    ot = obstime.ObsTime(observatory=head['obs'].strip(),
+                         date=year)
+    obsTime = coordio.time.Time(ot.nominal(lst=racen)).jd
 
     # set up correct opsdb schema
     from sdssdb.peewee.sdss5db import database
